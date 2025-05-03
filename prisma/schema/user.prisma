@@ -1,0 +1,29 @@
+model User {
+  id              String       @db.VarChar(255) @id  @default(uuid())
+  username        String       @db.VarChar(100) 
+  password        String       @db.VarChar(100)
+  status          Boolean      @default(true) 
+  name            String       @db.VarChar(100) 
+  ci_nit          String       @db.VarChar(50)
+  description     String?      @db.VarChar(255)
+  address         String?      @db.VarChar(100)
+  cellphone       String?      @db.VarChar(50)
+  telephone       String?      @db.VarChar(50)
+  email           String?      @db.VarChar(80)
+  working_days    String?      @db.VarChar(255)
+  entry_time      DateTime?
+  exit_time       DateTime?
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+  
+  @@unique([username])
+  @@unique([ci_nit])
+
+  role Role @relation(fields: [roleId], references: [id])
+  roleId String @db.VarChar(255)
+
+  subsidiary Subsidiary @relation(fields: [subsidiaryId], references: [id])
+  subsidiaryId String @db.VarChar(255)
+
+  schedulesUsers ScheduleUser[]
+}

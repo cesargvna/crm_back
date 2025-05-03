@@ -1,0 +1,32 @@
+model Role{
+  id  String  @id @db.VarChar(255) @default(uuid())
+  name String @db.VarChar(50)
+  status Boolean @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([name]) 
+
+  permissions RolePermission[]
+  user User[]
+}
+
+model Permission  {
+  id  String  @id @db.VarChar(255) @default(uuid())
+  name String @db.VarChar(50)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([name])
+  
+  roles RolePermission[]
+}
+
+model RolePermission{
+  role          Role        @relation(fields: [roleId], references: [id])
+  roleId        String @db.VarChar(255)
+  permission    Permission  @relation(fields: [permissionId], references: [id])
+  permissionId  String @db.VarChar(255)
+
+  @@id([roleId, permissionId])
+}
