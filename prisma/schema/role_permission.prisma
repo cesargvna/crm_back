@@ -1,32 +1,51 @@
 model Role{
-  id  String  @id @db.VarChar(255) @default(uuid())
-  name String @db.VarChar(50)
-  status Boolean @default(true)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id                String        @id @db.VarChar(255) @default(uuid())
+  name              String        @db.VarChar(20)
+  status            Boolean       @default(true)
+  description       String?       @db.VarChar(100)
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @updatedAt
 
   @@unique([name]) 
 
-  permissions RolePermission[]
-  user User[]
+  rolePermissions   RolePermission[]
+  user              User[]
 }
 
-model Permission  {
-  id  String  @id @db.VarChar(255) @default(uuid())
-  name String @db.VarChar(50)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+model PermissionGroup {
+  id                String        @id @default(uuid()) @db.VarChar(255)
+  name              String        @db.VarChar(100) 
+  type              String        @db.VarChar(20)
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @updatedAt
+
+  @@unique([name]) 
+
+  rolePermissions   RolePermission[]
+}
+
+model PermissionAction {
+  id                String        @id @default(uuid()) @db.VarChar(255)
+  name              String        @db.VarChar(20)
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @updatedAt
 
   @@unique([name])
-  
-  roles RolePermission[]
+
+  rolePermissions   RolePermission[]
 }
 
-model RolePermission{
-  role          Role        @relation(fields: [roleId], references: [id])
-  roleId        String @db.VarChar(255)
-  permission    Permission  @relation(fields: [permissionId], references: [id])
-  permissionId  String @db.VarChar(255)
+model RolePermission {
+  id                String           @id @default(uuid()) @db.VarChar(255)
+  roleId            String           @db.VarChar(255)
+  groupId           String           @db.VarChar(255)
+  actionId          String           @db.VarChar(255)
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
 
-  @@id([roleId, permissionId])
+  role              Role             @relation(fields: [roleId], references: [id])
+  group             PermissionGroup  @relation(fields: [groupId], references: [id])
+  action            PermissionAction @relation(fields: [actionId], references: [id])
+
+  @@unique([roleId, groupId, actionId])
 }

@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { v4 as uuidv4 } from "uuid";
 import prisma from "../utils/prisma";
-import bcrypt from "bcrypt";
-
+//import bcrypt from "bcrypt";
+import * as bcrypt from 'bcryptjs';
 
 // Crear usuario
 export const createUser = async (req: Request, res: Response, next: NextFunction):Promise<void> => {

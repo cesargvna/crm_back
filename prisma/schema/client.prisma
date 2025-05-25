@@ -1,16 +1,23 @@
 model Client {
   id                String       @db.VarChar(255) @id  @default(uuid())
-  name              String       @db.VarChar(100) 
-  ci_nit            String?      @db.VarChar(50)
   status            Boolean      @default(true) 
-  description       String?      @db.VarChar(255)
-  address           String?      @db.VarChar(100)
-  cellphone         String?      @db.VarChar(50)
-  telephone         String?      @db.VarChar(50)
+  client_type       String       @db.VarChar(20)
   localty_point     Int          @default(0)
-  email             String?      @db.VarChar(80)
+  name              String       @db.VarChar(20) 
+
+  lastname          String?      @db.VarChar(20) 
+  ci                String?      @db.VarChar(20)
+  nit               String?      @db.VarChar(20)
+  description       String?      @db.VarChar(255)
+  address           String?      @db.VarChar(255)
+  cellphone         String?      @db.VarChar(20)
+  telephone         String?      @db.VarChar(20)
+  email             String?      @db.VarChar(20)
+
   created_at        DateTime     @default(now())
   updated_at        DateTime     @updatedAt
   
   @@unique([name])
+
+  sales Sale[]
 }
