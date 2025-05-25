@@ -12,15 +12,17 @@ model Product {
 
   @@unique([name, code])
 
-  productCategory      ProductCategory  @relation(fields: [productCategoryId], references: [id])
-  unitMeasurement      UnitMeasurement  @relation(fields: [unitMeasurementId], references: [id])
-  productPrices        ProductPrice[]
-  saleDetails          SaleDetail[]
-}
+  productCategory       ProductCategory  @relation(fields: [productCategoryId], references: [id])
+  unitMeasurement       UnitMeasurement  @relation(fields: [unitMeasurementId], references: [id])
+  productPrices         ProductPrice[]
+  saleDetails           SaleDetail[]
+}  
 
 model ProductCategory {
-  id        String     @id @default(uuid()) @db.VarChar(255)
-  name      String     @db.VarChar(50)
+  id                    String           @id @default(uuid()) @db.VarChar(255)
+  name                  String           @db.VarChar(50)
+  created_at            DateTime         @default(now())
+  updated_at            DateTime         @updatedAt
 
   @@unique([name])
 
@@ -28,36 +30,44 @@ model ProductCategory {
 }
 
 model UnitMeasurement {
-  id        String     @id @default(uuid()) @db.VarChar(255)
-  name      String     @db.VarChar(50)
-  quantity  Int
-  
-  products  Product[]
+  id                    String           @id @default(uuid()) @db.VarChar(255)
+  name                  String           @db.VarChar(50)
+  quantity              Int
+  created_at            DateTime         @default(now())
+  updated_at            DateTime         @updatedAt
+
+  products              Product[]
 }
 
 model ProductPrice {
-  id                String       @id @default(uuid()) @db.VarChar(255)
-  productId         String       @db.VarChar(255)
-  priceTypeId       String       @db.VarChar(255)
-  currencyId   String    @db.VarChar(255)
-  amountUSD         Decimal      @db.Decimal(10, 2)
+  id                    String           @id @default(uuid()) @db.VarChar(255)
+  productId             String           @db.VarChar(255)
+  priceTypeId           String           @db.VarChar(255)
+  currencyId            String           @db.VarChar(255)
+  amountUSD             Decimal          @db.Decimal(10, 2)
+  created_at            DateTime         @default(now())
+  updated_at            DateTime         @updatedAt
 
-  product           Product      @relation(fields: [productId], references: [id])
-  priceType         PriceType    @relation(fields: [priceTypeId], references: [id])
-  currency          Currency     @relation(fields: [currencyId], references: [id])
+  product               Product          @relation(fields: [productId], references: [id])
+  priceType             PriceType        @relation(fields: [priceTypeId], references: [id])
+  currency              Currency         @relation(fields: [currencyId], references: [id])
 }
 
 model PriceType {
-  id     String         @id @default(uuid()) @db.VarChar(255)
-  name   String         @db.VarChar(50)
+  id                    String           @id @default(uuid()) @db.VarChar(255)
+  name                  String           @db.VarChar(50)
+  created_at            DateTime         @default(now())
+  updated_at            DateTime         @updatedAt
 
   productPrices ProductPrice[]
 }
 
 model Currency {
-  id     String    @id @default(uuid()) @db.VarChar(255)
-  code   String    @unique @db.VarChar(10) // USD, BOB, etc.
-  name   String    @db.VarChar(50)
+  id                    String           @id @default(uuid()) @db.VarChar(255)
+  code                  String           @unique @db.VarChar(10) // USD, BOB, etc.
+  name                  String           @db.VarChar(50)
+  created_at            DateTime         @default(now())
+  updated_at            DateTime         @updatedAt
 
   productPrices ProductPrice[]
 
@@ -66,12 +76,13 @@ model Currency {
 }
 
 model ExchangeRate {
-  id               String    @id @default(uuid()) @db.VarChar(255)
-  fromCurrencyId   String    @db.VarChar(255)
-  toCurrencyId     String    @db.VarChar(255)
-  rate             Decimal   @db.Decimal(10, 4)
-  updated_at       DateTime  @updatedAt
-
-  fromCurrency     Currency  @relation("FromCurrency", fields: [fromCurrencyId], references: [id])
-  toCurrency       Currency  @relation("ToCurrency", fields: [toCurrencyId], references: [id])
+  id                    String           @id @default(uuid()) @db.VarChar(255)
+  fromCurrencyId        String           @db.VarChar(255)
+  toCurrencyId          String           @db.VarChar(255)
+  rate                  Decimal          @db.Decimal(10, 4)
+  created_at            DateTime         @default(now())
+  updated_at            DateTime         @updatedAt
+  
+  fromCurrency          Currency         @relation("FromCurrency", fields: [fromCurrencyId], references: [id])
+  toCurrency            Currency         @relation("ToCurrency", fields: [toCurrencyId], references: [id])
 }
