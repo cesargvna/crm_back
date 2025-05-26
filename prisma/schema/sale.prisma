@@ -16,8 +16,6 @@ model Sale {
   client               Client               @relation(fields: [clientId], references: [id])
   user                 User                 @relation(fields: [userId], references: [id])
   saleDetails          SaleDetail[]
-
-  
   creditPayments       CreditPayment[]     
 }
 
