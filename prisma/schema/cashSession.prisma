@@ -4,6 +4,7 @@ model CashSession {
 
   openDate          DateTime
   closeDate         DateTime?
+  status            Boolean     @default(false)
 
   initialAmount     Decimal     @db.Decimal(10, 2)
   salesCash         Decimal     @default(0) @db.Decimal(10, 2)

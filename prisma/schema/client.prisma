@@ -1,8 +1,8 @@
 model Client {
   id                String       @db.VarChar(255) @id  @default(uuid())
   status            Boolean      @default(true) 
-  client_type       String       @db.VarChar(20)
-  localty_point     Int          @default(0)
+  client_type       ClientType 
+  client_points     Int          @default(0)
   name              String       @db.VarChar(20) 
 
   lastname          String?      @db.VarChar(20) 
@@ -20,4 +20,12 @@ model Client {
   @@unique([name])
 
   sales Sale[]
+}
+
+enum ClientType {
+  PERSONA
+  EMPRESA
+  GUBERNAMENTAL
+  EXTRANJERO
+  OTRO
 }

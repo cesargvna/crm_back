@@ -2,7 +2,7 @@ model User {
   id              String       @db.VarChar(255) @id  @default(uuid())
   status          Boolean      @default(true) 
   username        String       @db.VarChar(10) 
-  password        String       @db.VarChar(100)
+  password        String       @db.VarChar(255)
   name            String       @db.VarChar(20) 
 
   lastname        String?      @db.VarChar(20)
@@ -28,6 +28,8 @@ model User {
   schedulesUsers  ScheduleUser[]
   cashSessions    CashSession[] 
   sales           Sale[]
+  expenses        Expense[]
+  incomes         Income[]
 }
 
 model ScheduleUser {

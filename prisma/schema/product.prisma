@@ -3,10 +3,10 @@ model Product {
   code                  String           @db.VarChar(50)
   name                  String           @db.VarChar(100)
   status                Boolean          @default(true)
-  stock                 Int              @default(0)
 
   productCategoryId     String           @db.VarChar(255) 
   unitMeasurementId     String           @db.VarChar(255)
+
   created_at            DateTime         @default(now())
   updated_at            DateTime         @updatedAt
 
@@ -14,13 +14,18 @@ model Product {
 
   productCategory       ProductCategory  @relation(fields: [productCategoryId], references: [id])
   unitMeasurement       UnitMeasurement  @relation(fields: [unitMeasurementId], references: [id])
+  
   productPrices         ProductPrice[]
   saleDetails           SaleDetail[]
+  purchaseDetails       PurchaseDetail[]
+  inventory             Inventory?
 }  
 
 model ProductCategory {
   id                    String           @id @default(uuid()) @db.VarChar(255)
   name                  String           @db.VarChar(50)
+  description           String?          @db.VarChar(100)
+  
   created_at            DateTime         @default(now())
   updated_at            DateTime         @updatedAt
 

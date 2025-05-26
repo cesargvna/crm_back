@@ -1,0 +1,36 @@
+model Inventory {
+  id                  String                @id @default(uuid()) @db.VarChar(255)
+  productId           String                @unique @db.VarChar(255)
+  quantity_available  Int       
+  min_quantity        Int       
+
+  created_at          DateTime              @default(now())
+  updated_at          DateTime              @updatedAt
+
+  product             Product               @relation(fields: [productId], references: [id])
+  stockHistory        StockHistory[]
+}
+
+model StockHistory {
+  id                  String              @id @default(uuid())
+  inventoryId         String
+  type                StockMovementType     // ENTRADA / SALIDA
+  source              StockMovementSource   // DEVOLUCION / VENTA / COMPRA / AJUSTE
+  quantity            Int
+  created_at          DateTime            @default(now())
+
+  inventory           Inventory           @relation(fields: [inventoryId], references: [id])
+}
+
+enum StockMovementSource {
+  VENTA
+  COMPRA
+  DEVOLUCION
+  AJUSTE
+  OTRO
+}
+
+enum StockMovementType {
+  ENTRADA
+  SALIDA
+}

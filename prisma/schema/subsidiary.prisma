@@ -1,7 +1,7 @@
 model Subsidiary {
   id                String        @db.VarChar(255) @id  @default(uuid()) 
   status            Boolean       @default(true) 
-  subsidiary_type   String        @db.VarChar(20)
+  subsidiary_type   SubsidiaryType
   name              String        @db.VarChar(20) 
   
   ci                String?       @db.VarChar(20)
@@ -21,6 +21,13 @@ model Subsidiary {
   
   users                 User[] 
   schedulesSubsidiaries ScheduleSubsidiary[]
+}
+
+enum SubsidiaryType {
+  CASA_MATRIZ
+  SUCURSAL
+  ALMACEN
+  OFICINA
 }
 
 model ScheduleSubsidiary {
