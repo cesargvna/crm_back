@@ -1,14 +1,33 @@
 model Purchase {
-  id           String       @id @default(uuid()) @db.VarChar(255)
-  supplierId   String       @db.VarChar(255)
-  total        Decimal      @default(0) @db.Decimal(10, 2)
-  note         String?      @db.VarChar(100)
+  id               String                  @id @default(uuid()) @db.VarChar(255)
+  supplierId       String                  @db.VarChar(255)
+  total            Decimal                 @db.Decimal(10, 2)
+  note             String?                 @db.VarChar(100)
 
-  created_at   DateTime     @default(now())
-  updated_at   DateTime     @updatedAt
+  paymentType      PaymentType
+  status           PurchaseStatus         
+  paymentStatus    PaymentStatus         
 
-  supplier     Supplier     @relation(fields: [supplierId], references: [id])
-  details      PurchaseDetail[]
+  created_at       DateTime                @default(now())
+  updated_at       DateTime                @updatedAt
+
+  supplier         Supplier                @relation(fields: [supplierId], references: [id])
+  details          PurchaseDetail[]
+  creditPayments   PurchaseCreditPayment[]
+}
+
+enum PurchaseStatus {
+  CONFIRMADA   // Productos recibidos, stock incrementado
+  DEVUELTA     // Productos devueltos, stock decrementado
+}
+
+model PurchaseCreditPayment {
+  id             String        @id @default(uuid()) @db.VarChar(255)
+  purchaseId     String        @db.VarChar(255)
+  amount         Decimal       @db.Decimal(10, 2)
+  paymentDate    DateTime      @default(now())
+
+  purchase       Purchase      @relation(fields: [purchaseId], references: [id])
 }
 
 model PurchaseDetail {
@@ -21,7 +40,6 @@ model PurchaseDetail {
 
   created_at   DateTime     @default(now())
   updated_at   DateTime     @updatedAt
-
 
   purchase     Purchase     @relation(fields: [purchaseId], references: [id])
   product      Product      @relation(fields: [productId], references: [id])

@@ -19,5 +19,4 @@ model CashSession {
   updated_at             DateTime    @updatedAt
 
   user                   User        @relation(fields: [userId], references: [id])
-  creditPayments         CreditPayment[]
 }
