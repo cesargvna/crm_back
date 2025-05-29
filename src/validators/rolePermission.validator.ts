@@ -59,3 +59,16 @@ export const assignPermissionsSchema = z.object({
     )
     .min(1, "At least one permission is required"),
 });
+
+export const getAllRolesQuerySchema = z.object({
+  search: z.string().min(3).optional(),
+  page: z.string().transform(Number).refine(val => val >= 1, {
+    message: "Page must be at least 1"
+  }).optional(),
+  limit: z.string().transform(Number).refine(val => val >= 1 && val <= 1000, {
+    message: "Limit must be between 1 and 1000"
+  }).optional(),
+  sortBy: z.enum(["name", "description"]).optional(),
+  sortOrder: z.enum(["asc", "desc"]).optional(),
+  status: z.enum(["true", "false", "all"]).optional().default("all")
+});

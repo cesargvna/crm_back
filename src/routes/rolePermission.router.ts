@@ -1,5 +1,4 @@
-// src/routes/rolePermission.router.ts
-import { Router } from 'express';
+import express from 'express';
 import {
   createPermissionGroup,
   updatePermissionGroup,
@@ -17,41 +16,40 @@ import {
 
 import {
   createPermissionGroupSchema,
-  updatePermissionGroupSchema,
-  toggleGroupStatusSchema,
+  updatePermissionGroupSchema, 
   createPermissionActionSchema,
   updatePermissionActionSchema,
-  toggleActionStatusSchema,
   createRoleSchema,
   updateRoleSchema,
   toggleRoleStatusSchema,
   assignPermissionsSchema,
-  
+  getAllRolesQuerySchema,
 } from '../validators/rolePermission.validator';
 
 import { validate } from '../middleware/validate.middleware';
 import { validateParams } from '../middleware/validateParams.middleware';
+import { validateQuery } from '../middleware/validateQuery.middleware';
 
-const router = Router();
+const roleRouter = express.Router();
 
 // ✅ Permission Group Routes
-router.post('/groups', validate(createPermissionGroupSchema), createPermissionGroup);
-router.put('/groups', validate(updatePermissionGroupSchema), updatePermissionGroup);
-router.get('/groups', getAllGroups);
+roleRouter.post('/groups', validate(createPermissionGroupSchema), createPermissionGroup);
+roleRouter.put('/groups', validate(updatePermissionGroupSchema), updatePermissionGroup);
+roleRouter.get('/groups', getAllGroups);
 
 // ✅ Permission Action Routes
-router.post('/actions', validate(createPermissionActionSchema), createPermissionAction);
-router.put('/actions', validate(updatePermissionActionSchema), updatePermissionAction);
-router.get('/actions', getAllActions);
+roleRouter.post('/actions', validate(createPermissionActionSchema), createPermissionAction);
+roleRouter.put('/actions', validate(updatePermissionActionSchema), updatePermissionAction);
+roleRouter.get('/actions', getAllActions);
 
 // ✅ Role Routes
-router.post('/roles', validate(createRoleSchema), createRole);
-router.put('/roles', validate(updateRoleSchema), updateRole);
-router.patch('/roles/:id/toggle', validateParams(toggleRoleStatusSchema), toggleRoleStatus);
-router.get('/roles/:id', getRoleWithPermissions);
+roleRouter.post('/roles', validate(createRoleSchema), createRole);
+roleRouter.put('/roles', validate(updateRoleSchema), updateRole);
+roleRouter.patch('/roles/:id/toggle', validateParams(toggleRoleStatusSchema), toggleRoleStatus);
+roleRouter.get('/roles/:id', getRoleWithPermissions);
 
 // ✅ Role Permission Assignment
-router.post('/roles/assign', validate(assignPermissionsSchema), assignPermissionsToRole);
-router.get('/roles', getAllRoles); 
+roleRouter.post('/roles/assign', validate(assignPermissionsSchema), assignPermissionsToRole);
+roleRouter.get('/roles', validateQuery(getAllRolesQuerySchema), getAllRoles);
 
-export default router;
+export default roleRouter;

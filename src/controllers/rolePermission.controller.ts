@@ -131,11 +131,53 @@ export const getRoleWithPermissions = async (req: Request, res: Response, next: 
 // ✅ Get All Roles (simple list)
 export const getAllRoles = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const roles = await prisma.role.findMany({
-      orderBy: { created_at: 'desc' } // opcional: orden más reciente primero
-    });
+    const {
+      search = '',
+      page = '1',
+      limit = '10',
+      sortBy = 'name',
+      sortOrder = 'asc',
+      status = 'all',
+    } = req.query;
 
-    res.json({ success: true, data: roles });
+    const pageNumber = Math.max(parseInt(page as string), 1);
+    const pageSize = Math.min(Math.max(parseInt(limit as string), 1), 1000);
+    const skip = (pageNumber - 1) * pageSize;
+
+    const searchTerm = (search as string).trim();
+
+    const where: any = {
+      ...(status !== 'all' && { status: status === 'true' }),
+      ...(searchTerm.length >= 3 && {
+        OR: [
+          { name: { contains: searchTerm, mode: 'insensitive' } },
+          { description: { contains: searchTerm, mode: 'insensitive' } },
+        ],
+      }),
+    };
+
+    const [roles, total] = await Promise.all([
+      prisma.role.findMany({
+        where,
+        orderBy: {
+          [sortBy as string]: sortOrder === 'desc' ? 'desc' : 'asc',
+        },
+        skip,
+        take: pageSize,
+      }),
+      prisma.role.count({ where }),
+    ]);
+
+    res.json({
+      success: true,
+      data: roles,
+      pagination: {
+        total,
+        page: pageNumber,
+        limit: pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    });
   } catch (error) {
     next(error);
   }
