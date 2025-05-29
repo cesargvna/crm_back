@@ -1,23 +1,27 @@
 model Subsidiary {
-  id                String        @db.VarChar(255) @id  @default(uuid()) 
-  status            Boolean       @default(true) 
-  subsidiary_type   SubsidiaryType
-  name              String        @db.VarChar(20) 
+  id                    String        @db.VarChar(255) @id  @default(uuid()) 
+  status                Boolean       @default(true) 
+  subsidiary_type       SubsidiaryType
+  name                  String        @db.VarChar(20) 
+  allowNegativeStock    Boolean       @default(false)
   
-  ci                String?       @db.VarChar(20)
-  nit               String?       @db.VarChar(20)
-  description       String?       @db.VarChar(100)
-  address           String?       @db.VarChar(100)
-  city              String?       @db.VarChar(20)
-  country           String?       @db.VarChar(20)
-  cellphone         String?       @db.VarChar(20)
-  telephone         String?       @db.VarChar(20)
-  email             String?       @db.VarChar(20)
+  ci                    String?       @db.VarChar(20)
+  nit                   String?       @db.VarChar(20)
+  description           String?       @db.VarChar(100)
+  address               String?       @db.VarChar(100)
+  city                  String?       @db.VarChar(20)
+  country               String?       @db.VarChar(20)
+  cellphone             String?       @db.VarChar(20)
+  telephone             String?       @db.VarChar(20)
+  email                 String?       @db.VarChar(20)
   
-  created_at        DateTime      @default(now())
-  updated_at        DateTime      @updatedAt
+  created_at            DateTime      @default(now())
+  updated_at            DateTime      @updatedAt
   
   @@unique([name])
+
+  tenantId              String        @db.VarChar(255)
+  tenant                Tenant        @relation(fields: [tenantId], references: [id])
   
   users                 User[] 
   schedulesSubsidiaries ScheduleSubsidiary[]
@@ -32,7 +36,8 @@ enum SubsidiaryType {
 
 model ScheduleSubsidiary {
   id              String        @id @db.VarChar(255) @default(uuid())
-  
+
+  status          Boolean       @default(true)
   start_day       String?       @db.VarChar(10)
   end_day         String?       @db.VarChar(10) 
   opening_hour    DateTime?

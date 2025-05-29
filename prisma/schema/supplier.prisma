@@ -1,7 +1,8 @@
 model Supplier {
   id                  String             @id @default(uuid()) @db.VarChar(255)
   name                String             @db.VarChar(100)
-  description         String?            @db.VarChar(255)
+  status              Boolean            @default(true)
+  description         String?            @db.VarChar(100)
   company             String?            @db.VarChar(100)
   phone               String?            @db.VarChar(20)
   telephone           String?            @db.VarChar(20)
@@ -18,6 +19,7 @@ model Supplier {
 model SupplierCategory {
   id          String     @id @default(uuid()) @db.VarChar(255)
   name        String     @db.VarChar(50)
+  status      Boolean    @default(true)
 
   created_at  DateTime   @default(now())
   updated_at  DateTime   @updatedAt

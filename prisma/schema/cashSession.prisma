@@ -13,7 +13,7 @@ model CashSession {
   systemAmount           Decimal     @default(0) @db.Decimal(10, 2)
   countedAmount          Decimal?    @db.Decimal(10, 2)
   difference             Decimal?    @db.Decimal(10, 2)
-  note                   String?     @db.VarChar(255)
+  note                   String?     @db.VarChar(100)
 
   created_at             DateTime    @default(now())
   updated_at             DateTime    @updatedAt

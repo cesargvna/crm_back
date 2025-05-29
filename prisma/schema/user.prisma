@@ -34,7 +34,7 @@ model User {
 
 model ScheduleUser {
   id                String        @id @db.VarChar(255) @default(uuid())
-  
+  status            Boolean       @default(true)
   start_day         String?       @db.VarChar(10)
   end_day           String?       @db.VarChar(10) 
   opening_hour      DateTime?

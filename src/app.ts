@@ -3,7 +3,7 @@ const app = express();
 import cors from 'cors';
 import errorHandler from './middleware/global.middleware';
 import subsidiaryRouter from "./routes/subsidiary.router";
-import rolePermissionRouter from './routes/role_permission.router';
+import rolePermissionRouter from './routes/rolePermission.router';
 import userRouter from './routes/user.router';
 import authRouter from './routes/auth.router';
 
