@@ -28,18 +28,18 @@ model Subsidiary {
 }
 
 enum SubsidiaryType {
-  CASA_MATRIZ
-  SUCURSAL
-  ALMACEN
-  OFICINA
+  HEADQUARTERS
+  SUBSIDIARY
+  WAREHOUSE
+  OFFICE
 }
 
 model ScheduleSubsidiary {
   id              String        @id @db.VarChar(255) @default(uuid())
 
   status          Boolean       @default(true)
-  start_day       String?       @db.VarChar(10)
-  end_day         String?       @db.VarChar(10) 
+  start_day       DayOfWeek?
+  end_day         DayOfWeek?
   opening_hour    DateTime?
   closing_hour    DateTime?
 

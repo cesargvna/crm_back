@@ -24,5 +24,7 @@ model SupplierCategory {
   created_at  DateTime   @default(now())
   updated_at  DateTime   @updatedAt
 
+  @@unique([name])
+
   suppliers   Supplier[]
 }

@@ -1,24 +1,28 @@
 model Purchase {
   id               String                  @id @default(uuid()) @db.VarChar(255)
   supplierId       String                  @db.VarChar(255)
+  userId           String                  @db.VarChar(255)
+
   total            Decimal                 @db.Decimal(10, 2)
   note             String?                 @db.VarChar(100)
 
+  purchaseDate     DateTime                @default(now())
   paymentType      PaymentType
-  status           PurchaseStatus         
+  purchaseStatus   PurchaseStatus         
   paymentStatus    PaymentStatus         
 
   created_at       DateTime                @default(now())
   updated_at       DateTime                @updatedAt
 
   supplier         Supplier                @relation(fields: [supplierId], references: [id])
-  details          PurchaseDetail[]
+  user             User                    @relation(fields: [userId], references: [id])
+  purchaseDetails  PurchaseDetail[]
   creditPayments   PurchaseCreditPayment[]
 }
 
 enum PurchaseStatus {
-  CONFIRMADA   // Productos recibidos, stock incrementado
-  DEVUELTA     // Productos devueltos, stock decrementado
+  CONFIRMADA  
+  DEVUELTA     
 }
 
 model PurchaseCreditPayment {

@@ -116,22 +116,32 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
 };
 
 
-// Obtener usuario por ID
-export const getUserById = async (req: Request, res: Response, next: NextFunction):Promise<void> => {
+// Obtener usuario por ID con horarios incluidos
+export const getUserById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
-    const user = await prisma.user.findUnique({ where: { id } });
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        schedulesUsers: true, // Incluye los horarios del usuario
+        role: true,
+        subsidiary: true,
+      },
+    });
 
     if (!user) {
       res.status(404).json({ success: false, message: "User not found" });
-      return ;
+      return;
     }
 
-    res.status(200).json({ success: true, data: user });
+    const { password, ...safeUser } = user;
+
+    res.status(200).json({ success: true, data: safeUser });
   } catch (error) {
     next(error);
   }
 };
+
 
 export const toggleUserStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

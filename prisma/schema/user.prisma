@@ -30,13 +30,14 @@ model User {
   sales           Sale[]
   expenses        Expense[]
   incomes         Income[]
+  purchases       Purchase[]
 }
 
 model ScheduleUser {
   id                String        @id @db.VarChar(255) @default(uuid())
   status            Boolean       @default(true)
-  start_day         String?       @db.VarChar(10)
-  end_day           String?       @db.VarChar(10) 
+  start_day         DayOfWeek?
+  end_day           DayOfWeek?
   opening_hour      DateTime?
   closing_hour      DateTime?
   
@@ -45,4 +46,14 @@ model ScheduleUser {
 
   user              User          @relation(fields: [userId], references: [id])
   userId            String        @db.VarChar(255)
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
 }

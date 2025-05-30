@@ -2,13 +2,14 @@ model Sale {
   id                   String               @id @default(uuid()) @db.VarChar(255)
   clientId             String               @db.VarChar(255)
   userId               String               @db.VarChar(255)
+
+  total                Decimal              @db.Decimal(10, 2)
+  note                 String?              @db.VarChar(255)
   
   saleDate             DateTime             @default(now())
   paymentType          PaymentType
   dispatchStatus       DispatchStatus
   paymentStatus        PaymentStatus 
-  total                Decimal              @db.Decimal(10, 2)
-  note                 String?              @db.VarChar(255)
 
   created_at           DateTime             @default(now())
   updated_at           DateTime             @updatedAt
@@ -39,8 +40,8 @@ model SaleDetail {
   id                    String               @id @default(uuid()) @db.VarChar(255)
   saleId                String               @db.VarChar(255)
   productId             String               @db.VarChar(255)
+  unit_price            Decimal              @db.Decimal(10, 2)
   quantity              Int
-  price                 Decimal              @db.Decimal(10, 2)
   subtotal              Decimal              @db.Decimal(10, 2)
 
   created_at            DateTime             @default(now())
