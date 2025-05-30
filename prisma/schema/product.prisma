@@ -3,6 +3,7 @@ model Product {
   code                  String           @db.VarChar(50)
   name                  String           @db.VarChar(100)
   status                Boolean          @default(true)
+  description           String?          @db.VarChar(255)
 
   lastPurchasePriceUSD  Decimal?         @db.Decimal(10, 2)
   productCategoryId     String           @db.VarChar(255) 

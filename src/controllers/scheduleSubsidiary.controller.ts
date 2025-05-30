@@ -49,9 +49,19 @@ export const getSchedulesBySubsidiaryId = async (
 ): Promise<void> => {
   try {
     const { subsidiaryId } = req.params;
+
     const schedules = await prisma.scheduleSubsidiary.findMany({
       where: { subsidiaryId },
     });
+
+    if (schedules.length === 0) {
+      res.status(404).json({
+        success: false,
+        message: "No schedules found for this subsidiary",
+      });
+      return;
+    }
+
     res.status(200).json({ success: true, data: schedules });
   } catch (error) {
     next(error);

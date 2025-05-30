@@ -49,11 +49,11 @@ model ScheduleUser {
 }
 
 enum DayOfWeek {
-  MONDAY
-  TUESDAY
-  WEDNESDAY
-  THURSDAY
-  FRIDAY
-  SATURDAY
-  SUNDAY
+  LUNES
+  MARTES
+  MIÉRCOLES
+  JUEVES
+  VIERNES
+  SÁBADO
+  DOMINGO
 }
