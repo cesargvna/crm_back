@@ -1,0 +1,30 @@
+model Supplier {
+  id                  String             @id @default(uuid()) @db.VarChar(255)
+  name                String             @db.VarChar(100)
+  status              Boolean            @default(true)
+  description         String?            @db.VarChar(100)
+  company             String?            @db.VarChar(100)
+  phone               String?            @db.VarChar(20)
+  telephone           String?            @db.VarChar(20)
+  email               String?            @db.VarChar(80)
+  supplierCategoryId  String             @db.VarChar(255)
+  
+  created_at          DateTime           @default(now())
+  updated_at          DateTime           @updatedAt
+
+  supplierCategory    SupplierCategory   @relation(fields: [supplierCategoryId], references: [id])
+  purchases           Purchase[]
+}
+
+model SupplierCategory {
+  id          String     @id @default(uuid()) @db.VarChar(255)
+  name        String     @db.VarChar(50)
+  status      Boolean    @default(true)
+
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+
+  @@unique([name])
+
+  suppliers   Supplier[]
+}

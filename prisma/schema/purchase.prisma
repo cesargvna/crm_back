@@ -1,0 +1,50 @@
+model Purchase {
+  id               String                  @id @default(uuid()) @db.VarChar(255)
+  supplierId       String                  @db.VarChar(255)
+  userId           String                  @db.VarChar(255)
+
+  total            Decimal                 @db.Decimal(10, 2)
+  note             String?                 @db.VarChar(100)
+
+  purchaseDate     DateTime                @default(now())
+  paymentType      PaymentType
+  purchaseStatus   PurchaseStatus         
+  paymentStatus    PaymentStatus         
+
+  created_at       DateTime                @default(now())
+  updated_at       DateTime                @updatedAt
+
+  supplier         Supplier                @relation(fields: [supplierId], references: [id])
+  user             User                    @relation(fields: [userId], references: [id])
+  purchaseDetails  PurchaseDetail[]
+  creditPayments   PurchaseCreditPayment[]
+}
+
+enum PurchaseStatus {
+  CONFIRMADA  
+  DEVUELTA     
+}
+
+model PurchaseCreditPayment {
+  id             String        @id @default(uuid()) @db.VarChar(255)
+  purchaseId     String        @db.VarChar(255)
+  amount         Decimal       @db.Decimal(10, 2)
+  paymentDate    DateTime      @default(now())
+
+  purchase       Purchase      @relation(fields: [purchaseId], references: [id])
+}
+
+model PurchaseDetail {
+  id           String       @id @default(uuid()) @db.VarChar(255)
+  purchaseId   String       @db.VarChar(255)
+  productId    String       @db.VarChar(255)
+  unit_price   Decimal      @db.Decimal(10, 2)
+  quantity     Int
+  sub_total    Decimal      @db.Decimal(10, 2)
+
+  created_at   DateTime     @default(now())
+  updated_at   DateTime     @updatedAt
+
+  purchase     Purchase     @relation(fields: [purchaseId], references: [id])
+  product      Product      @relation(fields: [productId], references: [id])
+}

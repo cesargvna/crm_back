@@ -1,21 +1,51 @@
 model Subsidiary {
-  id              String    @db.VarChar(255) @id  @default(uuid()) 
-  name            String    @db.VarChar(100) 
-  ci_nit          String    @db.VarChar(50)
-  status          Boolean   @default(true) 
-  address         String?   @db.VarChar(100)
-  city            String?   @db.VarChar(50)
-  country         String?   @db.VarChar(50)
-  cellphone       String?   @db.VarChar(50)
-  telephone       String?   @db.VarChar(50)
-  email           String?   @db.VarChar(80)
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @updatedAt
+  id                    String        @db.VarChar(255) @id  @default(uuid()) 
+  status                Boolean       @default(true) 
+  subsidiary_type       SubsidiaryType
+  name                  String        @db.VarChar(20) 
+  allowNegativeStock    Boolean       @default(false)
+  
+  ci                    String?       @db.VarChar(20)
+  nit                   String?       @db.VarChar(20)
+  description           String?       @db.VarChar(100)
+  address               String?       @db.VarChar(100)
+  city                  String?       @db.VarChar(20)
+  country               String?       @db.VarChar(20)
+  cellphone             String?       @db.VarChar(20)
+  telephone             String?       @db.VarChar(20)
+  email                 String?       @db.VarChar(20)
+  
+  created_at            DateTime      @default(now())
+  updated_at            DateTime      @updatedAt
   
   @@unique([name])
-  @@unique([ci_nit])
+
+  tenantId              String        @db.VarChar(255)
+  tenant                Tenant        @relation(fields: [tenantId], references: [id])
   
-  users User[] 
+  users                 User[] 
   schedulesSubsidiaries ScheduleSubsidiary[]
 }
 
+enum SubsidiaryType {
+  HEADQUARTERS
+  SUBSIDIARY
+  WAREHOUSE
+  OFFICE
+}
+
+model ScheduleSubsidiary {
+  id              String        @id @db.VarChar(255) @default(uuid())
+
+  status          Boolean       @default(true)
+  start_day       DayOfWeek?
+  end_day         DayOfWeek?
+  opening_hour    DateTime?
+  closing_hour    DateTime?
+
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+
+  subsidiary      Subsidiary    @relation(fields: [subsidiaryId], references: [id])
+  subsidiaryId    String        @db.VarChar(255)
+}

@@ -1,55 +1,92 @@
+// ✅ subsidiary.validator.ts
 import { z } from "zod";
 
 export const subsidiarySchema = z.object({
-    name: z
-        .string()
-        .min(2, "Name must have at least 2 characters.")
-        .max(100, "Name must not exceed 100 characters.")
-        .nonempty("Name is required."),
+  tenantId: z
+    .string({ required_error: "Tenant ID is required" })
+    .uuid("Invalid tenant ID"),
 
-    ci_nit: z
-        .string()
-        .max(50, "CI/NIT must not exceed 50 characters.")
-        .nonempty("CI/NIT is required."),
+  name: z
+    .string()
+    .min(2, "Name must be at least 2 characters")
+    .max(20, "Name must not exceed 20 characters"),
 
-    address: z
-        .string()
-        .max(100, "Address must not exceed 100 characters.")
-        .optional()
-        .nullable(),
+  subsidiary_type: z.enum(
+    ["HEADQUARTERS", "SUBSIDIARY", "WAREHOUSE", "OFFICE"],
+    {
+      errorMap: () => ({ message: "Invalid subsidiary type" }),
+    }
+  ),
 
-    city: z
-        .string()
-        .max(50, "City must not exceed 50 characters.")
-        .optional()
-        .nullable(),
+  allowNegativeStock: z.boolean().optional(),
+  status: z.boolean().optional(),
 
-    country: z
-        .string()
-        .max(50, "Country must not exceed 50 characters.")
-        .optional()
-        .nullable(),
+  ci: z
+    .string()
+    .max(20, "CI must not exceed 20 characters")
+    .optional()
+    .nullable(),
+  nit: z
+    .string()
+    .max(20, "NIT must not exceed 20 characters")
+    .optional()
+    .nullable(),
+  description: z
+    .string()
+    .max(100, "Description must not exceed 100 characters")
+    .optional()
+    .nullable(),
+  address: z
+    .string()
+    .max(100, "Address must not exceed 100 characters")
+    .optional()
+    .nullable(),
+  city: z
+    .string()
+    .max(20, "City must not exceed 20 characters")
+    .optional()
+    .nullable(),
+  country: z
+    .string()
+    .max(20, "Country must not exceed 20 characters")
+    .optional()
+    .nullable(),
+  cellphone: z
+    .string()
+    .max(20, "Cellphone must not exceed 20 characters")
+    .optional()
+    .nullable(),
+  telephone: z
+    .string()
+    .max(20, "Telephone must not exceed 20 characters")
+    .optional()
+    .nullable(),
+  email: z
+    .string()
+    .email("Invalid email format")
+    .max(20, "Email must not exceed 20 characters")
+    .optional()
+    .nullable(),
+});
 
-    cellphone: z
-        .string()
-        .max(50, "Cellphone number must not exceed 50 characters.")
-        .regex(/^[+\d][\d\s]*$/, "Cellphone number must contain only digits, spaces, or start with '+'.")
-        .optional()
-        .nullable(),
+export const toggleSubsidiaryStatusSchema = z.object({
+  id: z.string().uuid("Invalid subsidiary ID"),
+});
 
-    telephone: z
-        .string()
-        .max(50, "Telephone number must not exceed 50 characters.")
-        .regex(/^[+\d][\d\s]*$/, "Cellphone number must contain only digits, spaces, or start with '+'.")
-        .optional()
-        .nullable(),
-
-    email: z
-        .string()
-        .email("Invalid email format.")
-        .max(80, "Email must not exceed 80 characters.")
-        .optional()
-        .nullable(),
-
-    status: z.boolean().optional(),
+export const getAllSubsidiariesQuerySchema = z.object({
+  page: z
+    .string()
+    .optional()
+    .transform((v) => parseInt(v || "1")),
+  limit: z
+    .string()
+    .optional()
+    .transform((v) => parseInt(v || "10")),
+  search: z.string().optional(),
+  status: z.enum(["true", "false", "all"]).optional().default("all"),
+  sortBy: z
+    .enum(["name", "city", "country", "created_at"])
+    .optional()
+    .default("name"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("asc"),
 });

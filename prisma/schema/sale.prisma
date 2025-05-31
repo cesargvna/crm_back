@@ -1,0 +1,61 @@
+model Sale {
+  id                   String               @id @default(uuid()) @db.VarChar(255)
+  clientId             String               @db.VarChar(255)
+  userId               String               @db.VarChar(255)
+
+  total                Decimal              @db.Decimal(10, 2)
+  note                 String?              @db.VarChar(255)
+  
+  saleDate             DateTime             @default(now())
+  paymentType          PaymentType
+  dispatchStatus       DispatchStatus
+  paymentStatus        PaymentStatus 
+
+  created_at           DateTime             @default(now())
+  updated_at           DateTime             @updatedAt
+
+  client               Client               @relation(fields: [clientId], references: [id])
+  user                 User                 @relation(fields: [userId], references: [id])
+  saleDetails          SaleDetail[]
+  creditPayments       CreditPayment[]     
+}
+
+enum PaymentType {
+  CONTADO
+  CREDITO
+}
+
+enum DispatchStatus {
+  COMPLETADA // venta realizada (activa)
+  ANULADA    // venta cancelada (reversada)
+}
+
+enum PaymentStatus {
+  PENDIENTE   // aún no se paga nada
+  PARCIAL     // se ha pagado una parte
+  COMPLETO    // se pagó todo el crédito
+}
+
+model SaleDetail {
+  id                    String               @id @default(uuid()) @db.VarChar(255)
+  saleId                String               @db.VarChar(255)
+  productId             String               @db.VarChar(255)
+  unit_price            Decimal              @db.Decimal(10, 2)
+  quantity              Int
+  subtotal              Decimal              @db.Decimal(10, 2)
+
+  created_at            DateTime             @default(now())
+  updated_at            DateTime             @updatedAt
+
+  sale                  Sale                 @relation(fields: [saleId], references: [id])
+  product               Product              @relation(fields: [productId], references: [id])
+}
+
+model CreditPayment {
+  id            String       @id @default(uuid()) @db.VarChar(255)
+  saleId        String       @db.VarChar(255)
+  amount        Decimal      @db.Decimal(10, 2)
+  paymentDate   DateTime     @default(now())
+
+  sale          Sale         @relation(fields: [saleId], references: [id])
+}

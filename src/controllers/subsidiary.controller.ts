@@ -1,21 +1,71 @@
-import { Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import prisma from '../utils/prisma';
+// ✅ subsidiary.controller.ts
+import { Request, Response, NextFunction } from "express";
+import { v4 as uuidv4 } from "uuid";
+import prisma from "../utils/prisma";
 
-
-export const createSubsidiary = async (req: Request, res: Response, next: NextFunction) => {
-
+export const createSubsidiary = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { ...otherData } = req.body;
-
     const newSubsidiary = await prisma.subsidiary.create({
       data: {
+        ...req.body,
         id: uuidv4(),
-        ...otherData,
       },
     });
-
     res.status(201).json({ success: true, message: "Subsidiary created", data: newSubsidiary });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllSubsidiaries = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const {
+      search = '',
+      page = '1',
+      limit = '10',
+      sortBy = 'name',
+      sortOrder = 'asc',
+      status = 'all'
+    } = req.query;
+
+    const pageNumber = Math.max(parseInt(page as string), 1);
+    const pageSize = Math.min(Math.max(parseInt(limit as string), 1), 1000);
+    const skip = (pageNumber - 1) * pageSize;
+
+    const searchTerm = (search as string).trim();
+
+    const where: any = {
+      ...(status !== 'all' && { status: status === 'true' }),
+      ...(searchTerm.length >= 2 && {
+        OR: [
+          { name: { contains: searchTerm, mode: 'insensitive' } },
+          { city: { contains: searchTerm, mode: 'insensitive' } },
+          { country: { contains: searchTerm, mode: 'insensitive' } },
+        ],
+      })
+    };
+
+    const [subsidiaries, total] = await Promise.all([
+      prisma.subsidiary.findMany({
+        where,
+        include: { tenant: true },
+        skip,
+        take: pageSize,
+        orderBy: { [sortBy as string]: sortOrder === 'desc' ? 'desc' : 'asc' },
+      }),
+      prisma.subsidiary.count({ where })
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: subsidiaries,
+      pagination: {
+        total,
+        page: pageNumber,
+        limit: pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -26,6 +76,7 @@ export const getSubsidiaryById = async (req: Request, res: Response, next: NextF
     const { id } = req.params;
     const subsidiary = await prisma.subsidiary.findUnique({
       where: { id },
+      include: { tenant: true, schedulesSubsidiaries: true },
     });
 
     if (!subsidiary) {
@@ -39,30 +90,33 @@ export const getSubsidiaryById = async (req: Request, res: Response, next: NextF
   }
 };
 
-export const updateSubsidiary = async (req: Request, res: Response) => {
+export const updateSubsidiary = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
-    const { ...otherData } = req.body;
-
-    const updatedSubsidiary = await prisma.subsidiary.update({
+    const updated = await prisma.subsidiary.update({
       where: { id },
-      data: {
-        ...otherData,
-      },
+      data: req.body
     });
-
-    res.status(200).json({ success: true, message: "Subsidiary updated", data: updatedSubsidiary });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Internal server error", error });
-  }
-};
-
-export const getAllSubsidiaries = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const subsidiaries = await prisma.subsidiary.findMany();
-
-    res.status(200).json({ success: true, data: subsidiaries });
+    res.status(200).json({ success: true, message: "Subsidiary updated", data: updated });
   } catch (error) {
     next(error);
   }
-}
+};
+
+export const toggleSubsidiaryStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const existing = await prisma.subsidiary.findUnique({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ success: false, message: "Subsidiary not found" });
+      return;
+    }
+    const updated = await prisma.subsidiary.update({
+      where: { id },
+      data: { status: !existing.status }
+    });
+    res.status(200).json({ success: true, message: "Subsidiary status toggled", data: updated });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -1,4 +1,5 @@
-import bcrypt from 'bcrypt';
+//import bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import { tokenSign } from '../utils/handleToken';

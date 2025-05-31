@@ -1,13 +1,21 @@
 import express from 'express';
 const userRouter = express.Router();
-import { createUser, updateUser, getAllUsers,getUserById } from '../controllers/user.controller';
+import { createUser, 
+         updateUser, 
+         getAllUsers,
+         getUserById,
+         toggleUserStatus, 
+        } from '../controllers/user.controller';
 import { validate } from '../middleware/validate.middleware';
-import { userSchema } from '../validators/user.validator';
-
+import { validateParams } from '../middleware/validateParams.middleware';
+import { userSchema, toggleUserStatusSchema, getAllUsersQuerySchema } from '../validators/user.validator';
+import { validateQuery } from "../middleware/validateQuery.middleware";
 
 userRouter.post('/',validate(userSchema), createUser);
 userRouter.put('/:id',validate(userSchema), updateUser);
-userRouter.get('/', getAllUsers);
+
+userRouter.get("/", validateQuery(getAllUsersQuerySchema), getAllUsers);
 userRouter.get('/:id', getUserById);
+userRouter.patch('/:id/toggle', validateParams(toggleUserStatusSchema), toggleUserStatus);
 
 export default userRouter;

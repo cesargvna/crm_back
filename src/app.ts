@@ -3,11 +3,12 @@ const app = express();
 import cors from 'cors';
 import errorHandler from './middleware/global.middleware';
 import subsidiaryRouter from "./routes/subsidiary.router";
-import rolePermissionRouter from './routes/role_permission.router';
+import rolePermissionRouter from './routes/rolePermission.router';
 import userRouter from './routes/user.router';
 import authRouter from './routes/auth.router';
-
-
+import tenantRouter from './routes/tenant.router';
+import scheduleUserRouter from './routes/scheduleUser.router';
+import scheduleSubsidiaryRouter from './routes/scheduleSubsidiary.router';
 
 app.use(express.json());
 app.use(cors());
@@ -16,6 +17,9 @@ app.use('/login', authRouter);
 app.use('/subsidiary', subsidiaryRouter);
 app.use('/role', rolePermissionRouter);
 app.use('/user', userRouter);
+app.use('/tenant', tenantRouter);
+app.use('/schedule-user', scheduleUserRouter);
+app.use('/schedule-subsidiary', scheduleSubsidiaryRouter);
 
 app.use(errorHandler);
 
