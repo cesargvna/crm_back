@@ -1,6 +1,14 @@
 // ✅ subsidiary.validator.ts
 import { z } from "zod";
 
+export const subsidiaryTypes = [
+  "MATRIZ",
+  "SUCURSAL",
+  "ALMACEN",
+  "OFICINA",
+] as const;
+
+
 export const subsidiarySchema = z.object({
   tenantId: z
     .string({ required_error: "Tenant ID is required" })
@@ -11,12 +19,11 @@ export const subsidiarySchema = z.object({
     .min(2, "Name must be at least 2 characters")
     .max(20, "Name must not exceed 20 characters"),
 
-  subsidiary_type: z.enum(
-    ["HEADQUARTERS", "SUBSIDIARY", "WAREHOUSE", "OFFICE"],
-    {
-      errorMap: () => ({ message: "Invalid subsidiary type" }),
-    }
-  ),
+  subsidiary_type: z
+    .string({ required_error: "subsidiary_type is required" })
+    .refine((val) => subsidiaryTypes.includes(val as any), {
+      message: `Invalid subsidiary type. Expected one of: ${subsidiaryTypes.join(" | ")}`,
+    }),
 
   allowNegativeStock: z.boolean().optional(),
   status: z.boolean().optional(),

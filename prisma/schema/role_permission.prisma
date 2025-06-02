@@ -1,55 +1,91 @@
-model Role{
-  id                String        @id @db.VarChar(255) @default(uuid())
-  name              String        @db.VarChar(20)
-  status            Boolean       @default(true)
-  description       String?       @db.VarChar(100)
+model PermissionSection {
+  id         String        @id @default(uuid()) @db.VarChar(255)
+  name       String        @db.VarChar(100)
+  order      Int           @default(0)
+  status     Boolean       @default(true)
 
-  created_at        DateTime      @default(now())
-  updated_at        DateTime      @updatedAt
+  modules    ModuleGroup[]
+  rolePermissions RolePermission[] // ✅ Enlace a permisos
 
-  @@unique([name]) 
+  created_at DateTime      @default(now())
+  updated_at DateTime      @updatedAt
 
-  rolePermissions   RolePermission[]
-  user              User[]
+  @@unique([name, order])
 }
 
-model PermissionGroup {
-  id                String        @id @default(uuid()) @db.VarChar(255)
-  name              String        @db.VarChar(100) 
-  type              String        @db.VarChar(20)
+model ModuleGroup {
+  id         String        @id @default(uuid()) @db.VarChar(255)
+  name       String        @db.VarChar(100)
+  route      String        @db.VarChar(255)
+  iconName   String        @db.VarChar(100)
+  status     Boolean       @default(true)
 
-  created_at        DateTime      @default(now())
-  updated_at        DateTime      @updatedAt
+  sectionId  String        @db.VarChar(255)
+  section    PermissionSection @relation(fields: [sectionId], references: [id])
 
-  @@unique([name]) 
-
-  rolePermissions   RolePermission[]
-}
-
-model PermissionAction {
-  id                String        @id @default(uuid()) @db.VarChar(255)
-  name              String        @db.VarChar(20)
-
-  created_at        DateTime      @default(now())
-  updated_at        DateTime      @updatedAt
+  submodules SubmoduleGroup[]
 
   @@unique([name])
 
-  rolePermissions   RolePermission[]
+  created_at DateTime      @default(now())
+  updated_at DateTime      @updatedAt
+}
+
+model SubmoduleGroup {
+  id         String        @id @default(uuid()) @db.VarChar(255)
+  name       String        @db.VarChar(100)
+  route      String        @db.VarChar(255)
+  status     Boolean       @default(true)
+
+  moduleId   String        @db.VarChar(255)
+  module     ModuleGroup   @relation(fields: [moduleId], references: [id])
+
+  @@unique([name])
+
+  created_at DateTime      @default(now())
+  updated_at DateTime      @updatedAt
+}
+
+model PermissionAction {
+  id         String        @id @default(uuid()) @db.VarChar(255)
+  name       String        @db.VarChar(50)
+
+  rolePermissions RolePermission[]
+
+  created_at DateTime      @default(now())
+  updated_at DateTime      @updatedAt
+
+  @@unique([name])
+}
+
+model Role {
+  id         String        @id @default(uuid()) @db.VarChar(255)
+  name       String        @db.VarChar(100)
+  description String?      @db.VarChar(255)
+  status     Boolean       @default(true)
+
+  rolePermissions RolePermission[]
+  users User[]
+
+  created_at DateTime      @default(now())
+  updated_at DateTime      @updatedAt
+
+  @@unique([name])
 }
 
 model RolePermission {
-  id                String           @id @default(uuid()) @db.VarChar(255)
-  roleId            String           @db.VarChar(255)
-  groupId           String           @db.VarChar(255)
-  actionId          String           @db.VarChar(255)
-  
-  created_at        DateTime         @default(now())
-  updated_at        DateTime         @updatedAt
+  id            String           @id @default(uuid()) @db.VarChar(255)
 
-  role              Role             @relation(fields: [roleId], references: [id])
-  group             PermissionGroup  @relation(fields: [groupId], references: [id])
-  action            PermissionAction @relation(fields: [actionId], references: [id])
+  roleId        String           @db.VarChar(255)
+  actionId      String           @db.VarChar(255)
+  sectionId     String           @db.VarChar(255)  // ✅ Solo enlazado a la sección
 
-  @@unique([roleId, groupId, actionId])
+  role          Role             @relation(fields: [roleId], references: [id])
+  action        PermissionAction @relation(fields: [actionId], references: [id])
+  section       PermissionSection @relation(fields: [sectionId], references: [id])
+
+  created_at    DateTime         @default(now())
+  updated_at    DateTime         @updatedAt
+
+  @@unique([roleId, actionId, sectionId])
 }

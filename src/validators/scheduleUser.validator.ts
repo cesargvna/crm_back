@@ -1,25 +1,38 @@
 // src/validators/scheduleUser.validator.ts
 import { z } from "zod";
 
-export const dayOfWeekEnum = z.enum([
-  "MONDAY",
-  "TUESDAY",
-  "WEDNESDAY",
-  "THURSDAY",
-  "FRIDAY",
-  "SATURDAY",
-  "SUNDAY",
-]);
-
+export const dayOfWeekEnumValues = [
+  "LUNES",
+  "MARTES",
+  "MIERCOLES",
+  "JUEVES",
+  "VIERNES",
+  "SABADO",
+  "DOMINGO",
+] as const;
 // Base sin refine
 const baseScheduleUserSchema = z.object({
   userId: z
     .string({ required_error: "User ID is required" })
     .uuid("Invalid user ID"),
 
-  start_day: dayOfWeekEnum.optional(),
-  end_day: dayOfWeekEnum.optional(),
+  start_day: z
+    .string()
+    .optional()
+    .refine((val) => !val || dayOfWeekEnumValues.includes(val as any), {
+      message: `Invalid enum value for start_day. Expected one of: ${dayOfWeekEnumValues.join(
+        " | "
+      )}`,
+    }),
 
+  end_day: z
+    .string()
+    .optional()
+    .refine((val) => !val || dayOfWeekEnumValues.includes(val as any), {
+      message: `Invalid enum value for end_day. Expected one of: ${dayOfWeekEnumValues.join(
+        " | "
+      )}`,
+    }),
   opening_hour: z
     .string()
     .optional()

@@ -4,10 +4,10 @@ import { z } from "zod";
 export const weekDays = [
   "LUNES",
   "MARTES",
-  "MIÉRCOLES",
+  "MIERCOLES",
   "JUEVES",
   "VIERNES",
-  "SÁBADO",
+  "SABADO",
   "DOMINGO",
 ] as const;
 
@@ -16,8 +16,17 @@ const baseScheduleSubsidiarySchema = z.object({
     .string({ required_error: "Subsidiary ID is required" })
     .uuid("Invalid subsidiary ID"),
 
-  start_day: z.enum(weekDays),
-  end_day: z.enum(weekDays),
+  start_day: z
+    .string({ required_error: "start_day is required" })
+    .refine((val) => weekDays.includes(val as any), {
+      message: `Invalid enum value for start_day. Expected one of: ${weekDays.join(" | ")}`,
+    }),
+
+  end_day: z
+    .string({ required_error: "end_day is required" })
+    .refine((val) => weekDays.includes(val as any), {
+      message: `Invalid enum value for end_day. Expected one of: ${weekDays.join(" | ")}`,
+    }),
 
   opening_hour: z
     .string()

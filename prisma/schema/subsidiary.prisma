@@ -28,10 +28,10 @@ model Subsidiary {
 }
 
 enum SubsidiaryType {
-  HEADQUARTERS
-  SUBSIDIARY
-  WAREHOUSE
-  OFFICE
+  MATRIZ
+  SUCURSAL
+  ALMACEN
+  OFICINA
 }
 
 model ScheduleSubsidiary {

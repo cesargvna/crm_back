@@ -51,9 +51,9 @@ model ScheduleUser {
 enum DayOfWeek {
   LUNES
   MARTES
-  MIÉRCOLES
+  MIERCOLES
   JUEVES
   VIERNES
-  SÁBADO
+  SABADO
   DOMINGO
 }
