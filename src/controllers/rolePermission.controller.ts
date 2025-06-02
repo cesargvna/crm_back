@@ -36,6 +36,7 @@ export const createPermissionSection = async (
     next(error);
   }
 };
+
 // ✅ Update Permission Section
 export const updatePermissionSection = async (
   req: Request,
