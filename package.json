@@ -11,7 +11,8 @@
     "prisma:migrate": "prisma migrate dev --name init --schema=prisma/schema",
     "prisma:reset": "prisma migrate reset --schema=prisma/schema",
     "prisma:seed": "tsx prisma/seed.ts",
-    "seed:init": "tsx prisma/seeds/seedInitialData.ts"
+    "seed:init": "tsx prisma/seeds/seedInitialData.ts",
+    "seed:full": "tsx prisma/seeds/main.ts"
   },
   "keywords": [],
   "author": "",

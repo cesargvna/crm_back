@@ -23,8 +23,8 @@ model User {
   subsidiary      Subsidiary   @relation(fields: [subsidiaryId], references: [id])
   subsidiaryId    String       @db.VarChar(255)
 
-  tenantId        String       @db.VarChar(255) // 👉 agregado sin relación
-
+  tenantId        String?      @db.VarChar(255) // 👉 agregado sin relación
+  
   schedulesUsers  ScheduleUser[]
   cashSessions    CashSession[] 
   sales           Sale[]

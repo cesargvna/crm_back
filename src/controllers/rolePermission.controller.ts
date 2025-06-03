@@ -801,32 +801,34 @@ export const getAllPermissionActions = async (
 };
 
 // ✅ Create Role
-export const createRole = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const createRole = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { name, description } = req.body;
+    const { name, description, tenantId } = req.body; // tenantId ya es inyectado por middleware
+
     const normalizedName = normalize(name.trim().toLowerCase());
 
-    const allRoles = await prisma.role.findMany();
-    const nameExists = allRoles.some(
-      role => normalize(role.name.trim().toLowerCase()) === normalizedName
-    );
-
-    if (nameExists) {
-      return res.status(400).json({
-        success: false,
-        message: `The role name "${name}" already exists.`,
-      });
-    }
-
-    const role = await prisma.role.create({
-      data: { id: uuidv4(), name, description },
+    const existing = await prisma.role.findFirst({
+      where: {
+        tenantId,
+        name: { equals: normalizedName, mode: "insensitive" },
+      },
     });
 
-    res.status(201).json({ success: true, data: role });
+    if (existing) {
+      res.status(400).json({ success: false, message: `The role name "${name}" already exists.` });
+      return;
+    }
+
+    const newRole = await prisma.role.create({
+      data: {
+        id: uuidv4(),
+        name,
+        description,
+        tenantId,
+      },
+    });
+
+    res.status(201).json({ success: true, message: "Role created", data: newRole });
   } catch (error) {
     next(error);
   }
