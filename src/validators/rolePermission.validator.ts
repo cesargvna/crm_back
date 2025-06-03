@@ -135,12 +135,28 @@ export const getAllRolesQuerySchema = z.object({
 // ==============================
 export const assignPermissionsSchema = z.object({
   roleId: z.string({ required_error: "Role ID is required" }).uuid("Invalid role ID"),
-  permissions: z
-    .array(
-      z.object({
-        sectionId: z.string({ required_error: "Section ID is required" }).uuid("Invalid section ID"),
-        actionId: z.string({ required_error: "Action ID is required" }).uuid("Invalid action ID"),
-      })
-    )
-    .min(1, { message: "At least one permission is required" }),
+  permissions: z.array(
+    z.object({
+      sectionId: z.string({ required_error: "Section ID is required" }).uuid("Invalid section ID"),
+      actionId: z.string({ required_error: "Action ID is required" }).uuid("Invalid action ID"),
+    })
+  )
+    .min(1, { message: "At least one permission is required" })
+    .refine((arr) => {
+      const seen = new Set();
+      for (const p of arr) {
+        const key = `${p.sectionId}_${p.actionId}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+      }
+      return true;
+    }, {
+      message: "Duplicate permission combination (sectionId + actionId) found in request.",
+    }),
+});
+
+export const removeMultiplePermissionsSchema = z.object({
+  rolePermissionIds: z.array(
+    z.string({ required_error: "Permission ID is required" }).uuid("Invalid permission ID")
+  ).min(1, { message: "You must provide at least one permission ID to remove." }),
 });

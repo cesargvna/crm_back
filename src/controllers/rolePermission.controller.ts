@@ -2,6 +2,7 @@
 import { Request, Response, NextFunction } from "express";
 import { v4 as uuidv4 } from "uuid";
 import prisma from "../utils/prisma";
+import normalize from "normalize-text";
 
 // ✅ Create Permission Section
 export const createPermissionSection = async (
@@ -12,14 +13,31 @@ export const createPermissionSection = async (
   try {
     const { name, order = 0 } = req.body;
 
-    const existingOrder = await prisma.permissionSection.findFirst({
-      where: { order }
-    });
+    // Normalizamos nombre
+    const normalizedName = normalize(name.trim().toLowerCase());
 
-    if (existingOrder) {
+    // Verifica nombre duplicado (ignorando tildes y mayúsculas)
+    const existingName = await prisma.permissionSection.findMany();
+    const nameExists = existingName.some(
+      (section) =>
+        normalize(section.name.trim().toLowerCase()) === normalizedName
+    );
+
+    if (nameExists) {
       return res.status(400).json({
         success: false,
-        message: `Another section already uses order "${order}". Orders must be unique.`,
+        message: `The name "${name}" is already in use.`,
+      });
+    }
+
+    // Verifica orden duplicado
+    const orderExists = await prisma.permissionSection.findFirst({
+      where: { order },
+    });
+    if (orderExists) {
+      return res.status(400).json({
+        success: false,
+        message: `Another section already uses order "${order}".`,
       });
     }
 
@@ -46,17 +64,46 @@ export const updatePermissionSection = async (
   try {
     const { id, name, order } = req.body;
 
-    const conflicting = await prisma.permissionSection.findFirst({
+    const current = await prisma.permissionSection.findUnique({
+      where: { id },
+    });
+    if (!current) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Section not found." });
+    }
+
+    const normalizedName = normalize(name.trim().toLowerCase());
+
+    // Validar nombre duplicado (excepto él mismo)
+    const otherSections = await prisma.permissionSection.findMany({
+      where: { NOT: { id } },
+    });
+
+    const nameExists = otherSections.some(
+      (section) =>
+        normalize(section.name.trim().toLowerCase()) === normalizedName
+    );
+
+    if (nameExists) {
+      return res.status(400).json({
+        success: false,
+        message: `Another section already uses the name "${name}".`,
+      });
+    }
+
+    // Validar orden duplicado (excepto él mismo)
+    const orderExists = await prisma.permissionSection.findFirst({
       where: {
         order,
-        NOT: { id }, // ⚠️ asegura que no sea el mismo registro
+        NOT: { id },
       },
     });
 
-    if (conflicting) {
+    if (orderExists) {
       return res.status(400).json({
         success: false,
-        message: `Another section already uses order "${order}". Please choose a different value.`,
+        message: `Another section already uses order "${order}".`,
       });
     }
 
@@ -211,6 +258,23 @@ export const createModuleGroup = async (
   try {
     const { name, route, iconName, sectionId } = req.body;
 
+    const normalizedName = normalize(name.trim().toLowerCase());
+
+    const existingModules = await prisma.moduleGroup.findMany({
+      where: { sectionId },
+    });
+
+    const nameExists = existingModules.some(
+      (m) => normalize(m.name.trim().toLowerCase()) === normalizedName
+    );
+
+    if (nameExists) {
+      return res.status(400).json({
+        success: false,
+        message: `The name "${name}" is already used in this section.`,
+      });
+    }
+
     const module = await prisma.moduleGroup.create({
       data: {
         id: uuidv4(),
@@ -235,6 +299,33 @@ export const updateModuleGroup = async (
 ) => {
   try {
     const { id, name, route, iconName, sectionId } = req.body;
+
+    const current = await prisma.moduleGroup.findUnique({ where: { id } });
+    if (!current) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Module not found" });
+    }
+
+    const normalizedName = normalize(name.trim().toLowerCase());
+
+    const otherModules = await prisma.moduleGroup.findMany({
+      where: {
+        sectionId,
+        NOT: { id },
+      },
+    });
+
+    const nameExists = otherModules.some(
+      (m) => normalize(m.name.trim().toLowerCase()) === normalizedName
+    );
+
+    if (nameExists) {
+      return res.status(400).json({
+        success: false,
+        message: `Another module in this section already uses the name "${name}".`,
+      });
+    }
 
     const updated = await prisma.moduleGroup.update({
       where: { id },
@@ -377,6 +468,23 @@ export const createSubmoduleGroup = async (
   try {
     const { name, route, moduleId } = req.body;
 
+    const normalizedName = normalize(name.trim().toLowerCase());
+
+    const existing = await prisma.submoduleGroup.findMany({
+      where: { moduleId },
+    });
+
+    const nameExists = existing.some(
+      (s) => normalize(s.name.trim().toLowerCase()) === normalizedName
+    );
+
+    if (nameExists) {
+      return res.status(400).json({
+        success: false,
+        message: `The name "${name}" is already used in this module.`,
+      });
+    }
+
     const submodule = await prisma.submoduleGroup.create({
       data: {
         id: uuidv4(),
@@ -400,6 +508,34 @@ export const updateSubmoduleGroup = async (
 ) => {
   try {
     const { id, name, route, moduleId } = req.body;
+
+    const current = await prisma.submoduleGroup.findUnique({ where: { id } });
+    if (!current) {
+      return res.status(404).json({
+        success: false,
+        message: "Submodule not found",
+      });
+    }
+
+    const normalizedName = normalize(name.trim().toLowerCase());
+
+    const others = await prisma.submoduleGroup.findMany({
+      where: {
+        moduleId,
+        NOT: { id },
+      },
+    });
+
+    const nameExists = others.some(
+      (s) => normalize(s.name.trim().toLowerCase()) === normalizedName
+    );
+
+    if (nameExists) {
+      return res.status(400).json({
+        success: false,
+        message: `Another submodule in this module already uses the name "${name}".`,
+      });
+    }
 
     const updated = await prisma.submoduleGroup.update({
       where: { id },
@@ -543,6 +679,19 @@ export const createPermissionAction = async (
 ) => {
   try {
     const { name } = req.body;
+    const normalizedName = normalize(name.trim().toLowerCase());
+
+    const allActions = await prisma.permissionAction.findMany();
+    const nameExists = allActions.some(
+      a => normalize(a.name.trim().toLowerCase()) === normalizedName
+    );
+
+    if (nameExists) {
+      return res.status(400).json({
+        success: false,
+        message: `The name "${name}" already exists in permission actions.`,
+      });
+    }
 
     const action = await prisma.permissionAction.create({
       data: { id: uuidv4(), name },
@@ -562,6 +711,33 @@ export const updatePermissionAction = async (
 ) => {
   try {
     const { id, name } = req.body;
+
+    const current = await prisma.permissionAction.findUnique({ where: { id } });
+    if (!current) {
+      return res.status(404).json({
+        success: false,
+        message: "Permission action not found",
+      });
+    }
+
+    const normalizedName = normalize(name.trim().toLowerCase());
+
+    const others = await prisma.permissionAction.findMany({
+      where: {
+        NOT: { id },
+      },
+    });
+
+    const nameExists = others.some(
+      a => normalize(a.name.trim().toLowerCase()) === normalizedName
+    );
+
+    if (nameExists) {
+      return res.status(400).json({
+        success: false,
+        message: `Another action already uses the name "${name}".`,
+      });
+    }
 
     const updated = await prisma.permissionAction.update({
       where: { id },
@@ -632,6 +808,19 @@ export const createRole = async (
 ) => {
   try {
     const { name, description } = req.body;
+    const normalizedName = normalize(name.trim().toLowerCase());
+
+    const allRoles = await prisma.role.findMany();
+    const nameExists = allRoles.some(
+      role => normalize(role.name.trim().toLowerCase()) === normalizedName
+    );
+
+    if (nameExists) {
+      return res.status(400).json({
+        success: false,
+        message: `The role name "${name}" already exists.`,
+      });
+    }
 
     const role = await prisma.role.create({
       data: { id: uuidv4(), name, description },
@@ -651,6 +840,28 @@ export const updateRole = async (
 ) => {
   try {
     const { id, name, description } = req.body;
+
+    const current = await prisma.role.findUnique({ where: { id } });
+    if (!current) {
+      return res.status(404).json({
+        success: false,
+        message: "Role not found",
+      });
+    }
+
+    const normalizedName = normalize(name.trim().toLowerCase());
+
+    const others = await prisma.role.findMany({ where: { NOT: { id } } });
+    const nameExists = others.some(
+      role => normalize(role.name.trim().toLowerCase()) === normalizedName
+    );
+
+    if (nameExists) {
+      return res.status(400).json({
+        success: false,
+        message: `Another role already uses the name "${name}".`,
+      });
+    }
 
     const updated = await prisma.role.update({
       where: { id },
@@ -786,8 +997,8 @@ export const getAllRoles = async (
   }
 };
 
-// ✅ Assign Permissions to Role
-export const assignPermissionsToRole = async (
+// ✅ Add Permissions to Role
+export const addPermissionsToRole = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -795,8 +1006,17 @@ export const assignPermissionsToRole = async (
   try {
     const { roleId, permissions } = req.body;
 
-    // Borrado previo si lo deseas:
-    await prisma.rolePermission.deleteMany({ where: { roleId } });
+    const seen = new Set();
+    for (const p of permissions) {
+      const key = `${p.sectionId}_${p.actionId}`;
+      if (seen.has(key)) {
+        return res.status(400).json({
+          success: false,
+          message: `Duplicate permission in request: section "${p.sectionId}", action "${p.actionId}".`,
+        });
+      }
+      seen.add(key);
+    }
 
     const data = permissions.map((p: any) => ({
       id: uuidv4(),
@@ -807,12 +1027,137 @@ export const assignPermissionsToRole = async (
 
     await prisma.rolePermission.createMany({
       data,
-      skipDuplicates: true,
+      skipDuplicates: true, // evita errores si ya existen
     });
 
-    res
-      .status(201)
-      .json({ success: true, message: "Permissions assigned successfully" });
+    res.status(201).json({
+      success: true,
+      message: "Permissions added successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removePermissionFromRole = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+
+    const permission = await prisma.rolePermission.findUnique({
+      where: { id },
+    });
+
+    if (!permission) {
+      return res.status(404).json({
+        success: false,
+        message: "Permission not found for this role.",
+      });
+    }
+
+    await prisma.rolePermission.delete({ where: { id } });
+
+    res.json({
+      success: true,
+      message: "Permission removed from role.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removeMultiplePermissionsFromRole = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { rolePermissionIds } = req.body;
+
+    if (!Array.isArray(rolePermissionIds) || rolePermissionIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "You must provide at least one permission ID to remove.",
+      });
+    }
+
+    // 1. Obtener todos los permisos con esos IDs
+    const permissions = await prisma.rolePermission.findMany({
+      where: { id: { in: rolePermissionIds } },
+    });
+
+    // 2. Validar existencia
+    if (permissions.length !== rolePermissionIds.length) {
+      return res.status(404).json({
+        success: false,
+        message: "One or more permission IDs do not exist.",
+      });
+    }
+
+    // 3. Validar que todos pertenezcan al mismo rol
+    const uniqueRoles = new Set(permissions.map(p => p.roleId));
+    if (uniqueRoles.size > 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Permissions belong to multiple roles. Only one role is allowed per deletion.",
+      });
+    }
+
+    // 4. Eliminar
+    await prisma.rolePermission.deleteMany({
+      where: {
+        id: { in: rolePermissionIds },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Selected permissions removed successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPermissionsByRoleId = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+
+    const role = await prisma.role.findUnique({
+      where: { id },
+    });
+
+    if (!role) {
+      return res.status(404).json({
+        success: false,
+        message: "Role not found.",
+      });
+    }
+
+    const permissions = await prisma.rolePermission.findMany({
+      where: { roleId: id },
+      include: {
+        section: { select: { id: true, name: true } },
+        action: { select: { id: true, name: true } },
+      },
+      orderBy: { created_at: "asc" },
+    });
+
+    res.json({
+      success: true,
+      permissions: permissions.map((p) => ({
+        id: p.id,
+        section: p.section,
+        action: p.action,
+      })),
+    });
   } catch (error) {
     next(error);
   }

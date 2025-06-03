@@ -1,7 +1,7 @@
 model User {
   id              String       @db.VarChar(255) @id  @default(uuid())
   status          Boolean      @default(true) 
-  username        String       @db.VarChar(10) 
+  username        String       @unique @db.VarChar(10) 
   password        String       @db.VarChar(255)
   name            String       @db.VarChar(20) 
 
@@ -16,8 +16,6 @@ model User {
 
   created_at      DateTime     @default(now())
   updated_at      DateTime     @updatedAt
-  
-  @@unique([username])
 
   role            Role         @relation(fields: [roleId], references: [id])
   roleId          String       @db.VarChar(255)

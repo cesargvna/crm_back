@@ -28,7 +28,9 @@ import {
   toggleRoleStatus,
   getRoleWithPermissions,
   getAllRoles,
-  assignPermissionsToRole
+  addPermissionsToRole,
+  removeMultiplePermissionsFromRole,
+  getPermissionsByRoleId
 } from '../controllers/rolePermission.controller';
 
 import {
@@ -55,7 +57,8 @@ import {
   updateRoleSchema,
   toggleRoleStatusSchema,
   getAllRolesQuerySchema,
-  assignPermissionsSchema
+  assignPermissionsSchema,
+  removeMultiplePermissionsSchema
 } from '../validators/rolePermission.validator';
 
 import { validate } from '../middleware/validate.middleware';
@@ -97,8 +100,10 @@ roleRouter.put('/roles', validate(updateRoleSchema), asyncHandler(updateRole));
 roleRouter.patch('/roles/:id/toggle', validateParams(toggleRoleStatusSchema), asyncHandler(toggleRoleStatus));
 roleRouter.get('/roles/:id', asyncHandler(getRoleWithPermissions));
 roleRouter.get('/roles', validateQuery(getAllRolesQuerySchema), asyncHandler(getAllRoles));
+roleRouter.get('/roles/:id/permissions', asyncHandler(getPermissionsByRoleId));
 
 // ✅ Assign Permissions
-roleRouter.post('/roles/assign', validate(assignPermissionsSchema), asyncHandler(assignPermissionsToRole));
+roleRouter.post("/roles/assign", validate(assignPermissionsSchema), asyncHandler(addPermissionsToRole));
+roleRouter.delete("/roles/permissions/bulk-remove", validate(removeMultiplePermissionsSchema), asyncHandler(removeMultiplePermissionsFromRole));
 
 export default roleRouter;
