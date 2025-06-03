@@ -1,7 +1,7 @@
 model User {
   id              String       @db.VarChar(255) @id  @default(uuid())
   status          Boolean      @default(true) 
-  username        String       @unique @db.VarChar(10) 
+  username        String       @db.VarChar(10) 
   password        String       @db.VarChar(255)
   name            String       @db.VarChar(20) 
 
@@ -23,12 +23,17 @@ model User {
   subsidiary      Subsidiary   @relation(fields: [subsidiaryId], references: [id])
   subsidiaryId    String       @db.VarChar(255)
 
+  tenantId        String       @db.VarChar(255) // 👉 agregado sin relación
+
   schedulesUsers  ScheduleUser[]
   cashSessions    CashSession[] 
   sales           Sale[]
   expenses        Expense[]
   incomes         Income[]
   purchases       Purchase[]
+
+  @@unique([username, tenantId])
+  @@index([tenantId]) // ✅ índice por tenantId
 }
 
 model ScheduleUser {
@@ -42,8 +47,12 @@ model ScheduleUser {
   created_at        DateTime      @default(now())
   updated_at        DateTime      @updatedAt
 
+  tenantId          String       @db.VarChar(255) // 👉 agregado sin relación
+
   user              User          @relation(fields: [userId], references: [id])
   userId            String        @db.VarChar(255)
+
+  @@index([tenantId]) // ✅ índice por tenantId
 }
 
 enum DayOfWeek {

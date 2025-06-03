@@ -1,9 +1,10 @@
-import express from 'express';
-const authRouter = express.Router();
-import { login } from '../controllers/auth.controller';
-import { authSchema } from '../validators/auth.validator';
-import { validate } from '../middleware/validate.middleware';
+import express from "express";
+import { login } from "../controllers/auth.controller";
+import { validate } from "../middleware/validate.middleware";
+import { authSchema } from "../validators/auth.validator";
 
-authRouter.post('/',validate(authSchema), login);
+const authRouter = express.Router();
+
+authRouter.post("/login", validate(authSchema), login);
 
 export default authRouter;

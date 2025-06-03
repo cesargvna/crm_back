@@ -1,13 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import { v4 as uuidv4 } from "uuid";
 import prisma from "../utils/prisma";
-//import bcrypt from "bcrypt";
 import * as bcrypt from 'bcryptjs';
 
 // Crear usuario
-export const createUser = async (req: Request, res: Response, next: NextFunction):Promise<void> => {
+export const createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const {password, ...otherData } = req.body;
+    const { password, ...otherData } = req.body;
     if (!password) {
       res.status(400).json({ success: false, message: "Password is required" });
       return;
@@ -18,7 +17,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     const newUser = await prisma.user.create({
       data: {
         id: uuidv4(),
-        password:hashedPassword, 
+        password: hashedPassword,
         ...otherData,
       },
     });
@@ -33,10 +32,10 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 export const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
-    const {password, ...otherData } = req.body;
+    const { password, ...otherData } = req.body;
     const saltRounds = 10;
 
-    const user = await prisma.user.findUnique({ where: { id } });
+    const user = await prisma.user.findFirst({ where: { id, tenantId: req.user?.tenantId } });
     if (!user) {
       res.status(404).json({ success: false, message: "User not found" });
       return;
@@ -78,6 +77,7 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
     const searchTerm = (search as string).trim();
 
     const where: any = {
+      tenantId: req.user?.tenantId,
       ...(status !== 'all' && { status: status === 'true' }),
       ...(searchTerm.length >= 3 && {
         OR: [
@@ -115,15 +115,14 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-
 // Obtener usuario por ID con horarios incluidos
 export const getUserById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
-    const user = await prisma.user.findUnique({
-      where: { id },
+    const user = await prisma.user.findFirst({
+      where: { id, tenantId: req.user?.tenantId },
       include: {
-        schedulesUsers: true, // Incluye los horarios del usuario
+        schedulesUsers: true,
         role: true,
         subsidiary: true,
       },
@@ -142,12 +141,11 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-
 export const toggleUserStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
 
-    const user = await prisma.user.findUnique({ where: { id } });
+    const user = await prisma.user.findFirst({ where: { id, tenantId: req.user?.tenantId } });
     if (!user) {
       res.status(404).json({ success: false, message: "User not found" });
       return;
@@ -155,7 +153,7 @@ export const toggleUserStatus = async (req: Request, res: Response, next: NextFu
 
     const updated = await prisma.user.update({
       where: { id },
-      data: { status: !user.status }
+      data: { status: !user.status },
     });
 
     const { password, ...safeUser } = updated;

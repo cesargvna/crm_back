@@ -18,25 +18,14 @@ import {
   toggleScheduleSubsidiaryStatusSchema,
 } from "../validators/scheduleSubsidiary.validator";
 
-scheduleSubsidiaryRouter.post(
-  "/",
-  validate(scheduleSubsidiarySchema),
-  createScheduleSubsidiary
-);
-scheduleSubsidiaryRouter.get("/", getAllScheduleSubsidiaries);
-scheduleSubsidiaryRouter.get(
-  "/subsidiary/:subsidiaryId",
-  getSchedulesBySubsidiaryId
-);
-scheduleSubsidiaryRouter.put(
-  "/:id",
-  validate(updateScheduleSubsidiarySchema),
-  updateScheduleSubsidiary
-);
-scheduleSubsidiaryRouter.patch(
-  "/:id/toggle",
-  validateParams(toggleScheduleSubsidiaryStatusSchema),
-  toggleScheduleSubsidiaryStatus
-);
+import { authenticate } from "../middleware/auth.middleware";
+import { injectTenantId } from "../middleware/injectTenantId.middleware";
+
+scheduleSubsidiaryRouter.post("/", authenticate, injectTenantId, validate(scheduleSubsidiarySchema), createScheduleSubsidiary);
+scheduleSubsidiaryRouter.put("/:id", authenticate, injectTenantId, validate(updateScheduleSubsidiarySchema), updateScheduleSubsidiary);
+
+scheduleSubsidiaryRouter.get("/", authenticate, getAllScheduleSubsidiaries);
+scheduleSubsidiaryRouter.get("/subsidiary/:subsidiaryId", authenticate, getSchedulesBySubsidiaryId);
+scheduleSubsidiaryRouter.patch("/:id/toggle", authenticate, validateParams(toggleScheduleSubsidiaryStatusSchema), toggleScheduleSubsidiaryStatus);
 
 export default scheduleSubsidiaryRouter;

@@ -1,25 +1,39 @@
-//import bcrypt from 'bcrypt';
-import * as bcrypt from 'bcryptjs';
-import { Request, Response, NextFunction } from 'express';
-import prisma from '../utils/prisma';
-import { tokenSign } from '../utils/handleToken';
+import { Request, Response, NextFunction } from "express";
+import prisma from "../utils/prisma";
+import * as bcrypt from "bcryptjs";
+import { tokenSign } from "../utils/handleToken";
+import { asyncHandler } from "../utils/asyncHandler";
 
-const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        const { username, password } = req.body;
-        const user = await prisma.user.findUnique({ where: {username} });
-        const passwordCorrect = user === null ? false : await bcrypt.compare(password, user.password);
+export const login = asyncHandler(async (req: Request, res: Response) => {
+  const { username, password } = req.body;
 
-        if(!(user && passwordCorrect)){
-            res.status(401).json({error: 'Invalid username or password'});
-        }
+  const user = await prisma.user.findFirst({
+    where: { username },
+    include: { role: true },
+  });
 
-        const token = await tokenSign(user);
-        res.status(200).json({token, username: user?.username});
+  if (!user) {
+    return res.status(401).json({ success: false, message: "Invalid credentials" });
+  }
 
-    } catch (error) {
-        next(error);
-    }
-};
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    return res.status(401).json({ success: false, message: "Invalid credentials" });
+  }
 
-export { login };
+  const token = await tokenSign({
+    id: user.id,
+    username: user.username,
+    tenantId: user.tenantId,
+    roleId: user.roleId,
+  });
+
+  const { password: _, ...safeUser } = user;
+
+  res.status(200).json({
+    success: true,
+    message: "Login successful",
+    token,
+    user: safeUser,
+  });
+});

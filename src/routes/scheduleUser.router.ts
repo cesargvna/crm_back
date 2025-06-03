@@ -18,18 +18,14 @@ import {
   toggleScheduleStatusSchema,
 } from "../validators/scheduleUser.validator";
 
-scheduleUserRouter.post("/", validate(scheduleUserSchema), createScheduleUser);
-scheduleUserRouter.get("/", getAllSchedules);
-scheduleUserRouter.get("/user/:userId", getSchedulesByUserId);
-scheduleUserRouter.put(
-  "/:id",
-  validate(updateScheduleUserSchema),
-  updateScheduleUser
-);
-scheduleUserRouter.patch(
-  "/:id/toggle",
-  validateParams(toggleScheduleStatusSchema),
-  toggleScheduleUserStatus
-);
+import { authenticate } from "../middleware/auth.middleware";
+import { injectTenantId } from "../middleware/injectTenantId.middleware";
+
+scheduleUserRouter.post("/", authenticate, injectTenantId, validate(scheduleUserSchema), createScheduleUser);
+scheduleUserRouter.put("/:id", authenticate, injectTenantId, validate(updateScheduleUserSchema), updateScheduleUser);
+
+scheduleUserRouter.get("/", authenticate, getAllSchedules);
+scheduleUserRouter.get("/user/:userId", authenticate, getSchedulesByUserId);
+scheduleUserRouter.patch("/:id/toggle", authenticate, validateParams(toggleScheduleStatusSchema), toggleScheduleUserStatus);
 
 export default scheduleUserRouter;

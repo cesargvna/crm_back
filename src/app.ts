@@ -10,6 +10,7 @@ import tenantRouter from './routes/tenant.router';
 import scheduleUserRouter from './routes/scheduleUser.router';
 import scheduleSubsidiaryRouter from './routes/scheduleSubsidiary.router';
 
+
 app.use(express.json());
 app.use(cors());
 

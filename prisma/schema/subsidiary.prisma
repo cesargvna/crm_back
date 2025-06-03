@@ -44,6 +44,10 @@ model ScheduleSubsidiary {
   created_at      DateTime      @default(now())
   updated_at      DateTime      @updatedAt
 
+  tenantId        String       @db.VarChar(255) // 👉 agregado sin relación
+
   subsidiary      Subsidiary    @relation(fields: [subsidiaryId], references: [id])
   subsidiaryId    String        @db.VarChar(255)
+
+  @@index([tenantId]) // ✅ índice por tenantId
 }

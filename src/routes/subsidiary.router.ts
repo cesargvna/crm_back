@@ -18,10 +18,14 @@ import {
   getAllSubsidiariesQuerySchema
 } from "../validators/subsidiary.validator";
 
-subsidiaryRouter.post("/", validate(subsidiarySchema), createSubsidiary);
-subsidiaryRouter.get("/", validate(getAllSubsidiariesQuerySchema), getAllSubsidiaries);
-subsidiaryRouter.get("/:id", getSubsidiaryById);
-subsidiaryRouter.put("/:id", validate(subsidiarySchema), updateSubsidiary);
-subsidiaryRouter.patch("/:id/toggle", validateParams(toggleSubsidiaryStatusSchema), toggleSubsidiaryStatus);
+import { authenticate } from "../middleware/auth.middleware";
+import { injectTenantId } from "../middleware/injectTenantId.middleware";
+
+subsidiaryRouter.post("/", authenticate, injectTenantId, validate(subsidiarySchema), createSubsidiary);
+subsidiaryRouter.put("/:id", authenticate, injectTenantId, validate(subsidiarySchema), updateSubsidiary);
+
+subsidiaryRouter.get("/", authenticate, validate(getAllSubsidiariesQuerySchema), getAllSubsidiaries);
+subsidiaryRouter.get("/:id", authenticate, getSubsidiaryById);
+subsidiaryRouter.patch("/:id/toggle", authenticate, validateParams(toggleSubsidiaryStatusSchema), toggleSubsidiaryStatus);
 
 export default subsidiaryRouter;

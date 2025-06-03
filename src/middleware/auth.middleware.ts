@@ -1,57 +1,43 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import prisma from "../utils/prisma";
 import { SECRET } from "../utils/config";
+import { asyncHandler } from "../utils/asyncHandler";
 
-// Middleware: Autenticación JWT
-export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
+// Global typing
+declare global {
+  namespace Express {
+    interface User {
+      id: string;
+      roleId: string;
+      tenantId: string;
+      username: string;
+    }
+
+    interface Request {
+      user?: User;
+    }
+  }
+}
+
+// ✅ Authentication middleware without DB access
+export const authenticate = asyncHandler(async (req, res, next) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ message: "Token no proporcionado" });
+  if (!authHeader) {
+    return res.status(401).json({ message: "Authorization token not provided." });
+  }
 
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, SECRET) as { id: string };
+    const decoded = jwt.verify(token, SECRET) as Express.User;
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      include: { role: true }, // necesario para permisos
-    });
-
-    if (!user) return res.status(401).json({ message: "Usuario no válido" });
-
-    req.user = user; // Ahora req.user estará disponible en todo
-    next();
-  } catch (error) {
-    return res.status(401).json({ message: "Token inválido o expirado" });
-  }
-};
-
-// Middleware: Validar si es super.admin
-export const isSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if (req.user?.role?.name !== "super.admin") {
-    return res.status(403).json({ message: "Acceso denegado: solo super.admin" });
-  }
-  next();
-};
-
-// Middleware: Validar permiso específico por módulo + acción
-export const hasPermission = (group: string, action: string) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    const user = req.user;
-
-    const permission = await prisma.rolePermission.findFirst({
-      where: {
-        roleId: user.roleId,
-        group: { name: group },
-        action: { name: action },
-      },
-    });
-
-    if (!permission) {
-      return res.status(403).json({ message: "No tienes permiso para esta acción" });
+    if (!decoded || !decoded.id || !decoded.tenantId) {
+      return res.status(401).json({ message: "Invalid or incomplete token." });
     }
 
+    req.user = decoded;
     next();
-  };
-};
+  } catch (error) {
+    return res.status(401).json({ message: "Invalid or expired token." });
+  }
+});
