@@ -2,7 +2,7 @@ model Subsidiary {
   id                    String        @db.VarChar(255) @id  @default(uuid()) 
   status                Boolean       @default(true) 
   subsidiary_type       SubsidiaryType
-  name                  String        @unique @db.VarChar(20) 
+  name                  String        @db.VarChar(50) 
   allowNegativeStock    Boolean       @default(false)
   
   ci                    String?       @db.VarChar(20)
@@ -13,13 +13,15 @@ model Subsidiary {
   country               String?       @db.VarChar(20)
   cellphone             String?       @db.VarChar(20)
   telephone             String?       @db.VarChar(20)
-  email                 String?       @db.VarChar(20)
+  email                 String?       @db.VarChar(50)
   
   created_at            DateTime      @default(now())
   updated_at            DateTime      @updatedAt
 
   tenantId              String        @db.VarChar(255)
   tenant                Tenant        @relation(fields: [tenantId], references: [id])
+
+  @@unique([name, tenantId])
   
   users                 User[] 
   schedulesSubsidiaries ScheduleSubsidiary[]

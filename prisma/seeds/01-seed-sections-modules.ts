@@ -181,7 +181,7 @@ export const seedSectionsModules = async () => {
     });
 
     if (existing) {
-      console.log(`⏩ Sección ya existe: ${section.sectionName}`);
+      console.log(`⏩ Section already exists: ${section.sectionName}`);
       continue;
     }
 
@@ -213,6 +213,6 @@ export const seedSectionsModules = async () => {
       },
     });
 
-    console.log(`✅ Sección creada: ${section.sectionName}`);
+    console.log(`✅ Section Created: ${section.sectionName}`);
   }
 };

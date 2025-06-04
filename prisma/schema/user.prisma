@@ -23,7 +23,7 @@ model User {
   subsidiary      Subsidiary   @relation(fields: [subsidiaryId], references: [id])
   subsidiaryId    String       @db.VarChar(255)
 
-  tenantId        String?      @db.VarChar(255) // 👉 agregado sin relación
+  tenantId        String?       @db.VarChar(255) // 👉 agregado sin relación
   
   schedulesUsers  ScheduleUser[]
   cashSessions    CashSession[] 
@@ -32,7 +32,7 @@ model User {
   incomes         Income[]
   purchases       Purchase[]
 
-  @@unique([username, tenantId])
+  @@unique([username, subsidiaryId])
   @@index([tenantId]) // ✅ índice por tenantId
 }
 

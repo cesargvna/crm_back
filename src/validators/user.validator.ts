@@ -1,16 +1,11 @@
 import { z } from "zod";
 
-export const userSchema = z.object({
+// Reglas base compartidas
+const sharedUserSchema = {
   username: z.string()
     .min(3, "Username must have at least 3 characters.")
     .max(10, "Username must not exceed 10 characters.")
     .nonempty("Username is required."),
-
-  password: z.string()
-    .min(6, "Password must have at least 6 characters.")
-    .max(100, "Password must not exceed 100 characters.")
-    .nonempty("Password is required.")
-    .optional(),
 
   name: z.string()
     .min(2, "Name must have at least 2 characters.")
@@ -63,7 +58,26 @@ export const userSchema = z.object({
   status: z.boolean().optional(),
 
   roleId: z.string().nonempty("Role ID is required."),
-  subsidiaryId: z.string().nonempty("Subsidiary ID is required.")
+  subsidiaryId: z.string().nonempty("Subsidiary ID is required."),
+};
+
+// ✅ Validación para crear usuario (requiere contraseña)
+export const userSchema = z.object({
+  ...sharedUserSchema,
+  password: z.string()
+    .min(6, "Password must have at least 6 characters.")
+    .max(100, "Password must not exceed 100 characters.")
+    .nonempty("Password is required."),
+});
+
+// ✅ Validación para actualizar usuario (contraseña opcional)
+export const updateUserSchema = z.object({
+  ...sharedUserSchema,
+  password: z.string()
+    .min(6, "Password must have at least 6 characters.")
+    .max(100, "Password must not exceed 100 characters.")
+    .optional()
+    .or(z.literal("")), // permite string vacío para omitir
 });
 
 export const toggleUserStatusSchema = z.object({

@@ -1,4 +1,4 @@
-import express from 'express';
+import express from "express";
 const userRouter = express.Router();
 
 import {
@@ -7,25 +7,56 @@ import {
   getAllUsers,
   getUserById,
   toggleUserStatus,
-} from '../controllers/user.controller';
+} from "../controllers/user.controller";
 
-import { validate } from '../middleware/validate.middleware';
-import { validateParams } from '../middleware/validateParams.middleware';
-import { userSchema, toggleUserStatusSchema, getAllUsersQuerySchema } from '../validators/user.validator';
+import { validate } from "../middleware/validate.middleware";
+import { validateParams } from "../middleware/validateParams.middleware";
+import {
+  userSchema,
+  updateUserSchema,
+  toggleUserStatusSchema,
+  getAllUsersQuerySchema,
+} from "../validators/user.validator";
 import { validateQuery } from "../middleware/validateQuery.middleware";
 
-import { authenticate } from '../middleware/auth.middleware'; // ✅ Agregar
-import { injectTenantId } from '../middleware/injectTenantId.middleware'; // ✅ Agregar
+import { authenticate } from "../middleware/auth.middleware";
+import { injectTenantId } from "../middleware/injectTenantId.middleware";
 
-// ✅ Aplica en creación y edición
-userRouter.post('/', authenticate, injectTenantId, validate(userSchema), createUser);
-userRouter.put('/:id', authenticate, injectTenantId, validate(userSchema), updateUser);
+// ✅ Crear usuario
+userRouter.post(
+  "/",
+  authenticate,
+  injectTenantId,
+  validate(userSchema),
+  createUser
+);
 
-// ✅ Solo autenticación para leer
-userRouter.get("/", authenticate, validateQuery(getAllUsersQuerySchema), getAllUsers);
-userRouter.get('/:id', authenticate, getUserById);
+// ✅ Actualizar usuario (usa updateUserSchema)
+userRouter.put(
+  "/:id",
+  authenticate,
+  injectTenantId,
+  validate(updateUserSchema),
+  updateUser
+);
 
-// ✅ Autenticación + validación en toggle
-userRouter.patch('/:id/toggle', authenticate, validateParams(toggleUserStatusSchema), toggleUserStatus);
+// ✅ Obtener todos los usuarios
+userRouter.get(
+  "/",
+  authenticate,
+  validateQuery(getAllUsersQuerySchema),
+  getAllUsers
+);
+
+// ✅ Obtener usuario por ID
+userRouter.get("/:id", authenticate, getUserById);
+
+// ✅ Cambiar estado del usuario
+userRouter.patch(
+  "/:id/toggle",
+  authenticate,
+  validateParams(toggleUserStatusSchema),
+  toggleUserStatus
+);
 
 export default userRouter;

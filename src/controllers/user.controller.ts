@@ -1,50 +1,106 @@
 import { Request, Response, NextFunction } from "express";
 import { v4 as uuidv4 } from "uuid";
 import prisma from "../utils/prisma";
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from "bcryptjs";
 
 // Crear usuario
-export const createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const createUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const { password, ...otherData } = req.body;
+    const { password, username, subsidiaryId, ...otherData } = req.body;
+
     if (!password) {
       res.status(400).json({ success: false, message: "Password is required" });
       return;
     }
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Verificar que no exista un usuario con el mismo username en la misma sucursal
+    const exists = await prisma.user.findFirst({
+      where: { username, subsidiaryId },
+    });
+
+    if (exists) {
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: "Username already exists in this subsidiary",
+        });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await prisma.user.create({
       data: {
         id: uuidv4(),
+        username,
+        subsidiaryId,
+        tenantId: req.user?.tenantId,
         password: hashedPassword,
         ...otherData,
       },
     });
 
-    res.status(201).json({ success: true, message: "User created", data: newUser });
+    res
+      .status(201)
+      .json({ success: true, message: "User created", data: newUser });
   } catch (error) {
     next(error);
   }
 };
 
 // Actualizar usuario
-export const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const updateUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { id } = req.params;
-    const { password, ...otherData } = req.body;
-    const saltRounds = 10;
+    const { password, username, subsidiaryId, ...otherData } = req.body;
 
-    const user = await prisma.user.findFirst({ where: { id, tenantId: req.user?.tenantId } });
+    const user = await prisma.user.findFirst({
+      where: { id, tenantId: req.user?.tenantId },
+    });
+
     if (!user) {
       res.status(404).json({ success: false, message: "User not found" });
       return;
     }
 
-    let updatedData: any = { ...otherData };
+    // Validar duplicado en actualización (si cambió username o subsidiary)
+    if (username && subsidiaryId) {
+      const duplicate = await prisma.user.findFirst({
+        where: {
+          id: { not: id },
+          username,
+          subsidiaryId,
+        },
+      });
+
+      if (duplicate) {
+        res
+          .status(400)
+          .json({
+            success: false,
+            message: "Username already exists in this subsidiary",
+          });
+        return;
+      }
+    }
+
+    const updatedData: any = {
+      username,
+      subsidiaryId,
+      ...otherData,
+    };
 
     if (password) {
-      updatedData.password = await bcrypt.hash(password, saltRounds);
+      updatedData.password = await bcrypt.hash(password, 10);
     }
 
     const updatedUser = await prisma.user.update({
@@ -52,22 +108,28 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
       data: updatedData,
     });
 
-    res.status(200).json({ success: true, message: "User updated", data: updatedUser });
+    res
+      .status(200)
+      .json({ success: true, message: "User updated", data: updatedUser });
   } catch (error) {
     next(error);
   }
 };
 
 // Obtener todos los usuarios
-export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getAllUsers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const {
-      search = '',
-      page = '1',
-      limit = '10',
-      sortBy = 'name',
-      sortOrder = 'asc',
-      status = 'all',
+      search = "",
+      page = "1",
+      limit = "10",
+      sortBy = "name",
+      sortOrder = "asc",
+      status = "all",
     } = req.query;
 
     const pageNumber = Math.max(parseInt(page as string), 1);
@@ -78,11 +140,11 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
 
     const where: any = {
       tenantId: req.user?.tenantId,
-      ...(status !== 'all' && { status: status === 'true' }),
+      ...(status !== "all" && { status: status === "true" }),
       ...(searchTerm.length >= 3 && {
         OR: [
-          { username: { contains: searchTerm, mode: 'insensitive' } },
-          { name: { contains: searchTerm, mode: 'insensitive' } },
+          { username: { contains: searchTerm, mode: "insensitive" } },
+          { name: { contains: searchTerm, mode: "insensitive" } },
         ],
       }),
     };
@@ -93,7 +155,7 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
         include: { role: true, subsidiary: true },
         skip,
         take: pageSize,
-        orderBy: { [sortBy as string]: sortOrder === 'desc' ? 'desc' : 'asc' },
+        orderBy: { [sortBy as string]: sortOrder === "desc" ? "desc" : "asc" },
       }),
       prisma.user.count({ where }),
     ]);
@@ -116,9 +178,14 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
 };
 
 // Obtener usuario por ID con horarios incluidos
-export const getUserById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getUserById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { id } = req.params;
+
     const user = await prisma.user.findFirst({
       where: { id, tenantId: req.user?.tenantId },
       include: {
@@ -141,11 +208,19 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const toggleUserStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+// Cambiar estado (habilitar/deshabilitar)
+export const toggleUserStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { id } = req.params;
 
-    const user = await prisma.user.findFirst({ where: { id, tenantId: req.user?.tenantId } });
+    const user = await prisma.user.findFirst({
+      where: { id, tenantId: req.user?.tenantId },
+    });
+
     if (!user) {
       res.status(404).json({ success: false, message: "User not found" });
       return;
@@ -157,7 +232,10 @@ export const toggleUserStatus = async (req: Request, res: Response, next: NextFu
     });
 
     const { password, ...safeUser } = updated;
-    res.status(200).json({ success: true, message: "User status updated", data: safeUser });
+
+    res
+      .status(200)
+      .json({ success: true, message: "User status updated", data: safeUser });
   } catch (error) {
     next(error);
   }
