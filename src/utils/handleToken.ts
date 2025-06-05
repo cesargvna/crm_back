@@ -8,7 +8,7 @@ if (!SECRET) {
 interface TokenPayload {
   id: string;
   username: string;
-  tenantId: string;
+  tenantId: string | null;
   roleId: string;
 }
 

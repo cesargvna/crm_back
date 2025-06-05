@@ -1,11 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import { v4 as uuidv4 } from "uuid";
 import prisma from "../utils/prisma";
+import normalize from "normalize-text";
 
 // Middleware de autorización local
 const ensureSystemAdmin = (req: Request, res: Response): boolean => {
-  if (req.user?.username !== "System_Admin") {
-    res.status(403).json({ message: "Only System_Admin can manage tenants." });
+  const roleId = req.user?.roleId?.toLowerCase();
+  if (roleId !== "system_admin" && roleId !== "system.admin") {
+    res.status(403).json({ message: "Only System.admin can manage tenants." });
     return false;
   }
   return true;
@@ -15,8 +17,27 @@ export const createTenant = async (req: Request, res: Response, next: NextFuncti
   try {
     if (!ensureSystemAdmin(req, res)) return;
 
+    const normalizedName = normalize(req.body.name.trim().toLowerCase());
+
+    // Validación de duplicados ignorando tildes y mayúsculas
+    const existing = await prisma.tenant.findMany();
+    const exists = existing.some((tenant) =>
+      normalize(tenant.name.trim().toLowerCase()) === normalizedName
+    );
+
+    if (exists) {
+      res.status(400).json({
+        success: false,
+        message: `The name "${req.body.name}" is already in use.`,
+      });
+      return;
+    }
+
     const tenant = await prisma.tenant.create({
-      data: { id: uuidv4(), ...req.body }
+      data: {
+        id: uuidv4(),
+        ...req.body,
+      },
     });
 
     res.status(201).json({ success: true, message: "Tenant created", data: tenant });
@@ -103,9 +124,36 @@ export const updateTenant = async (req: Request, res: Response, next: NextFuncti
     if (!ensureSystemAdmin(req, res)) return;
 
     const { id } = req.params;
+    const { name, ...rest } = req.body;
+
+    if (name) {
+      const normalizedNewName = normalize(name.trim().toLowerCase());
+
+      const existing = await prisma.tenant.findMany({
+        where: {
+          NOT: { id }, // Excluye el tenant actual
+        },
+      });
+
+      const nameExists = existing.some((tenant) =>
+        normalize(tenant.name.trim().toLowerCase()) === normalizedNewName
+      );
+
+      if (nameExists) {
+        res.status(400).json({
+          success: false,
+          message: `The name "${name}" is already in use.`,
+        });
+        return;
+      }
+    }
+
     const updated = await prisma.tenant.update({
       where: { id },
-      data: req.body
+      data: {
+        ...(name && { name }),
+        ...rest,
+      },
     });
 
     res.status(200).json({ success: true, message: "Tenant updated", data: updated });

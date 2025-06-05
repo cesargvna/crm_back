@@ -49,7 +49,10 @@ export const getSchedulesByUserId = async (
 ): Promise<void> => {
   try {
     const { userId } = req.params;
-    const schedules = await prisma.scheduleUser.findMany({ where: { userId } });
+    const schedules = await prisma.scheduleUser.findMany({
+      where: { userId },
+      orderBy: { start_day: "asc" },
+    });
     res.status(200).json({ success: true, data: schedules });
   } catch (error) {
     next(error);
@@ -99,13 +102,11 @@ export const toggleScheduleUserStatus = async (
       where: { id },
       data: { status: !existing.status },
     });
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Schedule status toggled",
-        data: updated,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Schedule status toggled",
+      data: updated,
+    });
   } catch (error) {
     next(error);
   }

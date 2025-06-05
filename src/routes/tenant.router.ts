@@ -21,7 +21,7 @@ import {
 import { authenticate } from "../middleware/auth.middleware";
 import { getMyTenant } from "../controllers/tenant.controller";
 
-// 👇 Solo System_Admin podrá acceder a estas rutas
+// 👇 Solo System.Admin podrá acceder a estas rutas
 tenantRouter.get("/", authenticate, validateQuery(getAllTenantsQuerySchema), getAllTenants);
 tenantRouter.post("/", authenticate, validate(tenantSchema), createTenant);
 tenantRouter.get("/:id", authenticate, getTenantById);

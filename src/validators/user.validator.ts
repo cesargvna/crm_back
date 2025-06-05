@@ -4,7 +4,7 @@ import { z } from "zod";
 const sharedUserSchema = {
   username: z.string()
     .min(3, "Username must have at least 3 characters.")
-    .max(10, "Username must not exceed 10 characters.")
+    .max(20, "Username must not exceed 20 characters.")
     .nonempty("Username is required."),
 
   name: z.string()

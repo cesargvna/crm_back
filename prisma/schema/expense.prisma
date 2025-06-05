@@ -5,6 +5,9 @@ model Expense {
   description           String?          @db.VarChar(100)
   total_amount          Decimal          @db.Decimal(10, 2)
 
+  tenantId              String           @db.VarChar(255)
+  subsidiaryId          String           @db.VarChar(255)
+
   created_at            DateTime         @default(now())
   updated_at            DateTime         @updatedAt
 
@@ -13,6 +16,9 @@ model Expense {
   
   expenseCategory       ExpenseCategory  @relation(fields: [expenseCategoryId], references: [id])
   user                  User             @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([subsidiaryId])
 }
 
 model ExpenseCategory {
@@ -20,11 +26,16 @@ model ExpenseCategory {
   name                  String           @db.VarChar(20)
   status                Boolean          @default(true)
   description           String?          @db.VarChar(100)
+
+  tenantId              String           @db.VarChar(255)
+  subsidiaryId          String           @db.VarChar(255)
   
   created_at            DateTime         @default(now())
   updated_at            DateTime         @updatedAt
 
-  @@unique([name])
+  @@unique([name, tenantId])
+  @@index([tenantId])
+  @@index([subsidiaryId])
 
   expenses              Expense[] 
 }

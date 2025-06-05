@@ -17,18 +17,21 @@ export const createUser = async (
       return;
     }
 
-    // Verificar que no exista un usuario con el mismo username en la misma sucursal
+    const normalizedUsername = username.normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+    // ✅ Comparar username ignorando mayúsculas/minúsculas y acentos
     const exists = await prisma.user.findFirst({
-      where: { username, subsidiaryId },
+      where: {
+        username: { equals: normalizedUsername, mode: "insensitive" },
+        subsidiaryId,
+      },
     });
 
     if (exists) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "Username already exists in this subsidiary",
-        });
+      res.status(400).json({
+        success: false,
+        message: "Username already exists in this subsidiary",
+      });
       return;
     }
 
@@ -72,23 +75,23 @@ export const updateUser = async (
       return;
     }
 
-    // Validar duplicado en actualización (si cambió username o subsidiary)
+    // ✅ Validar duplicado ignorando case y acentos en actualización
     if (username && subsidiaryId) {
+      const normalizedUsername = username.normalize("NFD").replace(/[̀-ͯ]/g, "");
+
       const duplicate = await prisma.user.findFirst({
         where: {
           id: { not: id },
-          username,
+          username: { equals: normalizedUsername, mode: "insensitive" },
           subsidiaryId,
         },
       });
 
       if (duplicate) {
-        res
-          .status(400)
-          .json({
-            success: false,
-            message: "Username already exists in this subsidiary",
-          });
+        res.status(400).json({
+          success: false,
+          message: "Username already exists in this subsidiary",
+        });
         return;
       }
     }
@@ -136,7 +139,10 @@ export const getAllUsers = async (
     const pageSize = Math.min(Math.max(parseInt(limit as string), 1), 1000);
     const skip = (pageNumber - 1) * pageSize;
 
-    const searchTerm = (search as string).trim();
+    const searchTerm = (search as string)
+      .trim()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "");
 
     const where: any = {
       tenantId: req.user?.tenantId,

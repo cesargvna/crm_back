@@ -683,7 +683,7 @@ export const createPermissionAction = async (
 
     const allActions = await prisma.permissionAction.findMany();
     const nameExists = allActions.some(
-      a => normalize(a.name.trim().toLowerCase()) === normalizedName
+      (a) => normalize(a.name.trim().toLowerCase()) === normalizedName
     );
 
     if (nameExists) {
@@ -729,7 +729,7 @@ export const updatePermissionAction = async (
     });
 
     const nameExists = others.some(
-      a => normalize(a.name.trim().toLowerCase()) === normalizedName
+      (a) => normalize(a.name.trim().toLowerCase()) === normalizedName
     );
 
     if (nameExists) {
@@ -800,77 +800,104 @@ export const getAllPermissionActions = async (
   }
 };
 
-// ✅ Create Role
-export const createRole = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+// ✅ Crear rol
+export const createRole = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const { name, description, tenantId } = req.body; // tenantId ya es inyectado por middleware
+    const { name, description } = req.body;
+    const tenantId = req.user?.tenantId;
 
     const normalizedName = normalize(name.trim().toLowerCase());
 
-    const existing = await prisma.role.findFirst({
-      where: {
-        tenantId,
-        name: { equals: normalizedName, mode: "insensitive" },
-      },
+    const existingRoles = await prisma.role.findMany({
+      where: { tenantId },
     });
 
-    if (existing) {
-      res.status(400).json({ success: false, message: `The role name "${name}" already exists.` });
-      return;
+    const nameExists = existingRoles.some(
+      (role) => normalize(role.name.trim().toLowerCase()) === normalizedName
+    );
+
+    if (nameExists) {
+      return res.status(400).json({
+        success: false,
+        message: `The name "${name}" is already in use for this tenant.`,
+      });
     }
 
     const newRole = await prisma.role.create({
       data: {
         id: uuidv4(),
-        name,
-        description,
+        name: name.trim(),
+        description: description?.trim() || "",
         tenantId,
       },
     });
 
-    res.status(201).json({ success: true, message: "Role created", data: newRole });
+    res.status(201).json({
+      success: true,
+      message: "Role created successfully",
+      data: newRole,
+    });
   } catch (error) {
     next(error);
   }
 };
 
-// ✅ Update Role
+// ✅ Actualizar rol
 export const updateRole = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { id, name, description } = req.body;
+    const { id } = req.params;
+    const { name, description } = req.body;
+    const tenantId = req.user?.tenantId;
 
-    const current = await prisma.role.findUnique({ where: { id } });
-    if (!current) {
-      return res.status(404).json({
-        success: false,
-        message: "Role not found",
-      });
+    const role = await prisma.role.findUnique({ where: { id } });
+
+    if (!role) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Role not found" });
     }
 
     const normalizedName = normalize(name.trim().toLowerCase());
 
-    const others = await prisma.role.findMany({ where: { NOT: { id } } });
-    const nameExists = others.some(
-      role => normalize(role.name.trim().toLowerCase()) === normalizedName
+    const existingRoles = await prisma.role.findMany({
+      where: {
+        tenantId,
+        NOT: { id },
+      },
+    });
+
+    const nameExists = existingRoles.some(
+      (r) => normalize(r.name.trim().toLowerCase()) === normalizedName
     );
 
     if (nameExists) {
       return res.status(400).json({
         success: false,
-        message: `Another role already uses the name "${name}".`,
+        message: `The name "${name}" is already in use for this tenant.`,
       });
     }
 
     const updated = await prisma.role.update({
       where: { id },
-      data: { name, description },
+      data: {
+        name: name.trim(),
+        description: description?.trim() || "",
+      },
     });
 
-    res.json({ success: true, data: updated });
+    res.status(200).json({
+      success: true,
+      message: "Role updated successfully",
+      data: updated,
+    });
   } catch (error) {
     next(error);
   }
@@ -1100,11 +1127,12 @@ export const removeMultiplePermissionsFromRole = async (
     }
 
     // 3. Validar que todos pertenezcan al mismo rol
-    const uniqueRoles = new Set(permissions.map(p => p.roleId));
+    const uniqueRoles = new Set(permissions.map((p) => p.roleId));
     if (uniqueRoles.size > 1) {
       return res.status(400).json({
         success: false,
-        message: "Permissions belong to multiple roles. Only one role is allowed per deletion.",
+        message:
+          "Permissions belong to multiple roles. Only one role is allowed per deletion.",
       });
     }
 

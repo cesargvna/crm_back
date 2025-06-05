@@ -9,7 +9,7 @@ import { seedUsers } from "./06-seed-users";
 async function main() {
   try {
     await seedSystemAdmin();
-    console.log("✅ Seed: Usuario System_Admin");
+    console.log("✅ Seed: Usuario System.Admin");
   } catch (err) {
     console.error("❌ Error en seedSystemAdmin:", err);
   }

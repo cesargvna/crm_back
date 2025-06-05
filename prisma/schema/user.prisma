@@ -1,7 +1,7 @@
 model User {
   id              String       @db.VarChar(255) @id  @default(uuid())
   status          Boolean      @default(true) 
-  username        String       @db.VarChar(10) 
+  username        String       @unique @db.VarChar(20) 
   password        String       @db.VarChar(255)
   name            String       @db.VarChar(20) 
 
@@ -32,7 +32,6 @@ model User {
   incomes         Income[]
   purchases       Purchase[]
 
-  @@unique([username, subsidiaryId])
   @@index([tenantId]) // ✅ índice por tenantId
 }
 

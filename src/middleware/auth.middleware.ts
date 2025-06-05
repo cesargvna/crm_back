@@ -23,7 +23,9 @@ declare global {
 export const authenticate = asyncHandler(async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    return res.status(401).json({ message: "Authorization token not provided." });
+    return res
+      .status(401)
+      .json({ message: "Authorization token not provided." });
   }
 
   const token = authHeader.split(" ")[1];
@@ -31,8 +33,17 @@ export const authenticate = asyncHandler(async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, SECRET) as Express.User;
 
-    if (!decoded || !decoded.id || !decoded.tenantId) {
+    if (!decoded || !decoded.id || !decoded.username || !decoded.roleId) {
       return res.status(401).json({ message: "Invalid or incomplete token." });
+    }
+
+    // ✅ Permitir que tenantId sea null SOLO si es System.admin (case-insensitive)
+    const isSystemAdmin = decoded.roleId?.toLowerCase() === "system.admin";
+
+    if (!isSystemAdmin && !decoded.tenantId) {
+      return res
+        .status(401)
+        .json({ message: "Tenant ID is required for this user." });
     }
 
     req.user = decoded;

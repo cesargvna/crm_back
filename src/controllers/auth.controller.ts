@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import prisma from "../utils/prisma";
 import * as bcrypt from "bcryptjs";
 import { tokenSign } from "../utils/handleToken";
@@ -7,8 +7,18 @@ import { asyncHandler } from "../utils/asyncHandler";
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
+  // ✅ Normalizar para ignorar acentos y mayúsculas/minúsculas
+  const normalizedUsername = username
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+
   const user = await prisma.user.findFirst({
-    where: { username },
+    where: {
+      username: {
+        equals: normalizedUsername,
+        mode: "insensitive"
+      }
+    },
     include: { role: true },
   });
 

@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "../../generated/prisma";
+import { tokenSign } from "../../src/utils/handleToken";
 
 const prisma = new PrismaClient();
 
@@ -11,7 +12,7 @@ export const seedSystemAdmin = async () => {
     create: {
       id: "00000000-0000-0000-0000-000000000000",
       name: "GLOBAL",
-      description: "Tenant especial para System_Admin",
+      description: "Tenant especial para System.Admin",
       status: true,
     },
   });
@@ -38,14 +39,14 @@ export const seedSystemAdmin = async () => {
   });
 
   let systemAdminRole = await prisma.role.findFirst({
-    where: { name: "SYSTEM_ADMIN", tenantId: null },
+    where: { name: "system.admin", tenantId: null },
   });
 
   if (!systemAdminRole) {
     systemAdminRole = await prisma.role.create({
       data: {
         id: uuidv4(),
-        name: "SYSTEM_ADMIN",
+        name: "system.admin",
         description: "Rol global sin tenant",
         tenantId: null,
         status: true,
@@ -53,19 +54,20 @@ export const seedSystemAdmin = async () => {
     });
   }
 
-  const username = "sysadmin";
-  const exists = await prisma.user.findFirst({
-    where: { username, tenantId: null },
+  const username = "system.admin";
+  const exists = await prisma.user.findUnique({
+    where: { username },
   });
 
   if (exists) {
-    console.log("⏩ Usuario System_Admin ya existe");
+    console.log("⏩ Usuario system.admin ya existe");
     return;
   }
 
-  const hashed = await bcrypt.hash("12345678", 10);
+  const plaintextPassword = "12345678";
+  const hashed = await bcrypt.hash(plaintextPassword, 10);
 
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       id: uuidv4(),
       username,
@@ -79,5 +81,9 @@ export const seedSystemAdmin = async () => {
     },
   });
 
-  console.log("✅ Usuario especial System_Admin creado");
+  const token = await tokenSign(user);
+  console.log("✅ Usuario especial system.admin creado");
+  console.log(`👤 Username: ${username}`);
+  console.log(`🔑 Password: ${plaintextPassword}`);
+  console.log(`🔐 Token: ${token}`);
 };

@@ -5,10 +5,12 @@ export const tenantSchema = z.object({
     .string()
     .min(2, "Name must have at least 2 characters")
     .max(50, "Name must not exceed 50 characters")
-    .nonempty("Name is required."),
+    .nonempty("Name is required.")
+    .transform((val) => val.trim()),
   description: z
     .string()
     .max(100, "Description must not exceed 100 characters")
+    .transform((val) => (val?.trim() === "" ? null : val.trim()))
     .optional()
     .nullable(),
   status: z.boolean().optional(),
