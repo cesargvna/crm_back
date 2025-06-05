@@ -2,7 +2,7 @@
 import * as bcrypt from 'bcryptjs';
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
-import { tokenSign } from '../utils/handleToken';
+import { getTokenExpireTime, tokenSign } from '../utils/handleToken';
 
 const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -15,7 +15,8 @@ const login = async (req: Request, res: Response, next: NextFunction): Promise<v
         }
 
         const token = await tokenSign(user);
-        res.status(200).json({token, username: user?.username});
+        const expire = getTokenExpireTime();
+        res.status(200).json({token,expire});
 
     } catch (error) {
         next(error);
