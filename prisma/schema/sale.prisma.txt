@@ -52,10 +52,10 @@ model SaleDetail {
 }
 
 model CreditPayment {
-  id            String       @id @default(uuid()) @db.VarChar(255)
-  saleId        String       @db.VarChar(255)
-  amount        Decimal      @db.Decimal(10, 2)
-  paymentDate   DateTime     @default(now())
+  id                   String       @id @default(uuid()) @db.VarChar(255)
+  saleId               String       @db.VarChar(255)
+  amount               Decimal      @db.Decimal(10, 2)
+  paymentDate          DateTime     @default(now())
 
-  sale          Sale         @relation(fields: [saleId], references: [id])
+  sale                 Sale         @relation(fields: [saleId], references: [id])
 }

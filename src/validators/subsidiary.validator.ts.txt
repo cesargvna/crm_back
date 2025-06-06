@@ -1,0 +1,92 @@
+// ✅ subsidiary.validator.ts
+import { z } from "zod";
+
+export const subsidiarySchema = z.object({
+  tenantId: z
+    .string({ required_error: "Tenant ID is required" })
+    .uuid("Invalid tenant ID"),
+
+  name: z
+    .string()
+    .min(2, "Name must be at least 2 characters")
+    .max(20, "Name must not exceed 20 characters"),
+
+  subsidiary_type: z.enum(
+    ["HEADQUARTERS", "SUBSIDIARY", "WAREHOUSE", "OFFICE"],
+    {
+      errorMap: () => ({ message: "Invalid subsidiary type" }),
+    }
+  ),
+
+  allowNegativeStock: z.boolean().optional(),
+  status: z.boolean().optional(),
+
+  ci: z
+    .string()
+    .max(20, "CI must not exceed 20 characters")
+    .optional()
+    .nullable(),
+  nit: z
+    .string()
+    .max(20, "NIT must not exceed 20 characters")
+    .optional()
+    .nullable(),
+  description: z
+    .string()
+    .max(100, "Description must not exceed 100 characters")
+    .optional()
+    .nullable(),
+  address: z
+    .string()
+    .max(100, "Address must not exceed 100 characters")
+    .optional()
+    .nullable(),
+  city: z
+    .string()
+    .max(20, "City must not exceed 20 characters")
+    .optional()
+    .nullable(),
+  country: z
+    .string()
+    .max(20, "Country must not exceed 20 characters")
+    .optional()
+    .nullable(),
+  cellphone: z
+    .string()
+    .max(20, "Cellphone must not exceed 20 characters")
+    .optional()
+    .nullable(),
+  telephone: z
+    .string()
+    .max(20, "Telephone must not exceed 20 characters")
+    .optional()
+    .nullable(),
+  email: z
+    .string()
+    .email("Invalid email format")
+    .max(20, "Email must not exceed 20 characters")
+    .optional()
+    .nullable(),
+});
+
+export const toggleSubsidiaryStatusSchema = z.object({
+  id: z.string().uuid("Invalid subsidiary ID"),
+});
+
+export const getAllSubsidiariesQuerySchema = z.object({
+  page: z
+    .string()
+    .optional()
+    .transform((v) => parseInt(v || "1")),
+  limit: z
+    .string()
+    .optional()
+    .transform((v) => parseInt(v || "10")),
+  search: z.string().optional(),
+  status: z.enum(["true", "false", "all"]).optional().default("all"),
+  sortBy: z
+    .enum(["name", "city", "country", "created_at"])
+    .optional()
+    .default("name"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("asc"),
+});
