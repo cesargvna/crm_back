@@ -1,0 +1,96 @@
+model PermissionSection {
+  id              String        @id @default(uuid()) @db.VarChar(255)
+  name            String        @unique @db.VarChar(100)
+  order           Int           @unique @default(0)
+  status          Boolean       @default(true) // Global status
+
+  modules         ModuleGroup[]
+  rolePermissions RolePermission[] // Relación directa (solo se mantiene esta)
+
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+}
+
+model ModuleGroup {
+  id              String        @id @default(uuid()) @db.VarChar(255)
+  name            String        @db.VarChar(100)
+  route           String        @db.VarChar(255)
+  iconName        String        @db.VarChar(100)
+  status          Boolean       @default(true) // Global status
+
+  sectionId       String        @db.VarChar(255)
+  section         PermissionSection @relation(fields: [sectionId], references: [id])
+
+  submodules      SubmoduleGroup[]
+
+  @@unique([name, sectionId])
+
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+}
+
+model SubmoduleGroup {
+  id              String        @id @default(uuid()) @db.VarChar(255)
+  name            String        @db.VarChar(100)
+  route           String        @db.VarChar(255)
+  status          Boolean       @default(true) // Global status
+
+  moduleId        String        @db.VarChar(255)
+  module          ModuleGroup   @relation(fields: [moduleId], references: [id])
+
+  @@unique([name, moduleId])
+
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+}
+
+model PermissionAction {
+  id              String        @id @default(uuid()) @db.VarChar(255)
+  name            String        @unique @db.VarChar(50)
+
+  rolePermissions RolePermission[]
+
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+}
+
+model Role {
+  id               String        @id @default(uuid()) @db.VarChar(255)
+  name             String        @db.VarChar(30)
+  description      String?       @db.VarChar(255)
+  status           Boolean       @default(true)
+
+  tenantId         String        @db.VarChar(255)
+  subsidiaryId     String        @db.VarChar(255)
+  users            User[]
+  rolePermissions  RolePermission[]
+
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @updatedAt
+
+  @@index([tenantId])
+  @@index([subsidiaryId])
+  @@unique([name, tenantId, subsidiaryId]) // el nombre puede repetirse entre sucursales
+}
+
+model RolePermission {
+  id            String            @id @default(uuid()) @db.VarChar(255)
+
+  roleId        String            @db.VarChar(255)
+  actionId      String            @db.VarChar(255)
+  sectionId     String            @db.VarChar(255)
+  moduleId      String?           @db.VarChar(255) // Sin @relation para evitar bucle
+  submoduleId   String?           @db.VarChar(255) // Sin @relation para evitar bucle
+  tenantId      String            @db.VarChar(255)
+
+  role          Role              @relation(fields: [roleId], references: [id])
+  section       PermissionSection @relation(fields: [sectionId], references: [id])
+  action        PermissionAction  @relation(fields: [actionId], references: [id])
+
+  created_at    DateTime          @default(now())
+  updated_at    DateTime          @updatedAt
+
+  @@index([roleId])
+  @@index([tenantId])
+  @@unique([roleId, actionId, sectionId, moduleId, submoduleId])
+}

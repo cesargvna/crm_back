@@ -1,0 +1,27 @@
+// ✅ subsidiary.router.ts
+import express from "express";
+const subsidiaryRouter = express.Router();
+
+import {
+  createSubsidiary,
+  getAllSubsidiaries,
+  getSubsidiaryById,
+  updateSubsidiary,
+  toggleSubsidiaryStatus
+} from "../controllers/subsidiary.controller";
+
+import { validate } from "../middleware/validate.middleware";
+import { validateParams } from "../middleware/validateParams.middleware";
+import {
+  subsidiarySchema,
+  toggleSubsidiaryStatusSchema,
+  getAllSubsidiariesQuerySchema
+} from "../validators/subsidiary.validator";
+
+subsidiaryRouter.post("/", validate(subsidiarySchema), createSubsidiary);
+subsidiaryRouter.get("/", validate(getAllSubsidiariesQuerySchema), getAllSubsidiaries);
+subsidiaryRouter.get("/:id", getSubsidiaryById);
+subsidiaryRouter.put("/:id", validate(subsidiarySchema), updateSubsidiary);
+subsidiaryRouter.patch("/:id/toggle", validateParams(toggleSubsidiaryStatusSchema), toggleSubsidiaryStatus);
+
+export default subsidiaryRouter;
