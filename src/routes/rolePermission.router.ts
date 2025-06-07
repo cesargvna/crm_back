@@ -8,11 +8,11 @@ import { createPermissionSectionSchema, getAllPermissionSectionsQuerySchema, tog
 import { createPermissionSection, getAllPermissionSections, getAllPermissionSectionsComplete, getPermissionSectionById, togglePermissionSectionStatus, updatePermissionSection } from '../controllers/permissionSection.controller';
 import { createModuleGroup, getAllModuleGroups, getAllModuleGroupsComplete, getModuleGroupById, toggleModuleGroupStatus, updateModuleGroup } from '../controllers/moduleGroup.controller';
 import { createModuleGroupSchema, getAllModuleGroupsQuerySchema, toggleModuleGroupStatusSchema, updateModuleGroupSchema } from '../validators/moduleGroup.validator';
+import { createSubmoduleGroupSchema, getAllSubmoduleGroupsQuerySchema, toggleSubmoduleGroupStatusSchema, updateSubmoduleGroupSchema } from '../validators/submoduleGroup.validator';
+import { createSubmoduleGroup, getAllSubmoduleGroups, getAllSubmoduleGroupsComplete, getSubmoduleGroupById, toggleSubmoduleGroupStatus, updateSubmoduleGroup } from '../controllers/submoduleGroup.controller';
 
 
 const roleRouter = express.Router();
-
-
 
 // ✅ PERMISSION SECTION ROUTES
 roleRouter.post('/permission-sections', validate(createPermissionSectionSchema), createPermissionSection);
@@ -30,6 +30,12 @@ roleRouter.get('/permission-module', validateQuery(getAllModuleGroupsQuerySchema
 roleRouter.get('/permission-module/:id', getModuleGroupById);
 roleRouter.get('/permission-module-complete', getAllModuleGroupsComplete);
 
-
+// ✅ PERMISSION SUBMODULE ROUTES
+roleRouter.post('/permission-submodule', validate(createSubmoduleGroupSchema), createSubmoduleGroup);
+roleRouter.put('/permission-submodule/:id', validate(updateSubmoduleGroupSchema), updateSubmoduleGroup);
+roleRouter.patch('/permission-submodule/:id/status', validate(toggleSubmoduleGroupStatusSchema), toggleSubmoduleGroupStatus);
+roleRouter.get('/permission-submodule', validateQuery(getAllSubmoduleGroupsQuerySchema), getAllSubmoduleGroups);
+roleRouter.get('/permission-submodule/:id', getSubmoduleGroupById);
+roleRouter.get('/permission-submodule-complete', getAllSubmoduleGroupsComplete);
 
 export default roleRouter;

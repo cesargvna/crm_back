@@ -1,5 +1,6 @@
 import { permissionSectionPaths } from './paths/permissionSection';
 import { moduleGroupPaths } from './paths/moduleGroup';
+import { submoduleGroupPaths } from './paths/submoduleGroup';
 
 export const swaggerConfig = {
   openapi: '3.0.0',
@@ -18,9 +19,11 @@ export const swaggerConfig = {
   tags: [
     { name: 'Permission Section', description: 'Permission structure grouping modules and submodules' },
     { name: 'Permission Module', description: 'Modules grouped under a permission section' },
+    { name: 'Permission Submodule', description: 'Submodules grouped under a permission module' },
   ],
   paths: {
     ...permissionSectionPaths,
     ...moduleGroupPaths,
+    ...submoduleGroupPaths,
   },
 };
