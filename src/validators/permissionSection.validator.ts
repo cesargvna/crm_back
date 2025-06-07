@@ -5,7 +5,7 @@ import { z } from "zod";
 const nameSchema = z
   .string()
   .min(3, "Name must be at least 3 characters")
-  .max(100, "Name must be at most 100 characters")
+  .max(40, "Name must be at most 40 characters")
   .regex(
     /^[a-zA-Z.]+$/,
     'Only letters and "." are allowed. No ñ, spaces, numbers or symbols'
