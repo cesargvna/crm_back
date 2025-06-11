@@ -1,6 +1,11 @@
 import { permissionSectionPaths } from './paths/permissionSection';
 import { moduleGroupPaths } from './paths/moduleGroup';
 import { submoduleGroupPaths } from './paths/submoduleGroup';
+import { permissionActionPaths } from './paths/permissionAction';
+import { tenantPaths } from './paths/tenant';
+import { subsidiaryPaths } from './paths/subsidiary';
+import { rolePaths } from './paths/role';
+import { rolePermissionPaths } from './paths/rolePermission';
 
 export const swaggerConfig = {
   openapi: '3.0.0',
@@ -20,10 +25,21 @@ export const swaggerConfig = {
     { name: 'Permission Section', description: 'Permission structure grouping modules and submodules' },
     { name: 'Permission Module', description: 'Modules grouped under a permission section' },
     { name: 'Permission Submodule', description: 'Submodules grouped under a permission module' },
+    { name: 'Permission Action', description: 'Atomic permission operations like view, edit, create, etc.' },
+    { name: "Role", description: "Roles assigned to subsidiaries, with permission configurations" },
+    { name: "Role Permission", description: "Assign and retrieve permissions linked to roles" },
+    { name: 'Tenant', description: 'Represents a client or organization that owns its own users, roles, and subsidiaries' },
+    { name: 'Subsidiary', description: "Creates a new subsidiary under a specific tenant. The `subsidiary_type` must be one of: MATRIZ, SUCURSAL, ALMACEN, OFICINA." },
+  
   ],
   paths: {
     ...permissionSectionPaths,
     ...moduleGroupPaths,
     ...submoduleGroupPaths,
+    ...permissionActionPaths,
+    ...rolePaths,
+    ...rolePermissionPaths,
+    ...tenantPaths,
+    ...subsidiaryPaths,
   },
 };

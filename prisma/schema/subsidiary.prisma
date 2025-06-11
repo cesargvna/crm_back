@@ -19,12 +19,12 @@ model Subsidiary {
   updated_at            DateTime      @updatedAt
 
   tenantId              String        @db.VarChar(255)
-  tenant                Tenant        @relation(fields: [tenantId], references: [id])
+  tenant                Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([name, tenantId])
   
-  users                 User[] 
-  schedulesSubsidiaries ScheduleSubsidiary[]
+  users                   User[] 
+  schedulesSubsidiaries   ScheduleSubsidiary[]    @relation(name: "ScheduleSubsidiaryForSubsidiary")
 }
 
 enum SubsidiaryType {
@@ -46,9 +46,9 @@ model ScheduleSubsidiary {
   created_at      DateTime      @default(now())
   updated_at      DateTime      @updatedAt
 
-  tenantId        String       @db.VarChar(255) // 👉 agregado sin relación
+  tenantId        String       @db.VarChar(255) 
 
-  subsidiary      Subsidiary    @relation(fields: [subsidiaryId], references: [id])
+  subsidiary      Subsidiary    @relation(fields: [subsidiaryId], references: [id], name: "ScheduleSubsidiaryForSubsidiary")
   subsidiaryId    String        @db.VarChar(255)
 
   @@index([tenantId]) // ✅ índice por tenantId

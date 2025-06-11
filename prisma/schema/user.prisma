@@ -25,7 +25,7 @@ model User {
 
   tenantId        String?       @db.VarChar(255) // 👉 agregado sin relación
   
-  schedulesUsers  ScheduleUser[]
+  schedulesUsers    ScheduleUser[]    @relation(name: "ScheduleUserForUser")
   //cashSessions    CashSession[] 
   //sales           Sale[]
   //expenses        Expense[]
@@ -48,7 +48,7 @@ model ScheduleUser {
 
   tenantId          String       @db.VarChar(255) // 👉 agregado sin relación
 
-  user              User          @relation(fields: [userId], references: [id])
+  user              User          @relation(fields: [userId], references: [id], name: "ScheduleUserForUser")
   userId            String        @db.VarChar(255)
 
   @@index([tenantId]) // ✅ índice por tenantId

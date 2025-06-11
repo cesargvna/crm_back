@@ -10,7 +10,12 @@ import { createModuleGroup, getAllModuleGroups, getAllModuleGroupsComplete, getM
 import { createModuleGroupSchema, getAllModuleGroupsQuerySchema, toggleModuleGroupStatusSchema, updateModuleGroupSchema } from '../validators/moduleGroup.validator';
 import { createSubmoduleGroupSchema, getAllSubmoduleGroupsQuerySchema, toggleSubmoduleGroupStatusSchema, updateSubmoduleGroupSchema } from '../validators/submoduleGroup.validator';
 import { createSubmoduleGroup, getAllSubmoduleGroups, getAllSubmoduleGroupsComplete, getSubmoduleGroupById, toggleSubmoduleGroupStatus, updateSubmoduleGroup } from '../controllers/submoduleGroup.controller';
-
+import { createPermissionActionSchema, updatePermissionActionSchema } from '../validators/permissionAction.validator';
+import { createPermissionAction, getAllPermissionActions, getPermissionActionById, updatePermissionAction } from '../controllers/permissionAction.controller';
+import { createRoleSchema, getAllRolesQuerySchema, updateRoleSchema } from '../validators/role.validator';
+import { createRole, getRoleById, getRolesBySubsidiary, getRoleWithPermissions, toggleRoleStatus, updateRole } from '../controllers/role.controller';
+import { createRolePermissionSchema, deleteRolePermissionParamsSchema, getRolePermissionParamsSchema } from '../validators/rolePermission';
+import { createRolePermission, deleteRolePermission, getRolePermissionsByRoleId } from '../controllers/rolePermission.controller';
 
 const roleRouter = express.Router();
 
@@ -37,5 +42,24 @@ roleRouter.patch('/permission-submodule/:id/status', validate(toggleSubmoduleGro
 roleRouter.get('/permission-submodule', validateQuery(getAllSubmoduleGroupsQuerySchema), getAllSubmoduleGroups);
 roleRouter.get('/permission-submodule/:id', getSubmoduleGroupById);
 roleRouter.get('/permission-submodule-complete', getAllSubmoduleGroupsComplete);
+
+// ✅ PERMISSION ACTION ROUTES
+roleRouter.post('/permission-actions', validate(createPermissionActionSchema), createPermissionAction);
+roleRouter.put('/permission-actions/:id', validate(updatePermissionActionSchema), updatePermissionAction);
+roleRouter.get('/permission-actions', getAllPermissionActions);
+roleRouter.get('/permission-actions/:id', getPermissionActionById);
+
+// ✅ ROLE ROUTES
+roleRouter.post("/roles", validate(createRoleSchema), createRole);
+roleRouter.put("/roles/:id", validate(updateRoleSchema), updateRole);
+roleRouter.patch("/roles/:id/status", toggleRoleStatus);
+roleRouter.get("/roles/:id/permissions",  getRoleWithPermissions); 
+roleRouter.get("/roles/:id",getRoleById);
+roleRouter.get("/roles/by-subsidiary/:subsidiaryId",validateQuery(getAllRolesQuerySchema),getRolesBySubsidiary);
+
+// ✅ ROLE PERMISSION ROUTES
+roleRouter.post("/rolePermission",validate(createRolePermissionSchema),createRolePermission);
+roleRouter.get("/rolePermission/:roleId",validateParams(getRolePermissionParamsSchema),getRolePermissionsByRoleId);
+roleRouter.delete("/rolePermission/:id",validateParams(deleteRolePermissionParamsSchema),deleteRolePermission);
 
 export default roleRouter;

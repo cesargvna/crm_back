@@ -5,7 +5,7 @@ model PermissionSection {
   status          Boolean       @default(true) // Global status
 
   modules         ModuleGroup[]
-  rolePermissions RolePermission[] // Relación directa (solo se mantiene esta)
+  rolePermissions RolePermission[]
 
   created_at      DateTime      @default(now())
   updated_at      DateTime      @updatedAt
@@ -14,7 +14,7 @@ model PermissionSection {
 model ModuleGroup {
   id              String        @id @default(uuid()) @db.VarChar(255)
   name            String        @db.VarChar(40)
-  route           String        @db.VarChar(255)
+  route           String?       @db.VarChar(255)
   iconName        String        @db.VarChar(100)
   status          Boolean       @default(true) // Global status
 
