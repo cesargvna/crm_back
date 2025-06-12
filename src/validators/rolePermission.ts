@@ -1,13 +1,12 @@
 import { z } from "zod";
 
-// Reusable UUID opcional que acepta null o ""
 const optionalUUID = z
   .union([
     z.string().uuid(),
     z.literal(""),
     z.null()
   ])
-  .transform((val) => (val === "" || val === null ? undefined : val));
+  .transform((val) => (val === "" ? null : val));
 
 export const createRolePermissionSchema = z.object({
   roleId: z.string().uuid({ message: "Invalid roleId" }),

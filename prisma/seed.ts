@@ -5,7 +5,7 @@ import { seedModules } from "./seeds/04-module.seed";
 import { seedSubmodules } from "./seeds/05-submodule.seed";
 import { seedActions } from "./seeds/06-action.seed";
 import { seedRoles } from "./seeds/07-role.seed";
-//import { seedRolePermissions } from "./seeds/08-role-permission.seed";
+import { seedRolePermissions } from "./seeds/08-role-permission.seed";
 
 async function main() {
   console.log("🌱 Seeding started...");
@@ -17,7 +17,7 @@ async function main() {
   const submodules = await seedSubmodules(modules);
   const actions = await seedActions();
   const roles = await seedRoles(tenants, subsidiary);
-  //await seedRolePermissions(roles, actions, sections, modules, submodules, tenant.id);
+  await seedRolePermissions(roles, actions, sections, modules, submodules);
 
   console.log("✅ Seeding completed.");
 }

@@ -191,4 +191,109 @@ Each role includes its assigned users, permissions, and associated tenant info.
       },
     },
   },
+
+  "GET: role/roles/by-tenant/{tenantId}": {
+    get: {
+      tags: ["Role"],
+      summary: "Get all roles grouped by subsidiary for a tenant",
+      description: `
+Returns a structured list of all roles grouped by subsidiary for the given tenant ID. 
+Each role includes its name, status, and a list of assigned permissions with resolved action, section, module and submodule names.
+    `,
+      parameters: [
+        {
+          name: "tenantId",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
+      ],
+      responses: {
+        200: {
+          description: "Roles grouped by subsidiary for the specified tenant",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  tenant: {
+                    type: "object",
+                    properties: {
+                      id: {
+                        type: "string",
+                        example: "tenant-789",
+                      },
+                      name: {
+                        type: "string",
+                        example: "PERU - LIBRERÍA",
+                      },
+                      description: {
+                        type: "string",
+                        example:
+                          "Empresa peruana especializada en libros escolares.",
+                      },
+                    },
+                  },
+                  subsidiaries: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string", example: "Sucursal Central" },
+                        roles: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              name: {
+                                type: "string",
+                                example: "Administrador",
+                              },
+                              status: {
+                                type: "boolean",
+                                example: true,
+                              },
+                              permissions: {
+                                type: "array",
+                                items: {
+                                  type: "object",
+                                  properties: {
+                                    action: {
+                                      type: "string",
+                                      example: "ver",
+                                    },
+                                    section: {
+                                      type: "string",
+                                      example: "Usuarios",
+                                    },
+                                    module: {
+                                      type: "string",
+                                      nullable: true,
+                                      example: "Dashboard",
+                                    },
+                                    submodule: {
+                                      type: "string",
+                                      nullable: true,
+                                      example: "Reportes Detallados",
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        404: {
+          description: "Tenant not found",
+        },
+      },
+    },
+  },
 };

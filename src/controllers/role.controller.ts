@@ -283,3 +283,91 @@ export const getRoleById = asyncHandler(async (req: Request, res: Response) => {
     users: role.users,
   });
 }); 
+
+export const getRolesByTenant = asyncHandler(async (req: Request, res: Response) => {
+  const { tenantId } = req.params;
+
+  // 1. Verificar tenant
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { id: true, name: true, description: true },
+  });
+
+  if (!tenant) {
+    return res.status(404).json({ message: "Tenant not found" });
+  }
+
+  // 2. Obtener sucursales
+  const subsidiaries = await prisma.subsidiary.findMany({
+    where: { tenantId },
+    select: { id: true, name: true },
+  });
+
+  // 3. Obtener roles por sucursal
+  const subsidiariesWithRoles = await Promise.all(
+    subsidiaries.map(async (subsidiary) => {
+      const roles = await prisma.role.findMany({
+        where: { subsidiaryId: subsidiary.id },
+        include: {
+          rolePermissions: {
+            include: {
+              action: { select: { name: true } },
+              section: { select: { name: true } },
+            },
+          },
+        },
+      });
+
+      // 4. Resolver nombres de moduleId y submoduleId manualmente
+      const simplifiedRoles = await Promise.all(
+        roles.map(async (role) => {
+          const permissions = await Promise.all(
+            role.rolePermissions.map(async (rp) => {
+              const moduleName = rp.moduleId
+                ? (
+                    await prisma.moduleGroup.findUnique({
+                      where: { id: rp.moduleId },
+                      select: { name: true },
+                    })
+                  )?.name
+                : null;
+
+              const submoduleName = rp.submoduleId
+                ? (
+                    await prisma.submoduleGroup.findUnique({
+                      where: { id: rp.submoduleId },
+                      select: { name: true },
+                    })
+                  )?.name
+                : null;
+
+              return {
+                action: rp.action.name,
+                section: rp.section.name,
+                module: moduleName,
+                submodule: submoduleName,
+              };
+            })
+          );
+
+          return {
+            name: role.name,
+            status: role.status,
+            permissions,
+          };
+        })
+      );
+
+      return {
+        name: subsidiary.name,
+        roles: simplifiedRoles,
+      };
+    })
+  );
+
+  // 5. Responder
+  res.json({
+    tenant,
+    subsidiaries: subsidiariesWithRoles,
+  });
+});

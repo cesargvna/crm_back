@@ -13,7 +13,7 @@ import { createSubmoduleGroup, getAllSubmoduleGroups, getAllSubmoduleGroupsCompl
 import { createPermissionActionSchema, updatePermissionActionSchema } from '../validators/permissionAction.validator';
 import { createPermissionAction, getAllPermissionActions, getPermissionActionById, updatePermissionAction } from '../controllers/permissionAction.controller';
 import { createRoleSchema, getAllRolesQuerySchema, updateRoleSchema } from '../validators/role.validator';
-import { createRole, getRoleById, getRolesBySubsidiary, getRoleWithPermissions, toggleRoleStatus, updateRole } from '../controllers/role.controller';
+import { createRole, getRoleById, getRolesBySubsidiary, getRolesByTenant, getRoleWithPermissions, toggleRoleStatus, updateRole } from '../controllers/role.controller';
 import { createRolePermissionSchema, deleteRolePermissionParamsSchema, getRolePermissionParamsSchema } from '../validators/rolePermission';
 import { createRolePermission, deleteRolePermission, getRolePermissionsByRoleId } from '../controllers/rolePermission.controller';
 
@@ -56,6 +56,7 @@ roleRouter.patch("/roles/:id/status", toggleRoleStatus);
 roleRouter.get("/roles/:id/permissions",  getRoleWithPermissions); 
 roleRouter.get("/roles/:id",getRoleById);
 roleRouter.get("/roles/by-subsidiary/:subsidiaryId",validateQuery(getAllRolesQuerySchema),getRolesBySubsidiary);
+roleRouter.get("/roles/by-tenant/:tenantId", getRolesByTenant);
 
 // ✅ ROLE PERMISSION ROUTES
 roleRouter.post("/rolePermission",validate(createRolePermissionSchema),createRolePermission);
