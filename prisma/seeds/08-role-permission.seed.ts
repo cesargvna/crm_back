@@ -28,7 +28,10 @@ export async function seedRolePermissions(
 
   const allPermissions: any[] = [];
 
-  for (const [subsidiaryId, roleMap] of Object.entries(rolesBySubsidiary)) {
+  const normalizeId = (val: any) =>
+    val === undefined || val === null || val === "" ? null : val;
+
+  for (const [_, roleMap] of Object.entries(rolesBySubsidiary)) {
     for (const [roleNameRaw, role] of Object.entries(roleMap)) {
       const roleName = normalize(roleNameRaw);
       const tenantId = role.tenantId;
@@ -59,41 +62,41 @@ export async function seedRolePermissions(
           sectionModules.some((m) => m.id === sm.moduleId)
         );
 
-        // Permisos sobre la sección directamente
+        // Sección directamente
         for (const actionId of allowedActions) {
           allPermissions.push({
             roleId: role.id,
             tenantId,
             sectionId: section.id,
-            moduleId: undefined,
-            submoduleId: undefined,
+            moduleId: null,
+            submoduleId: null,
             actionId,
           });
         }
 
-        // Permisos sobre los módulos
+        // Módulos
         for (const mod of sectionModules) {
           for (const actionId of allowedActions) {
             allPermissions.push({
               roleId: role.id,
               tenantId,
               sectionId: section.id,
-              moduleId: mod.id,
-              submoduleId: undefined,
+              moduleId: normalizeId(mod.id),
+              submoduleId: null,
               actionId,
             });
           }
         }
 
-        // Permisos sobre los submódulos
+        // Submódulos
         for (const sm of sectionSubmodules) {
           for (const actionId of allowedActions) {
             allPermissions.push({
               roleId: role.id,
               tenantId,
               sectionId: section.id,
-              moduleId: sm.moduleId,
-              submoduleId: sm.id,
+              moduleId: normalizeId(sm.moduleId),
+              submoduleId: normalizeId(sm.id),
               actionId,
             });
           }
@@ -102,11 +105,16 @@ export async function seedRolePermissions(
     }
   }
 
+  // ✅ Inserción y conteo de duplicados
+  const before = await prisma.rolePermission.count();
   await prisma.rolePermission.createMany({
     data: allPermissions,
     skipDuplicates: true,
   });
+  const after = await prisma.rolePermission.count();
+  const inserted = after - before;
+  const skipped = allPermissions.length - inserted;
 
-  console.log(`✅ Se asignaron ${allPermissions.length} permisos (evitando duplicados)`);
-  return allPermissions;
+  console.log(`✅ ${inserted} permissions inserted, ${skipped} skipped (already existed).`);
+  return { inserted, skipped };
 }

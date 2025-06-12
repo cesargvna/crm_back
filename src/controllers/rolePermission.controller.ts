@@ -5,9 +5,14 @@ import { asyncHandler } from "../utils/asyncHandler";
 // ✅ Crear una nueva asignación de permiso
 export const createRolePermission = asyncHandler(
   async (req: Request, res: Response) => {
-    const { roleId, actionId, sectionId, moduleId, submoduleId } = req.body;
+    const {
+      roleId,
+      actionId,
+      sectionId,
+      moduleId,
+      submoduleId,
+    } = req.body;
 
-    // ✅ 1. Verificamos que exista el rol
     const role = await prisma.role.findUnique({
       where: { id: roleId },
     });
@@ -16,33 +21,43 @@ export const createRolePermission = asyncHandler(
       return res.status(404).json({ message: "Role not found." });
     }
 
-    // ✅ 2. Obtenemos el tenant manualmente desde el rol
     const tenantId = role.tenantId;
 
-    // ✅ 3. Validar duplicidad del permiso
+    // ✅ Normalize optional fields: treat "" and undefined as null
+    const normalize = (val: any) =>
+      val === undefined || val === null || val === "" ? null : val;
+
+    const normalizedModuleId = normalize(moduleId);
+    const normalizedSubmoduleId = normalize(submoduleId);
+
     const existing = await prisma.rolePermission.findFirst({
-      where: { roleId, actionId, sectionId, moduleId, submoduleId },
+      where: {
+        roleId,
+        actionId,
+        sectionId,
+        moduleId: normalizedModuleId,
+        submoduleId: normalizedSubmoduleId,
+      },
     });
 
     if (existing) {
       return res.status(409).json({
-        message: "Permission already assigned to this role.",
+        message: "This permission is already assigned to the role.",
       });
     }
 
-    // ✅ 4. Crear permiso
     const newPermission = await prisma.rolePermission.create({
       data: {
         roleId,
         actionId,
         sectionId,
-        moduleId,
-        submoduleId,
+        moduleId: normalizedModuleId,
+        submoduleId: normalizedSubmoduleId,
         tenantId,
       },
     });
 
-    res.status(201).json(newPermission);
+    return res.status(201).json(newPermission);
   }
 );
 

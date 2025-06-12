@@ -51,5 +51,7 @@ model ScheduleSubsidiary {
   subsidiary      Subsidiary    @relation(fields: [subsidiaryId], references: [id], name: "ScheduleSubsidiaryForSubsidiary")
   subsidiaryId    String        @db.VarChar(255)
 
+  @@unique([subsidiaryId, start_day, end_day, opening_hour, closing_hour])
+
   @@index([tenantId]) // ✅ índice por tenantId
 }
