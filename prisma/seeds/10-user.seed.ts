@@ -3,13 +3,19 @@ import bcrypt from "bcryptjs";
 import normalize from "normalize-text";
 import { fakerES as faker } from "@faker-js/faker";
 
+type SeededUser = {
+  id: string;
+  tenantId: string;
+};
+
 export const seedUsers = async (
   rolesBySubsidiary: Record<string, Record<string, any>>,
   subsidiaries: { id: string; tenantId: string }[]
-) => {
+): Promise<SeededUser[]> => {
   console.log("\n🌱 Seeding users by role, subsidiary and tenant...");
 
   const defaultPassword = await bcrypt.hash("Password123", 10);
+  const createdUsers: SeededUser[] = [];
 
   for (const subsidiary of subsidiaries) {
     const { id: subsidiaryId, tenantId } = subsidiary;
@@ -37,7 +43,7 @@ export const seedUsers = async (
       );
 
       if (attempts >= 5) {
-        console.warn(`❌ No se pudo generar username único para rol ${roleName} en sucursal ${subsidiaryId}`);
+        console.warn(`⚠️ Could not generate unique username for role ${roleName} in subsidiary ${subsidiaryId}`);
         continue;
       }
 
@@ -46,7 +52,7 @@ export const seedUsers = async (
       const email = faker.internet.email({ firstName: name, lastName: lastname }).slice(0, 20);
       const address = faker.location.streetAddress().slice(0, 100);
 
-      await prisma.user.create({
+      const user = await prisma.user.create({
         data: {
           username,
           password: defaultPassword,
@@ -58,16 +64,21 @@ export const seedUsers = async (
           address,
           cellphone: `7${faker.string.numeric(7)}`.slice(0, 20),
           telephone: `2${faker.string.numeric(6)}`.slice(0, 20),
-          description: "Usuario generado automáticamente".slice(0, 100),
+          description: "Automatically generated user".slice(0, 100),
           roleId: role.id,
           subsidiaryId,
           tenantId,
         },
+        select: { id: true }, // selecciona solo id
       });
 
-      console.log(`✅ Usuario ${username} creado para rol ${roleName} en sucursal ${subsidiaryId}`);
+      createdUsers.push({ id: user.id, tenantId });
+
+      console.log(`✅ User ${username} created for role ${roleName} in subsidiary ${subsidiaryId}`);
     }
   }
 
-  console.log("✅ Seeding de usuarios finalizado.\n");
+  console.log("✅ User seeding completed.\n");
+
+  return createdUsers;
 };

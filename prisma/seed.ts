@@ -8,6 +8,7 @@ import { seedRoles } from "./seeds/07-role.seed";
 import { seedRolePermissions } from "./seeds/08-role-permission.seed";
 import { scheduleSubsidiaries } from "./seeds/09-schedule-subsidiaries";
 import { seedUsers } from "./seeds/10-user.seed";
+import { seedScheduleUsers } from "./seeds/11-schedule-users.seed";
 
 async function main() {
   console.log("🌱 Seeding started...");
@@ -21,7 +22,8 @@ async function main() {
   const actions = await seedActions();
   const roles = await seedRoles(tenants, subsidiary);
   await seedRolePermissions(roles, actions, sections, modules, submodules);
-  await seedUsers(roles, subsidiary);
+  const users = await seedUsers(roles, subsidiary);
+  await seedScheduleUsers(users); 
   
   console.log("✅ Seeding completed.");
 }

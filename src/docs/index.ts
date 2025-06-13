@@ -8,6 +8,7 @@ import { rolePaths } from "./paths/role";
 import { rolePermissionPaths } from "./paths/rolePermission";
 import { scheduleSubsidiaryPaths } from "./paths/scheduleSubsidiary";
 import { userPaths } from "./paths/user";
+import { scheduleUserPaths } from "./paths/scheduleUser";
 
 export const swaggerConfig = {
   openapi: "3.0.0",
@@ -71,6 +72,13 @@ export const swaggerConfig = {
       description:
         "Manage users: creation, update, password, and status toggling. Each user belongs to a subsidiary and has a role with permissions.",
     },
+    {
+      name: "ScheduleUser",
+      description: `Manages opening and closing hours per user.\n
+  - Enum field \`DayOfWeek\` must be one of:
+    \`LUNES\`, \`MARTES\`, \`MIERCOLES\`, \`JUEVES\`, \`VIERNES\`, \`SABADO\`, \`DOMINGO\`.
+  - Dates must be in ISO 8601 format (e.g. \`2025-06-12T08:00:00.000Z\`).`,
+    },
   ],
   paths: {
     ...permissionSectionPaths,
@@ -83,5 +91,6 @@ export const swaggerConfig = {
     ...subsidiaryPaths,
     ...scheduleSubsidiaryPaths,
     ...userPaths,
+    ...scheduleUserPaths,
   },
 };
