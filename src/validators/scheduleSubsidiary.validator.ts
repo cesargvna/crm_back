@@ -1,52 +1,45 @@
 import { z } from "zod";
 
-// ✅ Enum de días permitido por tu modelo Prisma
-export const weekDays = [
+// Enum Zod equivalente al enum Prisma
+export const DayOfWeekEnum = z.enum([
   "LUNES",
   "MARTES",
-  "MIÉRCOLES",
+  "MIERCOLES",
   "JUEVES",
   "VIERNES",
-  "SÁBADO",
+  "SABADO",
   "DOMINGO",
-] as const;
+]);
 
-const baseScheduleSubsidiarySchema = z.object({
-  subsidiaryId: z
-    .string({ required_error: "Subsidiary ID is required" })
-    .uuid("Invalid subsidiary ID"),
-
-  start_day: z.enum(weekDays),
-  end_day: z.enum(weekDays),
-
+// Validación base compartida
+const baseScheduleFields = {
+  start_day: DayOfWeekEnum.optional(),
+  end_day: DayOfWeekEnum.optional(),
   opening_hour: z
     .string()
-    .refine((val) => !isNaN(Date.parse(val)), {
-      message: "Invalid opening_hour format. Must be ISO string",
-    }),
-
+    .datetime({ message: "Invalid opening_hour format. Must be ISO datetime string" })
+    .optional(),
   closing_hour: z
     .string()
-    .refine((val) => !isNaN(Date.parse(val)), {
-      message: "Invalid closing_hour format. Must be ISO string",
-    }),
+    .datetime({ message: "Invalid closing_hour format. Must be ISO datetime string" })
+    .optional(),
+};
 
-  status: z.boolean(),
+// ✅ Crear horario
+export const createScheduleSubsidiarySchema = z.object({
+  ...baseScheduleFields,
 });
 
-// ✅ Con comparación de horas
-export const scheduleSubsidiarySchema = baseScheduleSubsidiarySchema.refine(
-  (data) => new Date(data.opening_hour) < new Date(data.closing_hour),
-  {
-    message: "Opening hour must be earlier than closing hour.",
-    path: ["closing_hour"],
-  }
-);
+// ✅ Actualizar horario
+export const updateScheduleSubsidiarySchema = z.object({
+  ...baseScheduleFields,
+});
 
-// ✅ Versión para actualizar
-export const updateScheduleSubsidiarySchema = scheduleSubsidiarySchema;
+// ✅ Cambiar estado (opcional por body, si lo usas en algún caso)
+export const toggleScheduleStatusSchema = z.object({
+  status: z.boolean().optional(),
+});
 
-// ✅ Para toggle
-export const toggleScheduleSubsidiaryStatusSchema = z.object({
-  id: z.string().uuid("Invalid schedule ID"),
+export const subsidiaryIdParamsSchema = z.object({
+  subsidiaryId: z.string().uuid({ message: "Invalid subsidiary ID" }),
 });

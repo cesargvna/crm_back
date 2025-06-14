@@ -1,126 +1,153 @@
-// ✅ scheduleSubsidiary.controller.ts
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import prisma from "../utils/prisma";
-import { v4 as uuidv4 } from "uuid";
+import { asyncHandler } from "../utils/asyncHandler";
 
-export const createScheduleSubsidiary = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const data = {
-      ...req.body,
-      id: uuidv4(),
-      opening_hour: req.body.opening_hour
-        ? new Date(req.body.opening_hour)
-        : null,
-      closing_hour: req.body.closing_hour
-        ? new Date(req.body.closing_hour)
-        : null,
-    };
+// ✅ Crear horario para una sucursal
+export const createScheduleSubsidiary = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { subsidiaryId } = req.params;
+    const {
+      start_day,
+      end_day,
+      opening_hour,
+      closing_hour,
+    } = req.body;
 
-    const schedule = await prisma.scheduleSubsidiary.create({ data });
-    res
-      .status(201)
-      .json({ success: true, message: "Schedule created", data: schedule });
-  } catch (error) {
-    next(error);
+    // ✅ Obtener la subsidiaria y su tenantId
+    const subsidiary = await prisma.subsidiary.findUnique({
+      where: { id: subsidiaryId },
+      select: {
+        id: true,
+        tenantId: true,
+      },
+    });
+
+    if (!subsidiary) {
+      return res.status(404).json({ message: "Subsidiary not found" });
+    }
+
+    // ✅ Verificar duplicado manualmente
+    const existing = await prisma.scheduleSubsidiary.findFirst({
+      where: {
+        subsidiaryId,
+        start_day: start_day ?? null,
+        end_day: end_day ?? null,
+        opening_hour: opening_hour ? new Date(opening_hour) : null,
+        closing_hour: closing_hour ? new Date(closing_hour) : null,
+      },
+    });
+
+    if (existing) {
+      return res.status(409).json({ message: "Schedule already exists for this subsidiary." });
+    }
+
+    // ✅ Crear horario
+    const schedule = await prisma.scheduleSubsidiary.create({
+      data: {
+        subsidiaryId,
+        tenantId: subsidiary.tenantId,
+        start_day,
+        end_day,
+        opening_hour,
+        closing_hour,
+      },
+    });
+
+    res.status(201).json(schedule);
   }
-};
+);
 
-export const getAllScheduleSubsidiaries = async (
-  _req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const schedules = await prisma.scheduleSubsidiary.findMany();
-    res.status(200).json({ success: true, data: schedules });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const getSchedulesBySubsidiaryId = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+// ✅ Obtener horarios por subsidiaria
+export const getSchedulesBySubsidiary = asyncHandler(
+  async (req: Request, res: Response) => {
     const { subsidiaryId } = req.params;
 
     const schedules = await prisma.scheduleSubsidiary.findMany({
       where: { subsidiaryId },
+      orderBy: { created_at: "asc" },
     });
 
-    if (schedules.length === 0) {
-      res.status(404).json({
-        success: false,
-        message: "No schedules found for this subsidiary",
-      });
-      return;
-    }
-
-    res.status(200).json({ success: true, data: schedules });
-  } catch (error) {
-    next(error);
+    res.json(schedules);
   }
-};
+);
 
-export const updateScheduleSubsidiary = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+// ✅ Actualizar horario
+export const updateScheduleSubsidiary = asyncHandler(
+  async (req: Request, res: Response) => {
     const { id } = req.params;
-    const updated = await prisma.scheduleSubsidiary.update({
-      where: { id },
-      data: {
-        ...req.body,
-        opening_hour: req.body.opening_hour
-          ? new Date(req.body.opening_hour)
-          : null,
-        closing_hour: req.body.closing_hour
-          ? new Date(req.body.closing_hour)
-          : null,
-      },
-    });
-    res
-      .status(200)
-      .json({ success: true, message: "Schedule updated", data: updated });
-  } catch (error) {
-    next(error);
-  }
-};
+    const {
+      start_day,
+      end_day,
+      opening_hour,
+      closing_hour,
+    } = req.body;
 
-export const toggleScheduleSubsidiaryStatus = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { id } = req.params;
     const existing = await prisma.scheduleSubsidiary.findUnique({
       where: { id },
     });
+
     if (!existing) {
-      res.status(404).json({ success: false, message: "Schedule not found" });
-      return;
+      return res.status(404).json({ message: "Schedule not found" });
     }
+
     const updated = await prisma.scheduleSubsidiary.update({
       where: { id },
-      data: { status: !existing.status },
+      data: {
+        start_day,
+        end_day,
+        opening_hour,
+        closing_hour,
+      },
     });
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Schedule status toggled",
-        data: updated,
-      });
-  } catch (error) {
-    next(error);
+
+    res.json(updated);
   }
-};
+);
+
+// ✅ Eliminar horario
+export const deleteScheduleSubsidiary = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    const existing = await prisma.scheduleSubsidiary.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ message: "Schedule not found" });
+    }
+
+    await prisma.scheduleSubsidiary.delete({
+      where: { id },
+    });
+
+    res.json({ message: "Schedule deleted successfully" });
+  }
+);
+
+// ✅ Cambiar estado (activar/desactivar)
+export const toggleScheduleStatus = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    const schedule = await prisma.scheduleSubsidiary.findUnique({
+      where: { id },
+    });
+
+    if (!schedule) {
+      return res.status(404).json({ message: "Schedule not found" });
+    }
+
+    const updated = await prisma.scheduleSubsidiary.update({
+      where: { id },
+      data: {
+        status: !schedule.status,
+      },
+    });
+
+    res.json({
+      message: `Schedule is now ${updated.status ? "active" : "inactive"}`,
+      schedule: updated,
+    });
+  }
+);

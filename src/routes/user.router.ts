@@ -1,21 +1,27 @@
 import express from 'express';
-const userRouter = express.Router();
-import { createUser, 
-         updateUser, 
-         getAllUsers,
-         getUserById,
-         toggleUserStatus, 
-        } from '../controllers/user.controller';
 import { validate } from '../middleware/validate.middleware';
-import { validateParams } from '../middleware/validateParams.middleware';
-import { userSchema, toggleUserStatusSchema, getAllUsersQuerySchema } from '../validators/user.validator';
-import { validateQuery } from "../middleware/validateQuery.middleware";
+import { getAllUsersQuerySchema, updateUserPasswordSchema, userSchema } from '../validators/user.validator';
+import { createUser, getAllUsersByTenantId, getUserById, getUsersBySubsidiary, toggleUserStatus, updateUser, updateUserPassword } from '../controllers/user.controller';
+import { createScheduleUserSchema,  updateScheduleUserSchema } from '../validators/scheduleUser.validator';
+import { createScheduleUser, deleteScheduleUser, getSchedulesByUser, toggleScheduleUserStatus, updateScheduleUser } from '../controllers/scheduleUser.controller';
 
-userRouter.post('/',validate(userSchema), createUser);
-userRouter.put('/:id',validate(userSchema), updateUser);
 
-userRouter.get("/", validateQuery(getAllUsersQuerySchema), getAllUsers);
-userRouter.get('/:id', getUserById);
-userRouter.patch('/:id/toggle', validateParams(toggleUserStatusSchema), toggleUserStatus);
+
+const userRouter = express.Router();
+
+userRouter.post("/", validate(userSchema), createUser);
+userRouter.get("/:id", getUserById);
+userRouter.get("/by-tenant/:tenantId", validate(getAllUsersQuerySchema), getAllUsersByTenantId);
+userRouter.get("/by-subsidiary/:subsidiaryId", validate(getAllUsersQuerySchema), getUsersBySubsidiary);
+userRouter.put("/:id", validate(userSchema.omit( {username: true,password: true,subsidiaryId: true} )), updateUser);
+userRouter.patch("/:id/status", toggleUserStatus);
+userRouter.patch("/:id/password", validate(updateUserPasswordSchema), updateUserPassword);
+
+userRouter.post("/:userId/schedules", validate(createScheduleUserSchema), createScheduleUser);
+userRouter.get("/:userId/schedules", getSchedulesByUser);
+userRouter.put("/schedules/:id", validate(updateScheduleUserSchema), updateScheduleUser);
+userRouter.delete("/schedules/:id", deleteScheduleUser);
+userRouter.patch("/schedules/:id/status", toggleScheduleUserStatus);
+
 
 export default userRouter;

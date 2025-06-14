@@ -1,60 +1,72 @@
+// src/validators/user.validator.ts
 import { z } from "zod";
 
 export const userSchema = z.object({
-  username: z.string()
+  username: z
+    .string()
     .min(3, "Username must have at least 3 characters.")
-    .max(10, "Username must not exceed 10 characters.")
-    .nonempty("Username is required."),
+    .max(20, "Username must not exceed 20 characters.")
+    .regex(
+      /^[a-z0-9.]+$/,
+      "Username can only contain lowercase letters, numbers and a dot."
+    ),
 
-  password: z.string()
+  password: z
+    .string()
     .min(6, "Password must have at least 6 characters.")
-    .max(100, "Password must not exceed 100 characters.")
-    .nonempty("Password is required.")
-    .optional(),
+    .max(100, "Password must not exceed 100 characters."),
 
-  name: z.string()
+  name: z
+    .string()
     .min(2, "Name must have at least 2 characters.")
-    .max(20, "Name must not exceed 20 characters.")
-    .nonempty("Name is required."),
+    .max(20, "Name must not exceed 20 characters."),
 
-  lastname: z.string()
+  lastname: z
+    .string()
     .max(20, "Last name must not exceed 20 characters.")
     .optional()
     .nullable(),
 
-  ci: z.string()
+  ci: z
+    .string()
     .max(20, "CI must not exceed 20 characters.")
     .optional()
     .nullable(),
 
-  nit: z.string()
+  nit: z
+    .string()
     .max(20, "NIT must not exceed 20 characters.")
     .optional()
     .nullable(),
 
-  description: z.string()
+  description: z
+    .string()
     .max(100, "Description must not exceed 100 characters.")
     .optional()
     .nullable(),
 
-  address: z.string()
+  address: z
+    .string()
     .max(100, "Address must not exceed 100 characters.")
     .optional()
     .nullable(),
 
-  cellphone: z.string()
+  cellphone: z
+    .string()
     .max(20, "Cellphone must not exceed 20 characters.")
     .regex(/^[+\d][\d\s]*$/, "Invalid cellphone format.")
     .optional()
     .nullable(),
 
-  telephone: z.string()
+  telephone: z
+    .string()
     .max(20, "Telephone must not exceed 20 characters.")
     .regex(/^[+\d][\d\s]*$/, "Invalid telephone format.")
     .optional()
     .nullable(),
 
-  email: z.string()
+  email: z
+    .string()
     .email("Invalid email format.")
     .max(20, "Email must not exceed 20 characters.")
     .optional()
@@ -62,8 +74,8 @@ export const userSchema = z.object({
 
   status: z.boolean().optional(),
 
-  roleId: z.string().nonempty("Role ID is required."),
-  subsidiaryId: z.string().nonempty("Subsidiary ID is required.")
+  roleId: z.string().uuid("Invalid Role ID"),
+  subsidiaryId: z.string().uuid("Invalid Subsidiary ID"),
 });
 
 export const toggleUserStatusSchema = z.object({
@@ -85,14 +97,33 @@ export const getAllUsersQuerySchema = z.object({
       message: "Limit must be between 1 and 1000",
     }),
 
-  search: z.string().min(0).optional(),
-
+  search: z.string().optional(),
   status: z.enum(["true", "false", "all"]).optional().default("all"),
-
-  sortBy: z
+  orderBy: z
     .enum(["created_at", "username", "name"])
     .optional()
     .default("name"),
+  sort: z.enum(["asc", "desc"]).optional().default("asc"),
+});
 
-  sortOrder: z.enum(["asc", "desc"]).optional().default("asc"),
+export const updateUserPasswordSchema = z.object({
+  newPassword: z
+    .string()
+    .min(6, "Password must have at least 6 characters.")
+    .max(100, "Password must not exceed 100 characters."),
+});
+
+export const getUserByIdParamsSchema = z.object({
+  id: z.string().uuid("Invalid user ID"),
+});
+
+export const createUserParamsSchema = z.object({
+  username: z
+    .string()
+    .min(3, "Username must have at least 3 characters.")
+    .max(20, "Username must not exceed 20 characters.")
+    .regex(
+      /^[a-z0-9.]+$/,
+      "Username can only contain lowercase letters, numbers and a dot."
+    ),
 });

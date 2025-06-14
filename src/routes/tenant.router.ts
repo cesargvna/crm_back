@@ -1,16 +1,18 @@
 import express from "express";
-const tenantRouter = express.Router();
 import { validate } from "../middleware/validate.middleware";
 import { validateParams } from "../middleware/validateParams.middleware";
 import { validateQuery } from "../middleware/validateQuery.middleware";
-import { tenantSchema, toggleTenantStatusSchema, getAllTenantsQuerySchema } from "../validators/tenant.validator";
-import { createTenant, getTenantById, updateTenant, getAllTenants, toggleTenantStatus } from "../controllers/tenant.controller";
+import { createTenantSchema, getAllTenantsQuerySchema, toggleTenantStatusSchema, updateTenantSchema } from "../validators/tenant.validator";
+import { createTenant, deleteTenant, getAllTenants, getTenantById, toggleTenantStatus, updateTenant } from "../controllers/tenant.controller";
 
+const tenantRouter = express.Router();
 
-tenantRouter.get("/", validateQuery(getAllTenantsQuerySchema), getAllTenants);
-tenantRouter.post("/", validate(tenantSchema), createTenant);
-tenantRouter.get("/:id", getTenantById);
-tenantRouter.put("/:id", validate(tenantSchema), updateTenant);
-tenantRouter.patch("/:id/toggle", validateParams(toggleTenantStatusSchema), toggleTenantStatus);
+// ✅ TENANT ROUTES
+tenantRouter.post('/', validate(createTenantSchema), createTenant);
+tenantRouter.put('/:id', validate(updateTenantSchema), updateTenant);
+tenantRouter.patch('/:id/status', validate(toggleTenantStatusSchema), toggleTenantStatus);
+tenantRouter.delete('/:id', deleteTenant);
+tenantRouter.get('/', validateQuery(getAllTenantsQuerySchema), getAllTenants);
+tenantRouter.get('/:id', getTenantById);
 
 export default tenantRouter;

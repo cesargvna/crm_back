@@ -1,62 +1,51 @@
-// src/validators/scheduleUser.validator.ts
 import { z } from "zod";
 
-export const dayOfWeekEnum = z.enum([
-  "MONDAY",
-  "TUESDAY",
-  "WEDNESDAY",
-  "THURSDAY",
-  "FRIDAY",
-  "SATURDAY",
-  "SUNDAY",
+// ✅ Enum reutilizado
+export const DayOfWeekEnum = z.enum([
+  "LUNES",
+  "MARTES",
+  "MIERCOLES",
+  "JUEVES",
+  "VIERNES",
+  "SABADO",
+  "DOMINGO",
 ]);
 
-// Base sin refine
-const baseScheduleUserSchema = z.object({
-  userId: z
-    .string({ required_error: "User ID is required" })
-    .uuid("Invalid user ID"),
-
-  start_day: dayOfWeekEnum.optional(),
-  end_day: dayOfWeekEnum.optional(),
-
+// ✅ Campos base reutilizables
+const baseScheduleFields = {
+  start_day: DayOfWeekEnum.optional(),
+  end_day: DayOfWeekEnum.optional(),
   opening_hour: z
     .string()
-    .optional()
-    .refine((val) => !val || !isNaN(Date.parse(val)), {
-      message: "Invalid opening_hour format. Must be ISO string",
-    }),
-
+    .datetime({ message: "Invalid opening_hour format. Must be ISO datetime string" })
+    .optional(),
   closing_hour: z
     .string()
-    .optional()
-    .refine((val) => !val || !isNaN(Date.parse(val)), {
-      message: "Invalid closing_hour format. Must be ISO string",
-    }),
+    .datetime({ message: "Invalid closing_hour format. Must be ISO datetime string" })
+    .optional(),
+};
 
+// ✅ Crear horario de usuario
+export const createScheduleUserSchema = z.object({
+  ...baseScheduleFields,
+});
+
+// ✅ Actualizar horario de usuario
+export const updateScheduleUserSchema = z.object({
+  ...baseScheduleFields,
+});
+
+// ✅ Cambiar estado del horario (opcional por body si se usa)
+export const toggleScheduleUserStatusSchema = z.object({
   status: z.boolean().optional(),
 });
 
-// Con validación lógica de hora
-export const scheduleUserSchema = baseScheduleUserSchema.refine(
-  (data) => {
-    if (!data.opening_hour || !data.closing_hour) return true;
-    return new Date(data.opening_hour) < new Date(data.closing_hour);
-  },
-  {
-    message: "Opening hour must be earlier than closing hour.",
-    path: ["closing_hour"],
-  }
-);
+// ✅ Params: userId
+export const userIdParamsSchema = z.object({
+  userId: z.string().uuid({ message: "Invalid user ID" }),
+});
 
-export const updateScheduleUserSchema = baseScheduleUserSchema
-  .partial()
-  .extend({
-    id: z
-      .string({ required_error: "Schedule ID is required" })
-      .uuid("Invalid schedule ID"),
-  });
-
-export const toggleScheduleStatusSchema = z.object({
-  id: z.string().uuid("Invalid schedule ID"),
+// ✅ Params: id
+export const scheduleUserIdParamsSchema = z.object({
+  id: z.string().uuid({ message: "Invalid schedule ID" }),
 });

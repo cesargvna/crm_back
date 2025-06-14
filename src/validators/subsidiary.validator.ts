@@ -1,92 +1,86 @@
-// ✅ subsidiary.validator.ts
 import { z } from "zod";
 
-export const subsidiarySchema = z.object({
-  tenantId: z
-    .string({ required_error: "Tenant ID is required" })
-    .uuid("Invalid tenant ID"),
+const nameSchema = z
+  .string()
+  .min(3, "Name must be at least 3 characters")
+  .max(50, "Name must be at most 50 characters")
+  .regex(
+    /^[A-Za-z\u00C0-\u017F\sñÑ.-]+$/,
+    'Only letters, spaces, ".", and "-" are allowed'
+  );
 
-  name: z
-    .string()
-    .min(2, "Name must be at least 2 characters")
-    .max(20, "Name must not exceed 20 characters"),
+const optionalString = (max: number) =>
+  z.string().max(max).optional().or(z.literal(""));
 
-  subsidiary_type: z.enum(
-    ["HEADQUARTERS", "SUBSIDIARY", "WAREHOUSE", "OFFICE"],
+export const createSubsidiarySchema = z.object({
+  name: nameSchema,
+  tenantId: z.string().uuid({ message: "Invalid tenant ID" }),
+  subsidiary_type: z.enum(["MATRIZ", "SUCURSAL", "ALMACEN", "OFICINA"]),
+  allowNegativeStock: z.boolean().optional(),
+
+  ci: optionalString(20),
+  nit: optionalString(20),
+  description: optionalString(100),
+  address: optionalString(100),
+  city: optionalString(20),
+  country: optionalString(20),
+  cellphone: optionalString(20),
+  telephone: optionalString(20),
+  email: optionalString(50).refine(
+    (val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
     {
-      errorMap: () => ({ message: "Invalid subsidiary type" }),
+      message: "Invalid email format",
     }
   ),
+});
 
+export const updateSubsidiarySchema = z.object({
+  name: nameSchema,
+  subsidiary_type: z.enum(["MATRIZ", "SUCURSAL", "ALMACEN", "OFICINA"]),
   allowNegativeStock: z.boolean().optional(),
-  status: z.boolean().optional(),
 
-  ci: z
-    .string()
-    .max(20, "CI must not exceed 20 characters")
-    .optional()
-    .nullable(),
-  nit: z
-    .string()
-    .max(20, "NIT must not exceed 20 characters")
-    .optional()
-    .nullable(),
-  description: z
-    .string()
-    .max(100, "Description must not exceed 100 characters")
-    .optional()
-    .nullable(),
-  address: z
-    .string()
-    .max(100, "Address must not exceed 100 characters")
-    .optional()
-    .nullable(),
-  city: z
-    .string()
-    .max(20, "City must not exceed 20 characters")
-    .optional()
-    .nullable(),
-  country: z
-    .string()
-    .max(20, "Country must not exceed 20 characters")
-    .optional()
-    .nullable(),
-  cellphone: z
-    .string()
-    .max(20, "Cellphone must not exceed 20 characters")
-    .optional()
-    .nullable(),
-  telephone: z
-    .string()
-    .max(20, "Telephone must not exceed 20 characters")
-    .optional()
-    .nullable(),
-  email: z
-    .string()
-    .email("Invalid email format")
-    .max(20, "Email must not exceed 20 characters")
-    .optional()
-    .nullable(),
+  ci: optionalString(20),
+  nit: optionalString(20),
+  description: optionalString(100),
+  address: optionalString(100),
+  city: optionalString(20),
+  country: optionalString(20),
+  cellphone: optionalString(20),
+  telephone: optionalString(20),
+  email: optionalString(50).refine(
+    (val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+    {
+      message: "Invalid email format",
+    }
+  ),
 });
 
 export const toggleSubsidiaryStatusSchema = z.object({
-  id: z.string().uuid("Invalid subsidiary ID"),
+  status: z.boolean().optional(),
 });
 
 export const getAllSubsidiariesQuerySchema = z.object({
   page: z
     .string()
+    .regex(/^[1-9][0-9]*$/, { message: "Page must be a positive integer >= 1" })
     .optional()
-    .transform((v) => parseInt(v || "1")),
+    .default("1"),
+
   limit: z
     .string()
+    .regex(/^[1-9][0-9]*$/, { message: "Limit must be a positive integer" })
+    .refine((val) => parseInt(val) <= 1000, {
+      message: "Limit cannot exceed 1000",
+    })
     .optional()
-    .transform((v) => parseInt(v || "10")),
+    .default("5"),
+
   search: z.string().optional(),
   status: z.enum(["true", "false", "all"]).optional().default("all"),
-  sortBy: z
-    .enum(["name", "city", "country", "created_at"])
+  orderBy: z
+    .enum(["name", "created_at", "updated_at"])
     .optional()
     .default("name"),
-  sortOrder: z.enum(["asc", "desc"]).optional().default("asc"),
+  sort: z.enum(["asc", "desc"]).optional().default("asc"),
+  type: z.enum(["MATRIZ", "SUCURSAL", "ALMACEN", "OFICINA"]).optional(),
 });

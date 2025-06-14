@@ -1,112 +1,139 @@
-// ✅ scheduleUser.controller.ts
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import prisma from "../utils/prisma";
-import { v4 as uuidv4 } from "uuid";
+import { asyncHandler } from "../utils/asyncHandler";
 
-export const createScheduleUser = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const data = {
-      ...req.body,
-      id: uuidv4(),
-      opening_hour: req.body.opening_hour
-        ? new Date(req.body.opening_hour)
-        : null,
-      closing_hour: req.body.closing_hour
-        ? new Date(req.body.closing_hour)
-        : null,
-    };
+// ✅ Crear horario para un usuario
+export const createScheduleUser = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  const {
+    start_day,
+    end_day,
+    opening_hour,
+    closing_hour,
+  } = req.body;
 
-    const schedule = await prisma.scheduleUser.create({ data });
-    res
-      .status(201)
-      .json({ success: true, message: "Schedule created", data: schedule });
-  } catch (error) {
-    next(error);
+  // ✅ Obtener usuario y tenantId
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      tenantId: true,
+    },
+  });
+
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
   }
-};
 
-export const getAllSchedules = async (
-  _req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const schedules = await prisma.scheduleUser.findMany();
-    res.status(200).json({ success: true, data: schedules });
-  } catch (error) {
-    next(error);
-  }
-};
+  // ✅ Verificar duplicado
+  const existing = await prisma.scheduleUser.findFirst({
+    where: {
+      userId,
+      start_day: start_day ?? null,
+      end_day: end_day ?? null,
+      opening_hour: opening_hour ? new Date(opening_hour) : null,
+      closing_hour: closing_hour ? new Date(closing_hour) : null,
+    },
+  });
 
-export const getSchedulesByUserId = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { userId } = req.params;
-    const schedules = await prisma.scheduleUser.findMany({ where: { userId } });
-    res.status(200).json({ success: true, data: schedules });
-  } catch (error) {
-    next(error);
+  if (existing) {
+    return res.status(409).json({ message: "Schedule already exists for this user." });
   }
-};
 
-export const updateScheduleUser = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const updated = await prisma.scheduleUser.update({
-      where: { id },
-      data: {
-        ...req.body,
-        opening_hour: req.body.opening_hour
-          ? new Date(req.body.opening_hour)
-          : null,
-        closing_hour: req.body.closing_hour
-          ? new Date(req.body.closing_hour)
-          : null,
-      },
-    });
-    res
-      .status(200)
-      .json({ success: true, message: "Schedule updated", data: updated });
-  } catch (error) {
-    next(error);
-  }
-};
+  // ✅ Crear horario
+  const schedule = await prisma.scheduleUser.create({
+    data: {
+      userId,
+      tenantId: user.tenantId!,
+      start_day,
+      end_day,
+      opening_hour,
+      closing_hour,
+    },
+  });
 
-export const toggleScheduleUserStatus = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const existing = await prisma.scheduleUser.findUnique({ where: { id } });
-    if (!existing) {
-      res.status(404).json({ success: false, message: "Schedule not found" });
-      return;
-    }
-    const updated = await prisma.scheduleUser.update({
-      where: { id },
-      data: { status: !existing.status },
-    });
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Schedule status toggled",
-        data: updated,
-      });
-  } catch (error) {
-    next(error);
+  res.status(201).json(schedule);
+});
+
+// ✅ Obtener horarios por usuario
+export const getSchedulesByUser = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.params;
+
+  const schedules = await prisma.scheduleUser.findMany({
+    where: { userId },
+    orderBy: { created_at: "asc" },
+  });
+
+  res.json(schedules);
+});
+
+// ✅ Actualizar horario
+export const updateScheduleUser = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const {
+    start_day,
+    end_day,
+    opening_hour,
+    closing_hour,
+  } = req.body;
+
+  const existing = await prisma.scheduleUser.findUnique({
+    where: { id },
+  });
+
+  if (!existing) {
+    return res.status(404).json({ message: "Schedule not found" });
   }
-};
+
+  const updated = await prisma.scheduleUser.update({
+    where: { id },
+    data: {
+      start_day,
+      end_day,
+      opening_hour,
+      closing_hour,
+    },
+  });
+
+  res.json(updated);
+});
+
+// ✅ Eliminar horario
+export const deleteScheduleUser = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const existing = await prisma.scheduleUser.findUnique({
+    where: { id },
+  });
+
+  if (!existing) {
+    return res.status(404).json({ message: "Schedule not found" });
+  }
+
+  await prisma.scheduleUser.delete({ where: { id } });
+
+  res.json({ message: "Schedule deleted successfully" });
+});
+
+// ✅ Activar/desactivar horario
+export const toggleScheduleUserStatus = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const schedule = await prisma.scheduleUser.findUnique({ where: { id } });
+
+  if (!schedule) {
+    return res.status(404).json({ message: "Schedule not found" });
+  }
+
+  const updated = await prisma.scheduleUser.update({
+    where: { id },
+    data: {
+      status: !schedule.status,
+    },
+  });
+
+  res.json({
+    message: `Schedule is now ${updated.status ? "active" : "inactive"}`,
+    schedule: updated,
+  });
+});

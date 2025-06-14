@@ -1,34 +1,42 @@
+// src/validators/submoduleGroup.validator.ts
+
 import { z } from "zod";
 
 const nameSchema = z
   .string()
   .min(3, "Name must be at least 3 characters")
-  .max(50, "Name must be at most 50 characters")
+  .max(40, "Name must be at most 40 characters")
   .regex(
-    /^[A-Za-z\u00C0-\u017F\sñÑ.-]+$/,
-    'Only letters, spaces, ".", and "-" are allowed'
+    /^[a-zA-Z.]+$/,
+    'Only letters and "." are allowed. No ñ, spaces, numbers or symbols'
   );
 
-const descriptionSchema = z
+const routeSchema = z
   .string()
-  .max(100, "Description must be at most 100 characters")
-  .optional();
+  .min(1, "Route is required")
+  .max(255, "Route must be at most 255 characters");
 
-export const createTenantSchema = z.object({
+export const createSubmoduleGroupSchema = z.object({
   name: nameSchema,
-  description: descriptionSchema,
+  route: routeSchema,
+  moduleId: z
+    .string({ required_error: "Module ID is required" })
+    .uuid("Invalid module ID"),
 });
 
-export const updateTenantSchema = z.object({
+export const updateSubmoduleGroupSchema = z.object({
   name: nameSchema,
-  description: descriptionSchema,
+  route: routeSchema,
+  moduleId: z
+    .string({ required_error: "Module ID is required" })
+    .uuid("Invalid module ID"),
 });
 
-export const toggleTenantStatusSchema = z.object({
+export const toggleSubmoduleGroupStatusSchema = z.object({
   status: z.boolean().optional(),
 });
 
-export const getAllTenantsQuerySchema = z.object({
+export const getAllSubmoduleGroupsQuerySchema = z.object({
   page: z
     .string()
     .regex(/^[1-9][0-9]*$/, { message: "Page must be a positive integer >= 1" })

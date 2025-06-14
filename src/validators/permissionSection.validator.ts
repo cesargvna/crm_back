@@ -1,34 +1,31 @@
+// src/validators/permissionSection.validator.ts
 import { z } from "zod";
 
+// 🔒 Regla común: solo letras, sin ñ, sin números, sin espacios
 const nameSchema = z
   .string()
   .min(3, "Name must be at least 3 characters")
-  .max(50, "Name must be at most 50 characters")
+  .max(40, "Name must be at most 40 characters")
   .regex(
-    /^[A-Za-z\u00C0-\u017F\sñÑ.-]+$/,
-    'Only letters, spaces, ".", and "-" are allowed'
+    /^[a-zA-Z.]+$/,
+    'Only letters and "." are allowed. No ñ, spaces, numbers or symbols'
   );
 
-const descriptionSchema = z
-  .string()
-  .max(100, "Description must be at most 100 characters")
-  .optional();
-
-export const createTenantSchema = z.object({
+export const createPermissionSectionSchema = z.object({
   name: nameSchema,
-  description: descriptionSchema,
+  order: z.number().int().min(0).optional(),
 });
 
-export const updateTenantSchema = z.object({
+export const updatePermissionSectionSchema = z.object({
   name: nameSchema,
-  description: descriptionSchema,
+  order: z.number().int().min(0).optional(),
 });
 
-export const toggleTenantStatusSchema = z.object({
-  status: z.boolean().optional(),
+export const togglePermissionSectionStatusSchema = z.object({
+  status: z.boolean().optional(), // ✅ ahora no es requerido
 });
 
-export const getAllTenantsQuerySchema = z.object({
+export const getAllPermissionSectionsQuerySchema = z.object({
   page: z
     .string()
     .regex(/^[1-9][0-9]*$/, { message: "Page must be a positive integer >= 1" })
@@ -47,8 +44,8 @@ export const getAllTenantsQuerySchema = z.object({
   search: z.string().optional(),
   status: z.enum(["true", "false", "all"]).optional().default("all"),
   orderBy: z
-    .enum(["name", "created_at", "updated_at"])
+    .enum(["name", "order", "created_at", "updated_at"])
     .optional()
-    .default("name"),
+    .default("order"),
   sort: z.enum(["asc", "desc"]).optional().default("asc"),
 });

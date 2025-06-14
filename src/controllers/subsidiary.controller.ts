@@ -1,122 +1,301 @@
-// ✅ subsidiary.controller.ts
-import { Request, Response, NextFunction } from "express";
-import { v4 as uuidv4 } from "uuid";
+import { Request, Response } from "express";
 import prisma from "../utils/prisma";
+import normalize from "normalize-text";
+import { asyncHandler } from "../utils/asyncHandler";
 
-export const createSubsidiary = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const newSubsidiary = await prisma.subsidiary.create({
-      data: {
-        ...req.body,
-        id: uuidv4(),
+// ✅ Crear Subsidiary
+export const createSubsidiary = asyncHandler(
+  async (req: Request, res: Response) => {
+    const {
+      name,
+      subsidiary_type,
+      tenantId,
+      allowNegativeStock,
+      ci,
+      nit,
+      description,
+      address,
+      city,
+      country,
+      cellphone,
+      telephone,
+      email,
+    } = req.body;
+
+    const normalized = normalize(name.trim());
+
+    const exists = await prisma.subsidiary.findFirst({
+      where: {
+        name: { equals: normalized, mode: "insensitive" },
+        tenantId,
       },
     });
-    res.status(201).json({ success: true, message: "Subsidiary created", data: newSubsidiary });
-  } catch (error) {
-    next(error);
+
+    if (exists) {
+      return res.status(409).json({
+        message: `Subsidiary "${name}" already exists in this tenant.`,
+      });
+    }
+
+    const created = await prisma.subsidiary.create({
+      data: {
+        name: normalized,
+        subsidiary_type,
+        tenantId,
+        allowNegativeStock,
+        ci,
+        nit,
+        description,
+        address,
+        city,
+        country,
+        cellphone,
+        telephone,
+        email,
+      },
+    });
+
+    res.status(201).json(created);
   }
-};
+);
 
-export const getAllSubsidiaries = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
+// ✅ Actualizar Subsidiary
+export const updateSubsidiary = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
     const {
-      search = '',
-      page = '1',
-      limit = '10',
-      sortBy = 'name',
-      sortOrder = 'asc',
-      status = 'all'
-    } = req.query;
+      name,
+      subsidiary_type,
+      allowNegativeStock,
+      ci,
+      nit,
+      description,
+      address,
+      city,
+      country,
+      cellphone,
+      telephone,
+      email,
+    } = req.body;
 
-    const pageNumber = Math.max(parseInt(page as string), 1);
-    const pageSize = Math.min(Math.max(parseInt(limit as string), 1), 1000);
-    const skip = (pageNumber - 1) * pageSize;
+    const normalized = normalize(name.trim());
 
-    const searchTerm = (search as string).trim();
+    const exists = await prisma.subsidiary.findFirst({
+      where: {
+        id: { not: id },
+        name: { equals: normalized, mode: "insensitive" },
+      },
+    });
 
-    const where: any = {
-      ...(status !== 'all' && { status: status === 'true' }),
-      ...(searchTerm.length >= 2 && {
-        OR: [
-          { name: { contains: searchTerm, mode: 'insensitive' } },
-          { city: { contains: searchTerm, mode: 'insensitive' } },
-          { country: { contains: searchTerm, mode: 'insensitive' } },
-        ],
-      })
-    };
+    if (exists) {
+      return res
+        .status(409)
+        .json({ message: `Subsidiary "${name}" already exists.` });
+    }
 
-    const [subsidiaries, total] = await Promise.all([
-      prisma.subsidiary.findMany({
-        where,
-        include: { tenant: true },
-        skip,
-        take: pageSize,
-        orderBy: { [sortBy as string]: sortOrder === 'desc' ? 'desc' : 'asc' },
+    const updated = await prisma.subsidiary.update({
+      where: { id },
+      data: {
+        name: normalized,
+        subsidiary_type,
+        allowNegativeStock,
+        ci,
+        nit,
+        description,
+        address,
+        city,
+        country,
+        cellphone,
+        telephone,
+        email,
+      },
+    });
+
+    res.json(updated);
+  }
+);
+
+// ✅ Cambiar estado (activar/desactivar) con efectos en cascada
+export const toggleSubsidiaryStatus = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    const subsidiary = await prisma.subsidiary.findUnique({ where: { id } });
+
+    if (!subsidiary) {
+      return res.status(404).json({ message: "Subsidiary not found" });
+    }
+
+    const newStatus = !subsidiary.status;
+
+    // ✅ Actualizar estado de la sucursal
+    const updatedSubsidiary = await prisma.subsidiary.update({
+      where: { id },
+      data: { status: newStatus },
+    });
+
+    // ✅ Actualizar estado de usuarios y roles relacionados
+    await Promise.all([
+      prisma.user.updateMany({
+        where: { subsidiaryId: id },
+        data: { status: newStatus },
       }),
-      prisma.subsidiary.count({ where })
+      prisma.role.updateMany({
+        where: { subsidiaryId: id },
+        data: { status: newStatus },
+      }),
     ]);
 
-    res.status(200).json({
-      success: true,
-      data: subsidiaries,
-      pagination: {
-        total,
-        page: pageNumber,
-        limit: pageSize,
-        totalPages: Math.ceil(total / pageSize),
+    // ✅ Enviar respuesta con detalles explícitos para Postman
+    res.json({
+      message: `Subsidiary status updated to ${
+        newStatus ? "active" : "inactive"
+      }`,
+      updated: {
+        subsidiaryStatus: newStatus,
+        affectedEntities: {
+          users: `All users under subsidiary set to ${newStatus}`,
+          roles: `All roles under subsidiary set to ${newStatus}`,
+        },
       },
+      subsidiary: updatedSubsidiary,
     });
-  } catch (error) {
-    next(error);
   }
-};
+);
 
-export const getSubsidiaryById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
+// ✅ Eliminar Subsidiary (con eliminación en cascada activada por onDelete en Prisma)
+export const deleteSubsidiary = asyncHandler(
+  async (req: Request, res: Response) => {
     const { id } = req.params;
+
+    const subsidiary = await prisma.subsidiary.findUnique({ where: { id } });
+    if (!subsidiary) {
+      return res.status(404).json({ message: "Subsidiary not found" });
+    }
+
+    // 🔍 Contar relaciones antes de eliminar
+    const [users, roles] = await Promise.all([
+      prisma.user.count({ where: { subsidiaryId: id } }),
+      prisma.role.count({ where: { subsidiaryId: id } }),
+    ]);
+
+    await prisma.subsidiary.delete({ where: { id } });
+
+    res.json({
+      message: `Subsidiary "${subsidiary.name}" and related users/roles deleted successfully.`,
+      deletedRelations: { users, roles },
+    });
+  }
+);
+
+export const getSubsidiaryById = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+
     const subsidiary = await prisma.subsidiary.findUnique({
       where: { id },
-      include: { tenant: true, schedulesSubsidiaries: true },
+      include: {
+        schedulesSubsidiaries: true,
+      },
     });
 
     if (!subsidiary) {
-      res.status(404).json({ success: false, message: "Subsidiary not found" });
-      return;
+      return res.status(404).json({ message: "Subsidiary not found" });
     }
 
-    res.status(200).json({ success: true, data: subsidiary });
-  } catch (error) {
-    next(error);
-  }
-};
+    const [users, roles] = await Promise.all([
+      prisma.user.findMany({
+        where: { subsidiaryId: id },
+        include: {
+          schedulesUsers: true,
+          role: true,
+        },
+      }),
+      prisma.role.findMany({
+        where: { subsidiaryId: id },
+        include: {
+          rolePermissions: {
+            include: {
+              action: true,
+              section: true,
+            },
+          },
+        },
+      }),
+    ]);
 
-export const updateSubsidiary = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const updated = await prisma.subsidiary.update({
-      where: { id },
-      data: req.body
+    res.json({
+      subsidiary,
+      users,
+      roles,
     });
-    res.status(200).json({ success: true, message: "Subsidiary updated", data: updated });
-  } catch (error) {
-    next(error);
   }
-};
+);
 
-export const toggleSubsidiaryStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const existing = await prisma.subsidiary.findUnique({ where: { id } });
-    if (!existing) {
-      res.status(404).json({ success: false, message: "Subsidiary not found" });
-      return;
+export const getAllSubsidiariesByTenantId = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { tenantId } = req.params;
+    const {
+      page = "1",
+      limit = "5",
+      search = "",
+      status = "all",
+      orderBy = "name",
+      sort = "asc",
+      type, // MATRIZ | SUCURSAL | ALMACEN | OFICINA
+    } = req.query;
+
+    if (!tenantId) {
+      return res.status(400).json({ message: "tenantId is required" });
     }
-    const updated = await prisma.subsidiary.update({
-      where: { id },
-      data: { status: !existing.status }
+
+    const take = Math.min(parseInt(limit as string), 1000);
+    const skip = (parseInt(page as string) - 1) * take;
+
+    const filters: any = {
+      tenantId,
+      OR: [
+        {
+          name: {
+            contains: normalize(search as string),
+            mode: "insensitive",
+          },
+        },
+        {
+          description: {
+            contains: search as string,
+            mode: "insensitive",
+          },
+        },
+      ],
+    };
+
+    if (status === "true" || status === "false") {
+      filters.status = status === "true";
+    }
+
+    if (
+      type &&
+      ["MATRIZ", "SUCURSAL", "ALMACEN", "OFICINA"].includes(type as string)
+    ) {
+      filters.subsidiary_type = type;
+    }
+
+    const [data, total] = await Promise.all([
+      prisma.subsidiary.findMany({
+        where: filters,
+        orderBy: { [orderBy as string]: sort },
+        skip,
+        take,
+      }),
+      prisma.subsidiary.count({ where: filters }),
+    ]);
+
+    res.json({
+      total,
+      page: Number(page),
+      limit: take,
+      data,
     });
-    res.status(200).json({ success: true, message: "Subsidiary status toggled", data: updated });
-  } catch (error) {
-    next(error);
   }
-};
+);

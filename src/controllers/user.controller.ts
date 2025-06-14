@@ -1,166 +1,414 @@
-import { Request, Response, NextFunction } from "express";
-import { v4 as uuidv4 } from "uuid";
+// src/controllers/user.controller.ts
+import { Request, Response } from "express";
 import prisma from "../utils/prisma";
-//import bcrypt from "bcrypt";
-import * as bcrypt from 'bcryptjs';
+import { asyncHandler } from "../utils/asyncHandler";
+import bcrypt from "bcryptjs";
+import normalize from "normalize-text";
 
-// Crear usuario
-export const createUser = async (req: Request, res: Response, next: NextFunction):Promise<void> => {
-  try {
-    const {password, ...otherData } = req.body;
-    if (!password) {
-      res.status(400).json({ success: false, message: "Password is required" });
-      return;
-    }
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+// ✅ Crear Usuario
+export const createUser = asyncHandler(async (req: Request, res: Response) => {
+  let {
+    username,
+    password,
+    name,
+    lastname,
+    ci,
+    nit,
+    description,
+    address,
+    cellphone,
+    telephone,
+    email,
+    roleId,
+    subsidiaryId,
+  } = req.body;
 
-    const newUser = await prisma.user.create({
-      data: {
-        id: uuidv4(),
-        password:hashedPassword, 
-        ...otherData,
+  username = normalize(username.toLowerCase());
+  name = normalize(name);
+  lastname = normalize(lastname);
+  description = normalize(description);
+  address = normalize(address);
+  email = normalize(email);
+
+  const usernameRegex = /^[a-z0-9.]+$/;
+  if (!usernameRegex.test(username)) {
+    return res.status(400).json({
+      message:
+        "Username can only contain lowercase letters, numbers and a dot.",
+    });
+  }
+
+  const exists = await prisma.user.findUnique({ where: { username } });
+  if (exists) {
+    return res.status(409).json({ message: "Username already exists." });
+  }
+
+  const subsidiary = await prisma.subsidiary.findUnique({
+    where: { id: subsidiaryId },
+    select: { tenantId: true },
+  });
+
+  if (!subsidiary) {
+    return res.status(404).json({ message: "Subsidiary not found." });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const created = await prisma.user.create({
+    data: {
+      username,
+      password: hashedPassword,
+      name,
+      lastname,
+      ci,
+      nit,
+      description,
+      address,
+      cellphone,
+      telephone,
+      email,
+      roleId,
+      subsidiaryId,
+      tenantId: subsidiary.tenantId,
+    },
+  });
+
+  res.status(201).json(created);
+});
+
+// ✅ Obtener Usuario por ID
+export const getUserById = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  // 1. Obtener datos básicos del usuario
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      username: true,
+      name: true,
+      lastname: true,
+      ci: true,
+      nit: true,
+      address: true,
+      cellphone: true,
+      telephone: true,
+      email: true,
+      status: true,
+      tenantId: true,
+      subsidiary: {
+        select: {
+          id: true,
+          name: true,
+        },
       },
-    });
+      role: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      schedulesUsers: true,
+    },
+  });
 
-    res.status(201).json({ success: true, message: "User created", data: newUser });
-  } catch (error) {
-    next(error);
+  if (!user) {
+    return res.status(404).json({ message: "User not found." });
   }
-};
 
-// Actualizar usuario
-export const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const {password, ...otherData } = req.body;
-    const saltRounds = 10;
+  // 2. Obtener permisos del rol (manual, sin bucles)
+  const rolePermissions = await prisma.rolePermission.findMany({
+    where: { roleId: user.role?.id },
+    select: {
+      id: true,
+      action: { select: { id: true, name: true } },
+      section: { select: { id: true, name: true } },
+    },
+  });
 
-    const user = await prisma.user.findUnique({ where: { id } });
-    if (!user) {
-      res.status(404).json({ success: false, message: "User not found" });
-      return;
-    }
+  // 3. Armar respuesta estructurada
+  res.json({
+    id: user.id,
+    username: user.username,
+    name: user.name,
+    lastname: user.lastname,
+    ci: user.ci,
+    nit: user.nit,
+    address: user.address,
+    cellphone: user.cellphone,
+    telephone: user.telephone,
+    email: user.email,
+    status: user.status,
+    tenantId: user.tenantId,
+    subsidiary: user.subsidiary,
+    role: {
+      id: user.role?.id,
+      name: user.role?.name,
+      permissions: rolePermissions.map((perm) => ({
+        id: perm.id,
+        action: perm.action,
+        section: perm.section,
+      })),
+    },
+    schedules: user.schedulesUsers,
+  });
+});
 
-    let updatedData: any = { ...otherData };
-
-    if (password) {
-      updatedData.password = await bcrypt.hash(password, saltRounds);
-    }
-
-    const updatedUser = await prisma.user.update({
-      where: { id },
-      data: updatedData,
-    });
-
-    res.status(200).json({ success: true, message: "User updated", data: updatedUser });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Obtener todos los usuarios
-export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
+export const getAllUsersByTenantId = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { tenantId } = req.params;
     const {
-      search = '',
-      page = '1',
-      limit = '10',
-      sortBy = 'name',
-      sortOrder = 'asc',
-      status = 'all',
+      page = "1",
+      limit = "10",
+      search = "",
+      status = "all",
+      orderBy = "name",
+      sort = "asc",
     } = req.query;
 
-    const pageNumber = Math.max(parseInt(page as string), 1);
-    const pageSize = Math.min(Math.max(parseInt(limit as string), 1), 1000);
-    const skip = (pageNumber - 1) * pageSize;
+    const take = Math.min(parseInt(limit as string), 100);
+    const skip = (parseInt(page as string) - 1) * take;
 
-    const searchTerm = (search as string).trim();
-
-    const where: any = {
-      ...(status !== 'all' && { status: status === 'true' }),
-      ...(searchTerm.length >= 3 && {
-        OR: [
-          { username: { contains: searchTerm, mode: 'insensitive' } },
-          { name: { contains: searchTerm, mode: 'insensitive' } },
-        ],
-      }),
+    const filters: any = {
+      tenantId,
+      OR: [
+        { name: { contains: search as string, mode: "insensitive" } },
+        { username: { contains: search as string, mode: "insensitive" } },
+        { ci: { contains: search as string, mode: "insensitive" } },
+        { nit: { contains: search as string, mode: "insensitive" } },
+      ],
     };
+
+    if (status === "true" || status === "false") {
+      filters.status = status === "true";
+    }
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
-        where,
-        include: { role: true, subsidiary: true },
+        where: filters,
+        orderBy: { [orderBy as string]: sort },
         skip,
-        take: pageSize,
-        orderBy: { [sortBy as string]: sortOrder === 'desc' ? 'desc' : 'asc' },
+        take,
+        include: {
+          role: {
+            include: {
+              rolePermissions: {
+                include: {
+                  action: true,
+                  section: true,
+                },
+              },
+            },
+          },
+          subsidiary: true,
+          schedulesUsers: true,
+        },
       }),
-      prisma.user.count({ where }),
+      prisma.user.count({ where: filters }),
     ]);
 
-    const sanitizedUsers = users.map(({ password, ...rest }) => rest);
-
-    res.status(200).json({
-      success: true,
-      data: sanitizedUsers,
-      pagination: {
-        total,
-        page: pageNumber,
-        limit: pageSize,
-        totalPages: Math.ceil(total / pageSize),
-      },
-    });
-  } catch (error) {
-    next(error);
+    res.json({ total, page: Number(page), limit: take, data: users });
   }
-};
+);
 
+// ✅ Obtener todos los usuarios por Subsidiary (detallado, paginado + búsqueda + filtros)
+export const getUsersBySubsidiary = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { subsidiaryId } = req.params;
+    const {
+      page = "1",
+      limit = "5",
+      search = "",
+      status = "all",
+      orderBy = "name",
+      sort = "asc",
+    } = req.query;
 
-// Obtener usuario por ID con horarios incluidos
-export const getUserById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const user = await prisma.user.findUnique({
-      where: { id },
-      include: {
-        schedulesUsers: true, // Incluye los horarios del usuario
-        role: true,
-        subsidiary: true,
-      },
-    });
+    const take = Math.min(parseInt(limit as string), 100);
+    const skip = (parseInt(page as string) - 1) * take;
 
-    if (!user) {
-      res.status(404).json({ success: false, message: "User not found" });
-      return;
+    const filters: any = {
+      subsidiaryId,
+      OR: [
+        { name: { contains: search as string, mode: "insensitive" } },
+        { username: { contains: search as string, mode: "insensitive" } },
+        { ci: { contains: search as string, mode: "insensitive" } },
+        { nit: { contains: search as string, mode: "insensitive" } },
+      ],
+    };
+
+    if (status === "true" || status === "false") {
+      filters.status = status === "true";
     }
 
-    const { password, ...safeUser } = user;
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where: filters,
+        orderBy: { [orderBy as string]: sort },
+        skip,
+        take,
+        include: {
+          role: {
+            include: {
+              rolePermissions: {
+                include: {
+                  action: true,
+                  section: true,
+                },
+              },
+            },
+          },
+          subsidiary: true,
+          schedulesUsers: true,
+        },
+      }),
+      prisma.user.count({ where: filters }),
+    ]);
 
-    res.status(200).json({ success: true, data: safeUser });
-  } catch (error) {
-    next(error);
+    res.json({ total, page: Number(page), limit: take, data: users });
   }
-};
+);
 
+// ✅ Actualizar Usuario (sin permitir cambio de sucursal ni tenant)
+export const updateUser = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  let {
+    name,
+    lastname,
+    ci,
+    nit,
+    description,
+    address,
+    cellphone,
+    telephone,
+    email,
+    roleId,
+  } = req.body;
 
-export const toggleUserStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
+  // Normalizar campos
+  name = normalize(name);
+  lastname = normalize(lastname);
+  description = normalize(description);
+  address = normalize(address);
+  email = normalize(email);
+
+  // Buscar usuario original
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      username: true,
+      tenantId: true,
+      subsidiaryId: true,
+      roleId: true,
+    },
+  });
+
+  if (!user) {
+    return res.status(404).json({ message: "User not found." });
+  }
+
+  // Actualizar datos
+  await prisma.user.update({
+    where: { id },
+    data: {
+      name,
+      lastname,
+      ci,
+      nit,
+      description,
+      address,
+      cellphone,
+      telephone,
+      email,
+      roleId,
+    },
+  });
+
+  // Retornar resumen
+  res.json({
+    message: "User updated successfully.",
+    user: {
+      id: user.id,
+      username: user.username,
+      tenantId: user.tenantId,
+      subsidiaryId: user.subsidiaryId,
+      roleId,
+    },
+  });
+});
+
+// ✅ Cambiar estado del usuario (activar/desactivar)
+export const toggleUserStatus = asyncHandler(
+  async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) {
-      res.status(404).json({ success: false, message: "User not found" });
-      return;
+      return res.status(404).json({ message: "User not found." });
     }
 
     const updated = await prisma.user.update({
       where: { id },
-      data: { status: !user.status }
+      data: { status: !user.status },
     });
 
-    const { password, ...safeUser } = updated;
-    res.status(200).json({ success: true, message: "User status updated", data: safeUser });
-  } catch (error) {
-    next(error);
+    res.json({
+      message: `User status updated to ${
+        updated.status ? "active" : "inactive"
+      }.`,
+      user: updated,
+    });
   }
-};
+);
+
+export const updateUserPassword = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    // Validar longitud del password
+    if (!newPassword || newPassword.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters long." });
+    }
+
+    // Buscar usuario
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        username: true,
+        tenantId: true,
+        subsidiaryId: true,
+        roleId: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Encriptar nueva contraseña
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    // Actualizar contraseña
+    await prisma.user.update({
+      where: { id },
+      data: { password: hashed },
+    });
+
+    // Retornar resumen informativo
+    res.json({
+      message: "Password updated successfully.",
+      user: {
+        id: user.id,
+        username: user.username,
+        tenantId: user.tenantId,
+        subsidiaryId: user.subsidiaryId,
+        roleId: user.roleId,
+      },
+    });
+  }
+);

@@ -2,7 +2,7 @@ model Subsidiary {
   id                    String        @db.VarChar(255) @id  @default(uuid()) 
   status                Boolean       @default(true) 
   subsidiary_type       SubsidiaryType
-  name                  String        @db.VarChar(20) 
+  name                  String        @db.VarChar(50) 
   allowNegativeStock    Boolean       @default(false)
   
   ci                    String?       @db.VarChar(20)
@@ -13,25 +13,25 @@ model Subsidiary {
   country               String?       @db.VarChar(20)
   cellphone             String?       @db.VarChar(20)
   telephone             String?       @db.VarChar(20)
-  email                 String?       @db.VarChar(20)
+  email                 String?       @db.VarChar(50)
   
   created_at            DateTime      @default(now())
   updated_at            DateTime      @updatedAt
-  
-  @@unique([name])
 
   tenantId              String        @db.VarChar(255)
-  tenant                Tenant        @relation(fields: [tenantId], references: [id])
+  tenant                Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([name, tenantId])
   
-  users                 User[] 
-  schedulesSubsidiaries ScheduleSubsidiary[]
+  users                   User[] 
+  schedulesSubsidiaries   ScheduleSubsidiary[]    @relation(name: "ScheduleSubsidiaryForSubsidiary")
 }
 
 enum SubsidiaryType {
-  HEADQUARTERS
-  SUBSIDIARY
-  WAREHOUSE
-  OFFICE
+  MATRIZ
+  SUCURSAL
+  ALMACEN
+  OFICINA
 }
 
 model ScheduleSubsidiary {
@@ -46,6 +46,12 @@ model ScheduleSubsidiary {
   created_at      DateTime      @default(now())
   updated_at      DateTime      @updatedAt
 
-  subsidiary      Subsidiary    @relation(fields: [subsidiaryId], references: [id])
+  tenantId        String       @db.VarChar(255) 
+
+  subsidiary      Subsidiary    @relation(fields: [subsidiaryId], references: [id], name: "ScheduleSubsidiaryForSubsidiary")
   subsidiaryId    String        @db.VarChar(255)
+
+  @@unique([subsidiaryId, start_day, end_day, opening_hour, closing_hour])
+
+  @@index([tenantId]) // ✅ índice por tenantId
 }
