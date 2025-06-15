@@ -1,8 +1,8 @@
 import prisma from "../../src/utils/prisma";
 import normalize from "normalize-text";
 
-// Tipado para los roles agrupados por subsidiary
-type RoleMap = Record<string, { id: string; tenantId: string }>;
+// ✅ Tipado para los roles agrupados por subsidiary
+type RoleMap = Record<string, { id: string; tenantId: string; subsidiaryId: string }>;
 type RolesBySubsidiary = Record<string, RoleMap>;
 
 export async function seedRolePermissions(
@@ -35,6 +35,7 @@ export async function seedRolePermissions(
     for (const [roleNameRaw, role] of Object.entries(roleMap)) {
       const roleName = normalize(roleNameRaw);
       const tenantId = role.tenantId;
+      const subsidiaryId = role.subsidiaryId;
 
       const allowedSections = sections.filter((section) => {
         const name = normalize(section.name);
@@ -62,42 +63,54 @@ export async function seedRolePermissions(
           sectionModules.some((m) => m.id === sm.moduleId)
         );
 
-        // Sección directamente
+        // ✅ Sección directamente
         for (const actionId of allowedActions) {
+          const compositeKey = `${role.id}-${actionId}-${section.id}-null-null`;
           allPermissions.push({
             roleId: role.id,
             tenantId,
+            subsidiaryId,
             sectionId: section.id,
             moduleId: null,
             submoduleId: null,
             actionId,
+            compositeKey,
           });
         }
 
-        // Módulos
+        // ✅ Módulos
         for (const mod of sectionModules) {
+          const modId = normalizeId(mod.id);
           for (const actionId of allowedActions) {
+            const compositeKey = `${role.id}-${actionId}-${section.id}-${modId}-null`;
             allPermissions.push({
               roleId: role.id,
               tenantId,
+              subsidiaryId,
               sectionId: section.id,
-              moduleId: normalizeId(mod.id),
+              moduleId: modId,
               submoduleId: null,
               actionId,
+              compositeKey,
             });
           }
         }
 
-        // Submódulos
+        // ✅ Submódulos
         for (const sm of sectionSubmodules) {
+          const modId = normalizeId(sm.moduleId);
+          const subId = normalizeId(sm.id);
           for (const actionId of allowedActions) {
+            const compositeKey = `${role.id}-${actionId}-${section.id}-${modId}-${subId}`;
             allPermissions.push({
               roleId: role.id,
               tenantId,
+              subsidiaryId,
               sectionId: section.id,
-              moduleId: normalizeId(sm.moduleId),
-              submoduleId: normalizeId(sm.id),
+              moduleId: modId,
+              submoduleId: subId,
               actionId,
+              compositeKey,
             });
           }
         }
