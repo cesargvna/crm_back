@@ -71,7 +71,6 @@ export const getSchedulesByUser = asyncHandler(async (req: Request, res: Respons
   res.json(schedules);
 });
 
-
 // ✅ Actualizar horario
 export const updateScheduleUser = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;

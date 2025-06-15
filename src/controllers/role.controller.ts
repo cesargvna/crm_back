@@ -155,7 +155,43 @@ export const getRoleWithPermissions = asyncHandler(
       return res.status(404).json({ message: "Role not found" });
     }
 
-    res.json(role);
+    // 🔄 Enriquecer con nombre de módulo y submódulo
+    const enrichedPermissions = await Promise.all(
+      role.rolePermissions.map(async (rp) => {
+        const moduleName = rp.moduleId
+          ? (
+              await prisma.moduleGroup.findUnique({
+                where: { id: rp.moduleId },
+                select: { name: true },
+              })
+            )?.name
+          : null;
+
+        const submoduleName = rp.submoduleId
+          ? (
+              await prisma.submoduleGroup.findUnique({
+                where: { id: rp.submoduleId },
+                select: { name: true },
+              })
+            )?.name
+          : null;
+
+        return {
+          id: rp.id,
+          action: rp.action.name,
+          section: rp.section.name,
+          module: moduleName,
+          submodule: submoduleName,
+        };
+      })
+    );
+
+    res.json({
+      id: role.id,
+      name: role.name,
+      status: role.status,
+      permissions: enrichedPermissions,
+    });
   }
 );
 

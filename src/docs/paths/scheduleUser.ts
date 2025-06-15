@@ -1,5 +1,3 @@
-// src/docs/paths/scheduleUser.ts
-
 export const scheduleUserPaths = {
   "POST: /user/{userId}/schedules": {
     post: {
@@ -64,8 +62,36 @@ export const scheduleUserPaths = {
         },
       },
       responses: {
-        201: { description: "Schedule created successfully" },
-        404: { description: "User not found" },
+        201: {
+          description: "Schedule created successfully",
+          content: {
+            "application/json": {
+              example: {
+                id: "schedule-001",
+                userId: "user-001",
+                start_day: "LUNES",
+                end_day: "VIERNES",
+                opening_hour: "2025-06-12T08:00:00.000Z",
+                closing_hour: "2025-06-12T18:00:00.000Z",
+                status: true,
+              },
+            },
+          },
+        },
+        404: {
+          description: "User not found",
+          content: {
+            "application/json": { example: { message: "User not found" } },
+          },
+        },
+        409: {
+          description: "Schedule already exists for this user",
+          content: {
+            "application/json": {
+              example: { message: "Schedule already exists for this user." },
+            },
+          },
+        },
       },
     },
   },
@@ -74,7 +100,8 @@ export const scheduleUserPaths = {
     get: {
       tags: ["ScheduleUser"],
       summary: "Get all schedules for a user",
-      description: "Retrieves a list of schedules associated with a specific user.",
+      description:
+        "Retrieves a list of schedules associated with a specific user.",
       parameters: [
         {
           name: "userId",
@@ -84,8 +111,23 @@ export const scheduleUserPaths = {
         },
       ],
       responses: {
-        200: { description: "List of schedules" },
-        404: { description: "User not found" },
+        200: {
+          description: "List of schedules",
+          content: {
+            "application/json": {
+              example: [
+                {
+                  id: "schedule-001",
+                  start_day: "LUNES",
+                  end_day: "VIERNES",
+                  opening_hour: "2025-06-12T08:00:00.000Z",
+                  closing_hour: "2025-06-12T18:00:00.000Z",
+                  status: true,
+                },
+              ],
+            },
+          },
+        },
       },
     },
   },
@@ -94,7 +136,8 @@ export const scheduleUserPaths = {
     put: {
       tags: ["ScheduleUser"],
       summary: "Update a schedule",
-      description: "Updates an existing schedule by its ID. Dates must be in ISO format.",
+      description:
+        "Updates an existing schedule by its ID. Dates must be in ISO format.",
       parameters: [
         {
           name: "id",
@@ -152,8 +195,34 @@ export const scheduleUserPaths = {
         },
       },
       responses: {
-        200: { description: "Schedule updated successfully" },
+        200: {
+          description: "Schedule updated successfully",
+          content: {
+            "application/json": {
+              example: {
+                id: "schedule-001",
+                userId: "user-001",
+                start_day: "MARTES",
+                end_day: "SABADO",
+                opening_hour: "2025-06-12T09:00:00.000Z",
+                closing_hour: "2025-06-12T17:00:00.000Z",
+              },
+            },
+          },
+        },
         404: { description: "Schedule not found" },
+        409: {
+          description:
+            "Another schedule with the same range already exists for this user.",
+          content: {
+            "application/json": {
+              example: {
+                message:
+                  "Another schedule with the same range already exists for this user.",
+              },
+            },
+          },
+        },
       },
     },
   },
@@ -162,7 +231,8 @@ export const scheduleUserPaths = {
     patch: {
       tags: ["ScheduleUser"],
       summary: "Toggle schedule status",
-      description: "Toggles the `status` (active/inactive) of a schedule by ID.",
+      description:
+        "Toggles the `status` (active/inactive) of a schedule by ID.",
       parameters: [
         {
           name: "id",
@@ -172,8 +242,26 @@ export const scheduleUserPaths = {
         },
       ],
       responses: {
-        200: { description: "Schedule status updated" },
-        404: { description: "Schedule not found" },
+        200: {
+          description: "Schedule status updated",
+          content: {
+            "application/json": {
+              example: {
+                message: "Schedule is now active",
+                schedule: {
+                  id: "schedule-001",
+                  status: true,
+                },
+              },
+            },
+          },
+        },
+        404: {
+          description: "Schedule not found",
+          content: {
+            "application/json": { example: { message: "Schedule not found" } },
+          },
+        },
       },
     },
   },
@@ -192,8 +280,20 @@ export const scheduleUserPaths = {
         },
       ],
       responses: {
-        200: { description: "Schedule deleted successfully" },
-        404: { description: "Schedule not found" },
+        200: {
+          description: "Schedule deleted successfully",
+          content: {
+            "application/json": {
+              example: { message: "Schedule deleted successfully" },
+            },
+          },
+        },
+        404: {
+          description: "Schedule not found",
+          content: {
+            "application/json": { example: { message: "Schedule not found" } },
+          },
+        },
       },
     },
   },

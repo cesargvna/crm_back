@@ -5,13 +5,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 // ✅ Crear una nueva asignación de permiso
 export const createRolePermission = asyncHandler(
   async (req: Request, res: Response) => {
-    const {
-      roleId,
-      actionId,
-      sectionId,
-      moduleId,
-      submoduleId,
-    } = req.body;
+    const { roleId, actionId, sectionId, moduleId, submoduleId } = req.body;
 
     // ✅ 1. Obtener información del rol
     const role = await prisma.role.findUnique({
@@ -33,7 +27,9 @@ export const createRolePermission = asyncHandler(
     const normalizedSubmoduleId = normalize(submoduleId);
 
     // ✅ 3. Crear compositeKey única
-    const compositeKey = `${roleId}-${actionId}-${sectionId}-${normalizedModuleId ?? "null"}-${normalizedSubmoduleId ?? "null"}`;
+    const compositeKey = `${roleId}-${actionId}-${sectionId}-${
+      normalizedModuleId ?? "null"
+    }-${normalizedSubmoduleId ?? "null"}`;
 
     // ✅ 4. Verificar duplicado por compositeKey
     const existing = await prisma.rolePermission.findUnique({
@@ -69,7 +65,6 @@ export const getRolePermissionsByRoleId = asyncHandler(
   async (req: Request, res: Response) => {
     const { roleId } = req.params;
 
-    // 1. Buscar el rol (con sus permisos, acción y sección)
     const role = await prisma.role.findUnique({
       where: { id: roleId },
       include: {
@@ -86,26 +81,16 @@ export const getRolePermissionsByRoleId = asyncHandler(
       return res.status(404).json({ message: "Role not found." });
     }
 
-    // 2. Obtener manualmente la subsidiary
     const subsidiary = await prisma.subsidiary.findUnique({
       where: { id: role.subsidiaryId },
-      select: {
-        id: true,
-        name: true,
-      },
+      select: { id: true, name: true },
     });
 
-    // 3. Obtener manualmente el tenant
     const tenant = await prisma.tenant.findUnique({
       where: { id: role.tenantId },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-      },
+      select: { id: true, name: true, description: true },
     });
 
-    // 4. Construir respuesta
     res.json({
       role: {
         id: role.id,
@@ -120,6 +105,7 @@ export const getRolePermissionsByRoleId = asyncHandler(
         section: rp.section,
         moduleId: rp.moduleId,
         submoduleId: rp.submoduleId,
+        compositeKey: rp.compositeKey,
       })),
     });
   }
@@ -149,6 +135,7 @@ export const getRolePermissionsByTenantId = asyncHandler(
         section: rp.section,
         moduleId: rp.moduleId,
         submoduleId: rp.submoduleId,
+        compositeKey: rp.compositeKey,
         role: rp.role,
         subsidiaryId: rp.subsidiaryId,
       })),
@@ -180,6 +167,7 @@ export const getRolePermissionsBySubsidiaryId = asyncHandler(
         section: rp.section,
         moduleId: rp.moduleId,
         submoduleId: rp.submoduleId,
+        compositeKey: rp.compositeKey,
         role: rp.role,
         tenantId: rp.tenantId,
       })),
@@ -197,6 +185,8 @@ export const deleteRolePermission = asyncHandler(
       where: { id },
       include: {
         role: true,
+        action: true,
+        section: true,
       },
     });
 
@@ -204,18 +194,28 @@ export const deleteRolePermission = asyncHandler(
       return res.status(404).json({ message: "RolePermission not found." });
     }
 
-    // ✅ Puedes validar tenant si quieres:
-    // const tenantId = existing.role.tenantId;
-    // Aquí puedes hacer más validaciones si necesitas
-
     // 2. Eliminar
-    const deleted = await prisma.rolePermission.delete({
+    await prisma.rolePermission.delete({
       where: { id },
     });
 
+    // 3. Respuesta con detalle del permiso eliminado
     res.json({
       message: "Permission removed from role successfully.",
-      deleted,
+      deleted: {
+        id: existing.id,
+        role: {
+          id: existing.role.id,
+          name: existing.role.name,
+        },
+        action: existing.action,
+        section: existing.section,
+        moduleId: existing.moduleId,
+        submoduleId: existing.submoduleId,
+        tenantId: existing.tenantId,
+        subsidiaryId: existing.subsidiaryId,
+        compositeKey: existing.compositeKey,
+      },
     });
   }
 );
