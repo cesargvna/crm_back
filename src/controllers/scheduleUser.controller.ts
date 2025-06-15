@@ -12,12 +12,13 @@ export const createScheduleUser = asyncHandler(async (req: Request, res: Respons
     closing_hour,
   } = req.body;
 
-  // ✅ Obtener usuario y tenantId
+  // ✅ Obtener usuario con tenantId y subsidiaryId
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       id: true,
       tenantId: true,
+      subsidiaryId: true,
     },
   });
 
@@ -29,10 +30,10 @@ export const createScheduleUser = asyncHandler(async (req: Request, res: Respons
   const existing = await prisma.scheduleUser.findFirst({
     where: {
       userId,
-      start_day: start_day ?? null,
-      end_day: end_day ?? null,
-      opening_hour: opening_hour ? new Date(opening_hour) : null,
-      closing_hour: closing_hour ? new Date(closing_hour) : null,
+      start_day,
+      end_day,
+      opening_hour,
+      closing_hour,
     },
   });
 
@@ -40,11 +41,12 @@ export const createScheduleUser = asyncHandler(async (req: Request, res: Respons
     return res.status(409).json({ message: "Schedule already exists for this user." });
   }
 
-  // ✅ Crear horario
+  // ✅ Crear horario con tenantId y subsidiaryId
   const schedule = await prisma.scheduleUser.create({
     data: {
       userId,
       tenantId: user.tenantId!,
+      subsidiaryId: user.subsidiaryId,
       start_day,
       end_day,
       opening_hour,
@@ -61,7 +63,9 @@ export const getSchedulesByUser = asyncHandler(async (req: Request, res: Respons
 
   const schedules = await prisma.scheduleUser.findMany({
     where: { userId },
-    orderBy: { created_at: "asc" },
+    orderBy: {
+      start_day: "asc",
+    },
   });
 
   res.json(schedules);
@@ -77,12 +81,28 @@ export const updateScheduleUser = asyncHandler(async (req: Request, res: Respons
     closing_hour,
   } = req.body;
 
-  const existing = await prisma.scheduleUser.findUnique({
-    where: { id },
-  });
+  const existing = await prisma.scheduleUser.findUnique({ where: { id } });
 
   if (!existing) {
     return res.status(404).json({ message: "Schedule not found" });
+  }
+
+  // ✅ Verificar si ya existe otro horario igual para el mismo usuario
+  const duplicate = await prisma.scheduleUser.findFirst({
+    where: {
+      id: { not: id },
+      userId: existing.userId,
+      start_day,
+      end_day,
+      opening_hour,
+      closing_hour,
+    },
+  });
+
+  if (duplicate) {
+    return res.status(409).json({
+      message: "Another schedule with the same range already exists for this user.",
+    });
   }
 
   const updated = await prisma.scheduleUser.update({

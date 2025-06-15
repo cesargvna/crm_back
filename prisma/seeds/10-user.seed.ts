@@ -1,11 +1,13 @@
+// seeds/seedUsers.ts
 import prisma from "../../src/utils/prisma";
 import bcrypt from "bcryptjs";
 import normalize from "normalize-text";
 import { fakerES as faker } from "@faker-js/faker";
 
-type SeededUser = {
+export type SeededUser = {
   id: string;
   tenantId: string;
+  subsidiaryId: string;
 };
 
 export const seedUsers = async (
@@ -25,7 +27,6 @@ export const seedUsers = async (
       let username;
       let attempts = 0;
 
-      // Generar username único realista y limpio
       do {
         const nombre = faker.person.firstName();
         const apellido = faker.person.lastName();
@@ -35,7 +36,6 @@ export const seedUsers = async (
           .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
           .replace(/[^a-z0-9.]/g, "")
           .slice(0, 20);
-
         attempts++;
       } while (
         attempts < 5 &&
@@ -59,26 +59,24 @@ export const seedUsers = async (
           name: normalize(name),
           lastname: normalize(lastname),
           email,
-          ci: faker.string.numeric(8).slice(0, 20),
-          nit: faker.string.numeric(7).slice(0, 20),
+          ci: faker.string.numeric(8),
+          nit: faker.string.numeric(7),
           address,
           cellphone: `7${faker.string.numeric(7)}`.slice(0, 20),
           telephone: `2${faker.string.numeric(6)}`.slice(0, 20),
-          description: "Automatically generated user".slice(0, 100),
+          description: "Automatically generated user",
           roleId: role.id,
           subsidiaryId,
           tenantId,
         },
-        select: { id: true }, // selecciona solo id
+        select: { id: true },
       });
 
-      createdUsers.push({ id: user.id, tenantId });
-
+      createdUsers.push({ id: user.id, tenantId, subsidiaryId });
       console.log(`✅ User ${username} created for role ${roleName} in subsidiary ${subsidiaryId}`);
     }
   }
 
   console.log("✅ User seeding completed.\n");
-
   return createdUsers;
 };

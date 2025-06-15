@@ -20,9 +20,39 @@ export const permissionActionPaths = {
         },
       },
       responses: {
-        201: { description: "Permission action created successfully" },
-        400: { description: "Validation error" },
-        409: { description: "Name already exists" },
+        201: {
+          description: "Permission action created successfully",
+          content: {
+            "application/json": {
+              example: {
+                id: "a1b2c3d4-e5f6-7890-abcd-1234567890ab",
+                name: "view",
+                createdAt: "2025-06-15T12:00:00.000Z",
+                updatedAt: "2025-06-15T12:00:00.000Z",
+              },
+            },
+          },
+        },
+        400: {
+          description: "Validation error",
+          content: {
+            "application/json": {
+              example: {
+                message: "Name must be at least 3 characters",
+              },
+            },
+          },
+        },
+        409: {
+          description: "Name already exists",
+          content: {
+            "application/json": {
+              example: {
+                message: 'Action "view" already exists.',
+              },
+            },
+          },
+        },
       },
     },
   },
@@ -38,7 +68,7 @@ export const permissionActionPaths = {
           name: "id",
           in: "path",
           required: true,
-          schema: { type: "string" },
+          schema: { type: "string", example: "a1b2c3d4-e5f6-7890-abcd-1234567890ab" },
         },
       ],
       requestBody: {
@@ -56,9 +86,39 @@ export const permissionActionPaths = {
         },
       },
       responses: {
-        200: { description: "Permission action updated" },
-        400: { description: "Validation error" },
-        409: { description: "Name already exists" },
+        200: {
+          description: "Permission action updated",
+          content: {
+            "application/json": {
+              example: {
+                id: "a1b2c3d4-e5f6-7890-abcd-1234567890ab",
+                name: "edit",
+                createdAt: "2025-06-10T11:00:00.000Z",
+                updatedAt: "2025-06-15T13:30:00.000Z",
+              },
+            },
+          },
+        },
+        400: {
+          description: "Validation error",
+          content: {
+            "application/json": {
+              example: {
+                message: "Only letters and '.' are allowed. No ñ, spaces, numbers or symbols",
+              },
+            },
+          },
+        },
+        409: {
+          description: "Name already exists",
+          content: {
+            "application/json": {
+              example: {
+                message: 'Action "edit" already exists.',
+              },
+            },
+          },
+        },
       },
     },
   },
@@ -70,7 +130,27 @@ export const permissionActionPaths = {
       description:
         "Returns a full list of available permission actions. No pagination or filters applied.",
       responses: {
-        200: { description: "List of permission actions" },
+        200: {
+          description: "List of permission actions",
+          content: {
+            "application/json": {
+              example: [
+                {
+                  id: "11111111-1111-1111-1111-111111111111",
+                  name: "view",
+                  createdAt: "2025-06-01T10:00:00.000Z",
+                  updatedAt: "2025-06-01T10:00:00.000Z",
+                },
+                {
+                  id: "22222222-2222-2222-2222-222222222222",
+                  name: "edit",
+                  createdAt: "2025-06-01T10:05:00.000Z",
+                  updatedAt: "2025-06-01T10:05:00.000Z",
+                },
+              ],
+            },
+          },
+        },
       },
     },
   },
@@ -85,12 +165,33 @@ export const permissionActionPaths = {
           name: "id",
           in: "path",
           required: true,
-          schema: { type: "string" },
+          schema: { type: "string", example: "11111111-1111-1111-1111-111111111111" },
         },
       ],
       responses: {
-        200: { description: "Permission action found" },
-        404: { description: "Permission action not found" },
+        200: {
+          description: "Permission action found",
+          content: {
+            "application/json": {
+              example: {
+                id: "11111111-1111-1111-1111-111111111111",
+                name: "view",
+                createdAt: "2025-06-01T10:00:00.000Z",
+                updatedAt: "2025-06-01T10:00:00.000Z",
+              },
+            },
+          },
+        },
+        404: {
+          description: "Permission action not found",
+          content: {
+            "application/json": {
+              example: {
+                message: "Permission action not found",
+              },
+            },
+          },
+        },
       },
     },
   },

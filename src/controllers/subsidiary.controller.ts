@@ -163,31 +163,6 @@ export const toggleSubsidiaryStatus = asyncHandler(
   }
 );
 
-// ✅ Eliminar Subsidiary (con eliminación en cascada activada por onDelete en Prisma)
-export const deleteSubsidiary = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { id } = req.params;
-
-    const subsidiary = await prisma.subsidiary.findUnique({ where: { id } });
-    if (!subsidiary) {
-      return res.status(404).json({ message: "Subsidiary not found" });
-    }
-
-    // 🔍 Contar relaciones antes de eliminar
-    const [users, roles] = await Promise.all([
-      prisma.user.count({ where: { subsidiaryId: id } }),
-      prisma.role.count({ where: { subsidiaryId: id } }),
-    ]);
-
-    await prisma.subsidiary.delete({ where: { id } });
-
-    res.json({
-      message: `Subsidiary "${subsidiary.name}" and related users/roles deleted successfully.`,
-      deletedRelations: { users, roles },
-    });
-  }
-);
-
 export const getSubsidiaryById = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = req.params;

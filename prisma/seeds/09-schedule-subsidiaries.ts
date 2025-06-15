@@ -12,67 +12,69 @@ export async function scheduleSubsidiaries(
 
   const schedules: ScheduleSubsidiary[] = [];
 
-  for (const subsidiary of subsidiaries) {
-    const tenantId = subsidiary.tenantId;
+  // ⏰ Nuevos valores en formato string HH:mm
+  const WEEK_OPEN = "08:00";
+  const WEEK_CLOSE = "18:00";
+  const SAT_OPEN = "08:00";
+  const SAT_CLOSE = "12:00";
 
-    // Schedule 1: Monday to Friday
+  for (const subsidiary of subsidiaries) {
+    const { id: subsidiaryId, tenantId, name } = subsidiary;
+
+    // 🔎 Verificar horario de Lunes a Viernes
     const weekdayExists = await prisma.scheduleSubsidiary.findFirst({
       where: {
-        subsidiaryId: subsidiary.id,
+        subsidiaryId,
         start_day: DayOfWeek.LUNES,
         end_day: DayOfWeek.VIERNES,
-        opening_hour: new Date("2025-01-01T08:00:00Z"),
-        closing_hour: new Date("2025-01-01T18:00:00Z"),
+        opening_hour: WEEK_OPEN,
+        closing_hour: WEEK_CLOSE,
       },
     });
 
     if (!weekdayExists) {
       const schedule1 = await prisma.scheduleSubsidiary.create({
         data: {
-          subsidiaryId: subsidiary.id,
+          subsidiaryId,
           tenantId,
           start_day: DayOfWeek.LUNES,
           end_day: DayOfWeek.VIERNES,
-          opening_hour: new Date("2025-01-01T08:00:00Z"),
-          closing_hour: new Date("2025-01-01T18:00:00Z"),
+          opening_hour: WEEK_OPEN,
+          closing_hour: WEEK_CLOSE,
         },
       });
       schedules.push(schedule1);
-      console.log(`✅ Weekday schedule added to "${subsidiary.name}"`);
+      console.log(`✅ Weekday schedule added to "${name}"`);
     } else {
-      console.log(
-        `⚠️ Weekday schedule already exists for "${subsidiary.name}"`
-      );
+      console.log(`⚠️ Weekday schedule already exists for "${name}"`);
     }
 
-    // Schedule 2: Saturday
+    // 🔎 Verificar horario de Sábado
     const saturdayExists = await prisma.scheduleSubsidiary.findFirst({
       where: {
-        subsidiaryId: subsidiary.id,
+        subsidiaryId,
         start_day: DayOfWeek.SABADO,
         end_day: DayOfWeek.SABADO,
-        opening_hour: new Date("2025-01-01T08:00:00Z"),
-        closing_hour: new Date("2025-01-01T12:00:00Z"),
+        opening_hour: SAT_OPEN,
+        closing_hour: SAT_CLOSE,
       },
     });
 
     if (!saturdayExists) {
       const schedule2 = await prisma.scheduleSubsidiary.create({
         data: {
-          subsidiaryId: subsidiary.id,
+          subsidiaryId,
           tenantId,
           start_day: DayOfWeek.SABADO,
           end_day: DayOfWeek.SABADO,
-          opening_hour: new Date("2025-01-01T08:00:00Z"),
-          closing_hour: new Date("2025-01-01T12:00:00Z"),
+          opening_hour: SAT_OPEN,
+          closing_hour: SAT_CLOSE,
         },
       });
       schedules.push(schedule2);
-      console.log(`✅ Saturday schedule added to "${subsidiary.name}"`);
+      console.log(`✅ Saturday schedule added to "${name}"`);
     } else {
-      console.log(
-        `⚠️ Saturday schedule already exists for "${subsidiary.name}"`
-      );
+      console.log(`⚠️ Saturday schedule already exists for "${name}"`);
     }
   }
 

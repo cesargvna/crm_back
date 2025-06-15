@@ -3,7 +3,8 @@ export const subsidiaryPaths = {
     post: {
       tags: ["Subsidiary"],
       summary: "Create a new subsidiary",
-      description: "Creates a new subsidiary under a specific tenant. The `subsidiary_type` must be one of: MATRIZ, SUCURSAL, ALMACEN, OFICINA.",
+      description:
+        "Creates a new subsidiary under a specific tenant. The `subsidiary_type` must be one of: MATRIZ, SUCURSAL, ALMACEN, OFICINA.",
       requestBody: {
         required: true,
         content: {
@@ -35,7 +36,32 @@ export const subsidiaryPaths = {
         },
       },
       responses: {
-        201: { description: "Subsidiary created successfully" },
+        201: {
+          description: "Subsidiary created successfully",
+          content: {
+            "application/json": {
+              example: {
+                id: "uuid-sample-123",
+                name: "Sucursal La Paz",
+                subsidiary_type: "SUCURSAL",
+                tenantId: "uuid-tenant-456",
+                allowNegativeStock: false,
+                ci: "12345678",
+                nit: "1234567",
+                description: "Sucursal ubicada en La Paz",
+                address: "Av. Bolívar 123",
+                city: "La Paz",
+                country: "Bolivia",
+                cellphone: "+59171234567",
+                telephone: "2123456",
+                email: "lapaz@empresa.com",
+                status: true,
+                created_at: "2025-06-15T10:00:00Z",
+                updated_at: "2025-06-15T10:00:00Z"
+              }
+            }
+          }
+        },
         409: { description: "Subsidiary already exists in this tenant" },
       },
     },
@@ -45,7 +71,8 @@ export const subsidiaryPaths = {
     put: {
       tags: ["Subsidiary"],
       summary: "Update an existing subsidiary",
-      description: "Updates subsidiary details by ID. The `subsidiary_type` must be one of: MATRIZ, SUCURSAL, ALMACEN, OFICINA.",
+      description:
+        "Updates subsidiary details by ID. The `subsidiary_type` must be one of: MATRIZ, SUCURSAL, ALMACEN, OFICINA.",
       parameters: [
         { name: "id", in: "path", required: true, schema: { type: "string" } },
       ],
@@ -88,27 +115,34 @@ export const subsidiaryPaths = {
     patch: {
       tags: ["Subsidiary"],
       summary: "Toggle subsidiary status",
-      description: "Toggles the `status` (active/inactive) of a subsidiary. This operation will also update all users and roles assigned to the subsidiary to match the new status.\n\n- When deactivated: `user.status = false`, `role.status = false`\n- When reactivated: `user.status = true`, `role.status = true`.",
+      description:
+        "Toggles the `status` (active/inactive) of a subsidiary. This operation will also update all users and roles assigned to the subsidiary to match the new status.\n\n- When deactivated: `user.status = false`, `role.status = false`\n- When reactivated: `user.status = true`, `role.status = true`.",
       parameters: [
         { name: "id", in: "path", required: true, schema: { type: "string" } },
       ],
       responses: {
-        200: { description: "Subsidiary status updated, and user/role statuses updated accordingly" },
-        404: { description: "Subsidiary not found" },
-      },
-    },
-  },
-
-  "DELETE: /subsidiary/{id}": {
-    delete: {
-      tags: ["Subsidiary"],
-      summary: "Delete a subsidiary",
-      description: "Deletes a subsidiary and all related users and roles.",
-      parameters: [
-        { name: "id", in: "path", required: true, schema: { type: "string" } },
-      ],
-      responses: {
-        200: { description: "Subsidiary and related data deleted successfully" },
+        200: {
+          description: "Subsidiary status updated, and user/role statuses updated accordingly",
+          content: {
+            "application/json": {
+              example: {
+                message: "Subsidiary status updated to active",
+                updated: {
+                  subsidiaryStatus: true,
+                  affectedEntities: {
+                    users: "All users under subsidiary set to true",
+                    roles: "All roles under subsidiary set to true"
+                  }
+                },
+                subsidiary: {
+                  id: "uuid-sample-123",
+                  name: "Sucursal La Paz",
+                  status: true
+                }
+              }
+            }
+          }
+        },
         404: { description: "Subsidiary not found" },
       },
     },
@@ -118,7 +152,8 @@ export const subsidiaryPaths = {
     get: {
       tags: ["Subsidiary"],
       summary: "Get subsidiaries by tenant ID",
-      description: "Returns a paginated list of subsidiaries belonging to a specific tenant.",
+      description:
+        "Returns a paginated list of subsidiaries belonging to a specific tenant.",
       parameters: [
         { name: "tenantId", in: "path", required: true, schema: { type: "string" } },
         { name: "search", in: "query", schema: { type: "string" } },
@@ -130,7 +165,39 @@ export const subsidiaryPaths = {
         { name: "sort", in: "query", schema: { type: "string", enum: ["asc", "desc"], default: "asc" } },
       ],
       responses: {
-        200: { description: "List of subsidiaries" },
+        200: {
+          description: "List of subsidiaries",
+          content: {
+            "application/json": {
+              example: {
+                total: 1,
+                page: 1,
+                limit: 5,
+                data: [
+                  {
+                    id: "uuid-sample-123",
+                    name: "Sucursal La Paz",
+                    subsidiary_type: "SUCURSAL",
+                    tenantId: "uuid-tenant-456",
+                    allowNegativeStock: false,
+                    ci: "12345678",
+                    nit: "1234567",
+                    description: "Sucursal ubicada en La Paz",
+                    address: "Av. Bolívar 123",
+                    city: "La Paz",
+                    country: "Bolivia",
+                    cellphone: "+59171234567",
+                    telephone: "2123456",
+                    email: "lapaz@empresa.com",
+                    status: true,
+                    created_at: "2025-06-15T10:00:00Z",
+                    updated_at: "2025-06-15T10:00:00Z"
+                  }
+                ]
+              }
+            }
+          }
+        },
         400: { description: "tenantId is required" },
       },
     },
@@ -145,9 +212,67 @@ export const subsidiaryPaths = {
         { name: "id", in: "path", required: true, schema: { type: "string" } },
       ],
       responses: {
-        200: { description: "Subsidiary found" },
+        200: {
+          description: "Subsidiary found",
+          content: {
+            "application/json": {
+              example: {
+                subsidiary: {
+                  id: "uuid-sample-123",
+                  name: "Sucursal La Paz",
+                  subsidiary_type: "SUCURSAL",
+                  tenantId: "uuid-tenant-456",
+                  allowNegativeStock: false,
+                  ci: "12345678",
+                  nit: "1234567",
+                  description: "Sucursal ubicada en La Paz",
+                  address: "Av. Bolívar 123",
+                  city: "La Paz",
+                  country: "Bolivia",
+                  cellphone: "+59171234567",
+                  telephone: "2123456",
+                  email: "lapaz@empresa.com",
+                  status: true,
+                  created_at: "2025-06-15T10:00:00Z",
+                  updated_at: "2025-06-15T10:00:00Z"
+                },
+                users: [
+                  {
+                    id: "user-uuid-1",
+                    username: "jdoe",
+                    name: "John",
+                    lastname: "Doe",
+                    role: {
+                      id: "role-id-1",
+                      name: "admin"
+                    },
+                    schedulesUsers: []
+                  }
+                ],
+                roles: [
+                  {
+                    id: "role-id-1",
+                    name: "admin",
+                    rolePermissions: [
+                      {
+                        action: {
+                          id: "action-id",
+                          name: "ver"
+                        },
+                        section: {
+                          id: "section-id",
+                          name: "Usuarios"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
         404: { description: "Subsidiary not found" },
       },
     },
-  },
+  }
 };
