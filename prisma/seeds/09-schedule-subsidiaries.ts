@@ -12,10 +12,11 @@ export async function scheduleSubsidiaries(
 
   const schedules: ScheduleSubsidiary[] = [];
 
-  const WEEK_OPEN = new Date("2025-01-01T08:00:00Z");
-  const WEEK_CLOSE = new Date("2025-01-01T18:00:00Z");
-  const SAT_OPEN = new Date("2025-01-01T08:00:00Z");
-  const SAT_CLOSE = new Date("2025-01-01T12:00:00Z");
+  // ⏰ Nuevos valores en formato string HH:mm
+  const WEEK_OPEN = "08:00";
+  const WEEK_CLOSE = "18:00";
+  const SAT_OPEN = "08:00";
+  const SAT_CLOSE = "12:00";
 
   for (const subsidiary of subsidiaries) {
     const { id: subsidiaryId, tenantId, name } = subsidiary;

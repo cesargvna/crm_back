@@ -62,10 +62,13 @@ export const swaggerConfig = {
     },
     {
       name: "ScheduleSubsidiary",
-      description: `Manages opening and closing hours per subsidiary.\n
-  - Enum field \`DayOfWeek\` must be one of:
-    \`LUNES\`, \`MARTES\`, \`MIERCOLES\`, \`JUEVES\`, \`VIERNES\`, \`SABADO\`, \`DOMINGO\`.
-  - Dates must be in ISO string format (e.g. \`2025-06-12T08:00:00.000Z\`).`,
+      description:
+        `Manages working schedules for subsidiary based on day and hour range.
+        - Fields \`start_day\` and \`end_day\` must be valid days of the week in Spanish:
+        \`LUNES\`, \`MARTES\`, \`MIERCOLES\`, \`JUEVES\`, \`VIERNES\`, \`SABADO\`, \`DOMINGO\`.
+        - Fields \`opening_hour\` and \`closing_hour\` must follow the \`HH:mm\` 24-hour format (e.g., \`08:00\`, \`16:30\`).
+        - The start day must not come after the end day.
+        - The opening hour must be earlier than the closing hour.`,
     },
     {
       name: "User",
@@ -74,10 +77,13 @@ export const swaggerConfig = {
     },
     {
       name: "ScheduleUser",
-      description: `Manages opening and closing hours per user.\n
-  - Enum field \`DayOfWeek\` must be one of:
-    \`LUNES\`, \`MARTES\`, \`MIERCOLES\`, \`JUEVES\`, \`VIERNES\`, \`SABADO\`, \`DOMINGO\`.
-  - Dates must be in ISO 8601 format (e.g. \`2025-06-12T08:00:00.000Z\`).`,
+      description: 
+        `Manages working schedules for users based on day and hour range.
+        - Fields \`start_day\` and \`end_day\` must be valid days of the week in Spanish:
+        \`LUNES\`, \`MARTES\`, \`MIERCOLES\`, \`JUEVES\`, \`VIERNES\`, \`SABADO\`, \`DOMINGO\`.
+        - Fields \`opening_hour\` and \`closing_hour\` must follow the \`HH:mm\` 24-hour format (e.g., \`08:00\`, \`16:30\`).
+        - The start day must not come after the end day.
+        - The opening hour must be earlier than the closing hour.`,
     },
   ],
   paths: {

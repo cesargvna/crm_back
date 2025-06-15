@@ -32,8 +32,8 @@ export const createScheduleUser = asyncHandler(async (req: Request, res: Respons
       userId,
       start_day,
       end_day,
-      opening_hour: new Date(opening_hour),
-      closing_hour: new Date(closing_hour),
+      opening_hour,
+      closing_hour,
     },
   });
 
@@ -49,8 +49,8 @@ export const createScheduleUser = asyncHandler(async (req: Request, res: Respons
       subsidiaryId: user.subsidiaryId,
       start_day,
       end_day,
-      opening_hour: new Date(opening_hour),
-      closing_hour: new Date(closing_hour),
+      opening_hour,
+      closing_hour,
     },
   });
 
@@ -94,8 +94,8 @@ export const updateScheduleUser = asyncHandler(async (req: Request, res: Respons
       userId: existing.userId,
       start_day,
       end_day,
-      opening_hour: new Date(opening_hour),
-      closing_hour: new Date(closing_hour),
+      opening_hour,
+      closing_hour,
     },
   });
 
@@ -110,8 +110,8 @@ export const updateScheduleUser = asyncHandler(async (req: Request, res: Respons
     data: {
       start_day,
       end_day,
-      opening_hour: new Date(opening_hour),
-      closing_hour: new Date(closing_hour),
+      opening_hour,
+      closing_hour,
     },
   });
 

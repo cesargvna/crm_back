@@ -20,8 +20,8 @@ type UserSeedData = {
 export const seedScheduleUsers = async (users: UserSeedData[]) => {
   console.log("\n🌱 Seeding user schedules...");
 
-  const OPEN_HOUR = new Date("1900-01-01T08:00:00Z");
-  const CLOSE_HOUR = new Date("1900-01-01T16:00:00Z");
+  const OPEN_HOUR = "08:00";
+  const CLOSE_HOUR = "16:00";
 
   const data: any[] = [];
 
@@ -29,9 +29,7 @@ export const seedScheduleUsers = async (users: UserSeedData[]) => {
     const { id: userId, tenantId, subsidiaryId } = user;
 
     if (!tenantId || !subsidiaryId) {
-      console.warn(
-        `⚠️ Skipping user ${userId} — missing tenantId or subsidiaryId`
-      );
+      console.warn(`⚠️ Skipping user ${userId} — missing tenantId or subsidiaryId`);
       continue;
     }
 
@@ -55,9 +53,7 @@ export const seedScheduleUsers = async (users: UserSeedData[]) => {
       data,
       skipDuplicates: true,
     });
-    console.log(
-      `✅ ${data.length} user schedules inserted (duplicates skipped).`
-    );
+    console.log(`✅ ${data.length} user schedules inserted (duplicates skipped).`);
   } else {
     console.log("⚠️ No user schedules to insert.");
   }

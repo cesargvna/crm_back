@@ -53,8 +53,8 @@ export const createScheduleSubsidiary = asyncHandler(
         tenantId: subsidiary.tenantId,
         start_day,
         end_day,
-        opening_hour: new Date(opening_hour),
-        closing_hour: new Date(closing_hour),
+        opening_hour,
+        closing_hour,
       },
     });
 

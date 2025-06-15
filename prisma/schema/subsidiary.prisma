@@ -42,8 +42,8 @@ model ScheduleSubsidiary {
   status          Boolean       @default(true)
   start_day       DayOfWeek
   end_day         DayOfWeek
-  opening_hour    DateTime
-  closing_hour    DateTime
+  opening_hour    String        @db.VarChar(5) // ejemplo: "08:00"
+  closing_hour    String        @db.VarChar(5) // ejemplo: "16:30"
 
   created_at      DateTime      @default(now())
   updated_at      DateTime      @updatedAt
