@@ -32,26 +32,31 @@ model User {
   //incomes         Income[]
   //purchases       Purchase[]
 
-  @@index([tenantId]) // ✅ índice por tenantId
+  @@index([tenantId]) 
+  @@index([subsidiaryId])
 }
 
 model ScheduleUser {
   id                String        @id @db.VarChar(255) @default(uuid())
   status            Boolean       @default(true)
-  start_day         DayOfWeek?
-  end_day           DayOfWeek?
-  opening_hour      DateTime?
-  closing_hour      DateTime?
+  start_day         DayOfWeek
+  end_day           DayOfWeek
+  opening_hour      DateTime
+  closing_hour      DateTime
   
   created_at        DateTime      @default(now())
   updated_at        DateTime      @updatedAt
 
   tenantId          String       @db.VarChar(255) // 👉 agregado sin relación
+  subsidiaryId      String       @db.VarChar(255) 
 
   user              User          @relation(fields: [userId], references: [id], name: "ScheduleUserForUser")
   userId            String        @db.VarChar(255)
 
   @@index([tenantId]) // ✅ índice por tenantId
+  @@index([subsidiaryId])
+
+  @@unique([userId, start_day, end_day, opening_hour, closing_hour])
 }
 
 enum DayOfWeek {

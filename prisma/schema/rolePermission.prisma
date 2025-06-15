@@ -82,6 +82,8 @@ model RolePermission {
   moduleId      String?           @db.VarChar(255) // Sin @relation para evitar bucle
   submoduleId   String?           @db.VarChar(255) // Sin @relation para evitar bucle
   tenantId      String            @db.VarChar(255)
+  subsidiaryId  String            @db.VarChar(255)
+  compositeKey  String            @unique @db.VarChar(255)
 
   role          Role              @relation(fields: [roleId], references: [id])
   section       PermissionSection @relation(fields: [sectionId], references: [id])
@@ -92,5 +94,5 @@ model RolePermission {
 
   @@index([roleId])
   @@index([tenantId])
-  @@unique([roleId, actionId, sectionId, moduleId, submoduleId])
+  @@index([subsidiaryId])
 }

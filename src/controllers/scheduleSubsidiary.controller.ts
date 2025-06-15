@@ -26,19 +26,24 @@ export const createScheduleSubsidiary = asyncHandler(
       return res.status(404).json({ message: "Subsidiary not found" });
     }
 
-    // ✅ Verificar duplicado manualmente
+    // ✅ Construir cláusula dinámica para verificar duplicado
+    const whereClause: any = {
+      subsidiaryId,
+    };
+
+    if (start_day) whereClause.start_day = start_day;
+    if (end_day) whereClause.end_day = end_day;
+    if (opening_hour) whereClause.opening_hour = new Date(opening_hour);
+    if (closing_hour) whereClause.closing_hour = new Date(closing_hour);
+
     const existing = await prisma.scheduleSubsidiary.findFirst({
-      where: {
-        subsidiaryId,
-        start_day: start_day ?? null,
-        end_day: end_day ?? null,
-        opening_hour: opening_hour ? new Date(opening_hour) : null,
-        closing_hour: closing_hour ? new Date(closing_hour) : null,
-      },
+      where: whereClause,
     });
 
     if (existing) {
-      return res.status(409).json({ message: "Schedule already exists for this subsidiary." });
+      return res
+        .status(409)
+        .json({ message: "Schedule already exists for this subsidiary." });
     }
 
     // ✅ Crear horario
@@ -48,8 +53,8 @@ export const createScheduleSubsidiary = asyncHandler(
         tenantId: subsidiary.tenantId,
         start_day,
         end_day,
-        opening_hour,
-        closing_hour,
+        opening_hour: new Date(opening_hour),
+        closing_hour: new Date(closing_hour),
       },
     });
 

@@ -25,6 +25,8 @@ model Subsidiary {
   
   users                   User[] 
   schedulesSubsidiaries   ScheduleSubsidiary[]    @relation(name: "ScheduleSubsidiaryForSubsidiary")
+
+  @@index([tenantId]) 
 }
 
 enum SubsidiaryType {
@@ -38,20 +40,21 @@ model ScheduleSubsidiary {
   id              String        @id @db.VarChar(255) @default(uuid())
 
   status          Boolean       @default(true)
-  start_day       DayOfWeek?
-  end_day         DayOfWeek?
-  opening_hour    DateTime?
-  closing_hour    DateTime?
+  start_day       DayOfWeek
+  end_day         DayOfWeek
+  opening_hour    DateTime
+  closing_hour    DateTime
 
   created_at      DateTime      @default(now())
   updated_at      DateTime      @updatedAt
 
-  tenantId        String       @db.VarChar(255) 
+  tenantId        String        @db.VarChar(255) 
 
   subsidiary      Subsidiary    @relation(fields: [subsidiaryId], references: [id], name: "ScheduleSubsidiaryForSubsidiary")
   subsidiaryId    String        @db.VarChar(255)
 
   @@unique([subsidiaryId, start_day, end_day, opening_hour, closing_hour])
 
-  @@index([tenantId]) // ✅ índice por tenantId
+  @@index([tenantId]) 
+  @@index([subsidiaryId])
 }
