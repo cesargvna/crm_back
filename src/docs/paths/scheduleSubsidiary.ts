@@ -3,8 +3,7 @@ export const scheduleSubsidiaryPaths = {
     post: {
       tags: ["ScheduleSubsidiary"],
       summary: "Create a schedule for a subsidiary",
-      description:
-        `Creates a new schedule associated with a specific subsidiary.
+      description: `Creates a new schedule associated with a specific subsidiary.
         \n- \`start_day\` and \`end_day\` must be valid days of the week in Spanish: 
         \`LUNES\`, \`MARTES\`, \`MIERCOLES\`, \`JUEVES\`, \`VIERNES\`, \`SABADO\`, \`DOMINGO\`.
         \n- \`opening_hour\` and \`closing_hour\` must be strings in 24-hour \`HH:mm\` format (e.g., \`08:00\`, \`16:30\`).
@@ -24,16 +23,37 @@ export const scheduleSubsidiaryPaths = {
           "application/json": {
             schema: {
               type: "object",
-              required: ["start_day", "end_day", "opening_hour", "closing_hour"],
+              required: [
+                "start_day",
+                "end_day",
+                "opening_hour",
+                "closing_hour",
+              ],
               properties: {
                 start_day: {
                   type: "string",
-                  enum: ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"],
+                  enum: [
+                    "LUNES",
+                    "MARTES",
+                    "MIERCOLES",
+                    "JUEVES",
+                    "VIERNES",
+                    "SABADO",
+                    "DOMINGO",
+                  ],
                   example: "LUNES",
                 },
                 end_day: {
                   type: "string",
-                  enum: ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"],
+                  enum: [
+                    "LUNES",
+                    "MARTES",
+                    "MIERCOLES",
+                    "JUEVES",
+                    "VIERNES",
+                    "SABADO",
+                    "DOMINGO",
+                  ],
                   example: "VIERNES",
                 },
                 opening_hour: {
@@ -74,14 +94,18 @@ export const scheduleSubsidiaryPaths = {
         404: {
           description: "Subsidiary not found",
           content: {
-            "application/json": { example: { message: "Subsidiary not found" } },
+            "application/json": {
+              example: { message: "Subsidiary not found" },
+            },
           },
         },
         409: {
           description: "Schedule already exists for this subsidiary",
           content: {
             "application/json": {
-              example: { message: "Schedule already exists for this subsidiary." },
+              example: {
+                message: "Schedule already exists for this subsidiary.",
+              },
             },
           },
         },
@@ -92,8 +116,9 @@ export const scheduleSubsidiaryPaths = {
   "GET: /subsidiary/{subsidiaryId}/schedules": {
     get: {
       tags: ["ScheduleSubsidiary"],
-      summary: "Get all schedules for a subsidiary",
-      description: "Retrieves a list of schedules assigned to a specific subsidiary.",
+      summary: "Get all schedules for a subsidiary (paginated)",
+      description:
+        "Retrieves a paginated list of schedules assigned to a specific subsidiary. Supports filters and search.",
       parameters: [
         {
           name: "subsidiaryId",
@@ -101,26 +126,80 @@ export const scheduleSubsidiaryPaths = {
           required: true,
           schema: { type: "string", format: "uuid" },
         },
+        {
+          name: "page",
+          in: "query",
+          required: false,
+          schema: { type: "integer", default: 1, minimum: 1 },
+        },
+        {
+          name: "limit",
+          in: "query",
+          required: false,
+          schema: { type: "integer", default: 5, minimum: 1, maximum: 100 },
+        },
+        {
+          name: "search",
+          in: "query",
+          required: false,
+          schema: { type: "string" },
+          description: "Search by start_day or end_day",
+        },
+        {
+          name: "status",
+          in: "query",
+          required: false,
+          schema: {
+            type: "string",
+            enum: ["all", "true", "false"],
+            default: "all",
+          },
+        },
+        {
+          name: "orderBy",
+          in: "query",
+          required: false,
+          schema: {
+            type: "string",
+            enum: ["start_day", "created_at", "updated_at"],
+            default: "start_day",
+          },
+        },
+        {
+          name: "sort",
+          in: "query",
+          required: false,
+          schema: {
+            type: "string",
+            enum: ["asc", "desc"],
+            default: "asc",
+          },
+        },
       ],
       responses: {
-        200: {
-          description: "List of schedules",
+        "200": {
+          description: "Paginated list of schedules",
           content: {
             "application/json": {
-              example: [
-                {
-                  id: "schedule-sub-001",
-                  subsidiaryId: "subsidiary-001",
-                  tenantId: "tenant-001",
-                  start_day: "LUNES",
-                  end_day: "VIERNES",
-                  opening_hour: "08:00",
-                  closing_hour: "16:30",
-                  status: true,
-                  created_at: "2025-06-15T10:00:00.000Z",
-                  updated_at: "2025-06-15T10:00:00.000Z",
-                },
-              ],
+              example: {
+                total: 2,
+                page: 1,
+                limit: 5,
+                data: [
+                  {
+                    id: "schedule-sub-001",
+                    subsidiaryId: "subsidiary-001",
+                    tenantId: "tenant-001",
+                    start_day: "LUNES",
+                    end_day: "VIERNES",
+                    opening_hour: "08:00",
+                    closing_hour: "16:30",
+                    status: true,
+                    created_at: "2025-06-15T10:00:00.000Z",
+                    updated_at: "2025-06-15T10:00:00.000Z",
+                  },
+                ],
+              },
             },
           },
         },
@@ -132,8 +211,7 @@ export const scheduleSubsidiaryPaths = {
     put: {
       tags: ["ScheduleSubsidiary"],
       summary: "Update a schedule for a subsidiary",
-      description:
-        `Updates an existing schedule by ID.
+      description: `Updates an existing schedule by ID.
         \n- \`start_day\` and \`end_day\` must be valid days of the week in Spanish: 
         \`LUNES\`, \`MARTES\`, \`MIERCOLES\`, \`JUEVES\`, \`VIERNES\`, \`SABADO\`, \`DOMINGO\`.
         \n- \`opening_hour\` and \`closing_hour\` must be strings in 24-hour \`HH:mm\` format (e.g., \`08:00\`, \`16:30\`).
@@ -153,16 +231,37 @@ export const scheduleSubsidiaryPaths = {
           "application/json": {
             schema: {
               type: "object",
-              required: ["start_day", "end_day", "opening_hour", "closing_hour"],
+              required: [
+                "start_day",
+                "end_day",
+                "opening_hour",
+                "closing_hour",
+              ],
               properties: {
                 start_day: {
                   type: "string",
-                  enum: ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"],
+                  enum: [
+                    "LUNES",
+                    "MARTES",
+                    "MIERCOLES",
+                    "JUEVES",
+                    "VIERNES",
+                    "SABADO",
+                    "DOMINGO",
+                  ],
                   example: "MARTES",
                 },
                 end_day: {
                   type: "string",
-                  enum: ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"],
+                  enum: [
+                    "LUNES",
+                    "MARTES",
+                    "MIERCOLES",
+                    "JUEVES",
+                    "VIERNES",
+                    "SABADO",
+                    "DOMINGO",
+                  ],
                   example: "SABADO",
                 },
                 opening_hour: {
@@ -211,7 +310,9 @@ export const scheduleSubsidiaryPaths = {
           description: "Schedule already exists for this subsidiary",
           content: {
             "application/json": {
-              example: { message: "Schedule already exists for this subsidiary." },
+              example: {
+                message: "Schedule already exists for this subsidiary.",
+              },
             },
           },
         },

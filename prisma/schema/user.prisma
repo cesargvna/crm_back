@@ -26,7 +26,7 @@ model User {
   tenantId        String?       @db.VarChar(255) // 👉 agregado sin relación
   
   schedulesUsers    ScheduleUser[]    @relation(name: "ScheduleUserForUser")
-  //cashSessions    CashSession[] 
+  cashSessions    CashSession[] 
   //sales           Sale[]
   expenses        Expense[]
   incomes         Income[]

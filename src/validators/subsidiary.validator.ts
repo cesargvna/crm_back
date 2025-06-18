@@ -76,11 +76,15 @@ export const getAllSubsidiariesQuerySchema = z.object({
     .default("5"),
 
   search: z.string().optional(),
+
   status: z.enum(["true", "false", "all"]).optional().default("all"),
+
   orderBy: z
     .enum(["name", "created_at", "updated_at"])
     .optional()
     .default("name"),
+
   sort: z.enum(["asc", "desc"]).optional().default("asc"),
-  type: z.enum(["MATRIZ", "SUCURSAL", "ALMACEN", "OFICINA"]).optional(),
+
+  type: z.enum(["MATRIZ", "SUCURSAL", "ALMACEN", "OFICINA", "all"]).optional().default("all"),
 });

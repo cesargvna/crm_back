@@ -249,19 +249,29 @@ export const getAllSubsidiariesByTenantId = asyncHandler(
       filters.status = status === "true";
     }
 
-    if (
-      type &&
-      ["MATRIZ", "SUCURSAL", "ALMACEN", "OFICINA"].includes(type as string)
-    ) {
+    if ( type && type !== "all" && ["MATRIZ", "SUCURSAL", "ALMACEN", "OFICINA"].includes(type as string)) {
       filters.subsidiary_type = type;
     }
-
+    
     const [data, total] = await Promise.all([
       prisma.subsidiary.findMany({
         where: filters,
         orderBy: { [orderBy as string]: sort },
         skip,
         take,
+        include: {
+          schedulesSubsidiaries: {
+            orderBy: { start_day: "asc" },
+            select: {
+              id: true,
+              start_day: true,
+              end_day: true,
+              opening_hour: true,
+              closing_hour: true,
+              status: true,
+            },
+          },
+        },
       }),
       prisma.subsidiary.count({ where: filters }),
     ]);

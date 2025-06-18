@@ -62,17 +62,70 @@ export const createScheduleSubsidiary = asyncHandler(
   }
 );
 
-// ✅ Obtener horarios por subsidiaria
+// ✅ Obtener horarios por subsidiaria con paginación, búsqueda y filtros
 export const getSchedulesBySubsidiary = asyncHandler(
   async (req: Request, res: Response) => {
     const { subsidiaryId } = req.params;
+    const {
+      page = "1",
+      limit = "5",
+      search = "",
+      status = "all",
+      sort = "asc",
+      orderBy = "start_day",
+    } = req.query as Record<string, string>;
 
-    const schedules = await prisma.scheduleSubsidiary.findMany({
-      where: { subsidiaryId },
-      orderBy: { created_at: "asc" },
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const whereClause: any = {
+      subsidiaryId,
+    };
+
+    // Filtro de búsqueda (por día)
+    if (search) {
+      whereClause.OR = [
+        {
+          start_day: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          end_day: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+      ];
+    }
+
+    // Filtro de estado
+    if (status !== "all") {
+      whereClause.status = status === "true";
+    }
+
+    const [total, data] = await Promise.all([
+      prisma.scheduleSubsidiary.count({
+        where: whereClause,
+      }),
+      prisma.scheduleSubsidiary.findMany({
+        where: whereClause,
+        skip,
+        take: limitNumber,
+        orderBy: {
+          [orderBy]: sort,
+        },
+      }),
+    ]);
+
+    res.json({
+      total,
+      page: pageNumber,
+      limit: limitNumber,
+      data,
     });
-
-    res.json(schedules);
   }
 );
 

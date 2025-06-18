@@ -7,24 +7,37 @@ model Supplier {
   phone               String?            @db.VarChar(20)
   telephone           String?            @db.VarChar(20)
   email               String?            @db.VarChar(80)
+
+  tenantId            String             @db.VarChar(255)
+  subsidiaryId        String             @db.VarChar(255)
   supplierCategoryId  String             @db.VarChar(255)
-  
+
   created_at          DateTime           @default(now())
   updated_at          DateTime           @updatedAt
 
   supplierCategory    SupplierCategory   @relation(fields: [supplierCategoryId], references: [id])
   purchases           Purchase[]
+
+  @@unique([name, tenantId, subsidiaryId])
+  @@index([tenantId])
+  @@index([subsidiaryId])
 }
 
 model SupplierCategory {
-  id          String     @id @default(uuid()) @db.VarChar(255)
-  name        String     @db.VarChar(50)
-  status      Boolean    @default(true)
+  id            String     @id @default(uuid()) @db.VarChar(255)
+  name          String     @db.VarChar(50)
+  status        Boolean    @default(true)
+  description   String?    @db.VarChar(100)
 
-  created_at  DateTime   @default(now())
-  updated_at  DateTime   @updatedAt
+  tenantId      String     @db.VarChar(255)
+  subsidiaryId  String     @db.VarChar(255)
 
-  @@unique([name])
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
 
-  suppliers   Supplier[]
+  suppliers     Supplier[]
+
+  @@unique([name, tenantId, subsidiaryId])
+  @@index([tenantId])
+  @@index([subsidiaryId])
 }
