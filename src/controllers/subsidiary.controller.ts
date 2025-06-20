@@ -24,6 +24,7 @@ export const createSubsidiary = asyncHandler(
 
     const normalized = normalize(name.trim());
 
+    // 🚀 Validar nombre duplicado
     const exists = await prisma.subsidiary.findFirst({
       where: {
         name: { equals: normalized, mode: "insensitive" },
@@ -37,6 +38,23 @@ export const createSubsidiary = asyncHandler(
       });
     }
 
+    // 🚀 Validar si ya existe una MATRIZ en este tenant
+    if (subsidiary_type === "MATRIZ") {
+      const matrizExists = await prisma.subsidiary.findFirst({
+        where: {
+          tenantId,
+          subsidiary_type: "MATRIZ",
+        },
+      });
+
+      if (matrizExists) {
+        return res.status(409).json({
+          message: `A MATRIZ already exists in this tenant.`,
+        });
+      }
+    }
+
+    // ✅ Crear
     const created = await prisma.subsidiary.create({
       data: {
         name: normalized,
@@ -80,6 +98,7 @@ export const updateSubsidiary = asyncHandler(
 
     const normalized = normalize(name.trim());
 
+    // 🚀 Validar nombre duplicado (otro que no sea el actual)
     const exists = await prisma.subsidiary.findFirst({
       where: {
         id: { not: id },
@@ -93,6 +112,32 @@ export const updateSubsidiary = asyncHandler(
         .json({ message: `Subsidiary "${name}" already exists.` });
     }
 
+    // 🚀 Validar si ya hay otra MATRIZ
+    const currentSubsidiary = await prisma.subsidiary.findUnique({
+      where: { id },
+    });
+
+    if (!currentSubsidiary) {
+      return res.status(404).json({ message: "Subsidiary not found" });
+    }
+
+    if (subsidiary_type === "MATRIZ") {
+      const matrizExists = await prisma.subsidiary.findFirst({
+        where: {
+          id: { not: id }, // que no sea la misma que estamos editando
+          tenantId: currentSubsidiary.tenantId,
+          subsidiary_type: "MATRIZ",
+        },
+      });
+
+      if (matrizExists) {
+        return res.status(409).json({
+          message: `Another MATRIZ already exists in this tenant.`,
+        });
+      }
+    }
+
+    // ✅ Actualizar
     const updated = await prisma.subsidiary.update({
       where: { id },
       data: {

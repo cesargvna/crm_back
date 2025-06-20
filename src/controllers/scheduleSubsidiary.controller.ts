@@ -6,12 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 export const createScheduleSubsidiary = asyncHandler(
   async (req: Request, res: Response) => {
     const { subsidiaryId } = req.params;
-    const {
-      start_day,
-      end_day,
-      opening_hour,
-      closing_hour,
-    } = req.body;
+    const { start_day, end_day, opening_hour, closing_hour } = req.body;
 
     // ✅ Obtener la subsidiaria y su tenantId
     const subsidiary = await prisma.subsidiary.findUnique({
@@ -26,24 +21,21 @@ export const createScheduleSubsidiary = asyncHandler(
       return res.status(404).json({ message: "Subsidiary not found" });
     }
 
-    // ✅ Construir cláusula dinámica para verificar duplicado
-    const whereClause: any = {
-      subsidiaryId,
-    };
-
-    if (start_day) whereClause.start_day = start_day;
-    if (end_day) whereClause.end_day = end_day;
-    if (opening_hour) whereClause.opening_hour = new Date(opening_hour);
-    if (closing_hour) whereClause.closing_hour = new Date(closing_hour);
-
+    // ✅ Verificar duplicado
     const existing = await prisma.scheduleSubsidiary.findFirst({
-      where: whereClause,
+      where: {
+        subsidiaryId,
+        start_day,
+        end_day,
+        opening_hour,
+        closing_hour,
+      },
     });
 
     if (existing) {
-      return res
-        .status(409)
-        .json({ message: "Schedule already exists for this subsidiary." });
+      return res.status(409).json({
+        message: "Schedule already exists for this subsidiary.",
+      });
     }
 
     // ✅ Crear horario
@@ -71,8 +63,8 @@ export const getSchedulesBySubsidiary = asyncHandler(
       limit = "5",
       search = "",
       status = "all",
-      sort = "asc",
-      orderBy = "start_day",
+      sort = "desc",
+      orderBy = "updated_at",
     } = req.query as Record<string, string>;
 
     const pageNumber = parseInt(page);
@@ -83,28 +75,49 @@ export const getSchedulesBySubsidiary = asyncHandler(
       subsidiaryId,
     };
 
-    // Filtro de búsqueda (por día)
+    // Mapping de días para búsqueda parcial
+    const dayNames = [
+      "LUNES",
+      "MARTES",
+      "MIERCOLES",
+      "JUEVES",
+      "VIERNES",
+      "SABADO",
+      "DOMINGO",
+    ];
+
     if (search) {
-      whereClause.OR = [
-        {
-          start_day: {
-            contains: search,
-            mode: "insensitive",
+      const searchUpper = search.trim().toUpperCase();
+
+      const matchedDays = dayNames.filter((day) =>
+        day.includes(searchUpper)
+      );
+
+      if (matchedDays.length > 0) {
+        whereClause.OR = [
+          {
+            start_day: { in: matchedDays },
           },
-        },
-        {
-          end_day: {
-            contains: search,
-            mode: "insensitive",
+          {
+            end_day: { in: matchedDays },
           },
-        },
-      ];
+        ];
+      } else {
+        // Si no hay match, forzar un resultado vacío
+        whereClause.OR = [
+          {
+            start_day: { equals: "__NO_MATCH__" },
+          },
+        ];
+      }
     }
 
     // Filtro de estado
     if (status !== "all") {
       whereClause.status = status === "true";
     }
+
+    const sortDirection = sort?.toLowerCase() === "desc" ? "desc" : "asc";
 
     const [total, data] = await Promise.all([
       prisma.scheduleSubsidiary.count({
@@ -115,7 +128,7 @@ export const getSchedulesBySubsidiary = asyncHandler(
         skip,
         take: limitNumber,
         orderBy: {
-          [orderBy]: sort,
+          [orderBy]: sortDirection,
         },
       }),
     ]);
@@ -129,16 +142,25 @@ export const getSchedulesBySubsidiary = asyncHandler(
   }
 );
 
-// ✅ Actualizar horario
+export const getScheduleSubsidiaryById = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const schedule = await prisma.scheduleSubsidiary.findUnique({
+    where: { id },
+  });
+
+  if (!schedule) {
+    return res.status(404).json({ message: "Schedule not found" });
+  }
+
+  res.json(schedule);
+});
+
+// ✅ Actualizar horario (con verificación de duplicado)
 export const updateScheduleSubsidiary = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = req.params;
-    const {
-      start_day,
-      end_day,
-      opening_hour,
-      closing_hour,
-    } = req.body;
+    const { start_day, end_day, opening_hour, closing_hour } = req.body;
 
     const existing = await prisma.scheduleSubsidiary.findUnique({
       where: { id },
@@ -148,6 +170,25 @@ export const updateScheduleSubsidiary = asyncHandler(
       return res.status(404).json({ message: "Schedule not found" });
     }
 
+    // ✅ Verificar duplicado (excepto el mismo)
+    const duplicate = await prisma.scheduleSubsidiary.findFirst({
+      where: {
+        id: { not: id },
+        subsidiaryId: existing.subsidiaryId,
+        start_day,
+        end_day,
+        opening_hour,
+        closing_hour,
+      },
+    });
+
+    if (duplicate) {
+      return res.status(409).json({
+        message: "Another schedule already exists with these values.",
+      });
+    }
+
+    // ✅ Actualizar
     const updated = await prisma.scheduleSubsidiary.update({
       where: { id },
       data: {
@@ -200,6 +241,7 @@ export const toggleScheduleStatus = asyncHandler(
       where: { id },
       data: {
         status: !schedule.status,
+        updated_at: new Date(),
       },
     });
 
