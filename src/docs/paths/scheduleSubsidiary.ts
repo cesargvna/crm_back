@@ -207,6 +207,49 @@ export const scheduleSubsidiaryPaths = {
     },
   },
 
+  "GET: /subsidiary/schedules/{id}": {
+    get: {
+      tags: ["ScheduleSubsidiary"],
+      summary: "Get schedule by ID",
+      description: "Retrieves a specific schedule by its ID.",
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
+      ],
+      responses: {
+        200: {
+          description: "Schedule found",
+          content: {
+            "application/json": {
+              example: {
+                id: "schedule-sub-001",
+                subsidiaryId: "subsidiary-001",
+                tenantId: "tenant-001",
+                start_day: "LUNES",
+                end_day: "VIERNES",
+                opening_hour: "08:00",
+                closing_hour: "16:30",
+                status: true,
+                created_at: "2025-06-15T10:00:00.000Z",
+                updated_at: "2025-06-15T10:00:00.000Z",
+              },
+            },
+          },
+        },
+        404: {
+          description: "Schedule not found",
+          content: {
+            "application/json": { example: { message: "Schedule not found" } },
+          },
+        },
+      },
+    },
+  },
+
   "PUT: /subsidiary/schedules/{id}": {
     put: {
       tags: ["ScheduleSubsidiary"],
