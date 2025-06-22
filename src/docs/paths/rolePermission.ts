@@ -244,6 +244,85 @@ export const rolePermissionPaths = {
     },
   },
 
+  "GET: role/rolePermission/sidebar/{roleId}": {
+    get: {
+      tags: ["Role Permission"],
+      summary: "Get sidebar structure by Role ID",
+      description:
+        "Builds the sidebar structure for the given role. Returns only the sections, modules and submodules where the role has a 'ver' permission assigned.",
+      parameters: [
+        {
+          name: "roleId",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
+      ],
+      responses: {
+        200: {
+          description: "Sidebar structure retrieved successfully",
+          content: {
+            "application/json": {
+              example: {
+                roleId: "rol-123",
+                totalSections: 5,
+                sections: [
+                  {
+                    id: "sec-1",
+                    name: "Ventas",
+                    order: 2,
+                    status: true,
+                    modules: [
+                      {
+                        id: "mod-1",
+                        name: "Caja",
+                        route: "/cash",
+                        iconName: "AccountBalanceWalletIcon",
+                        status: true,
+                        submodules: [],
+                      },
+                    ],
+                  },
+                  {
+                    id: "sec-2",
+                    name: "Reportes",
+                    order: 5,
+                    status: true,
+                    modules: [
+                      {
+                        id: "mod-5",
+                        name: "Ventas",
+                        route: null,
+                        iconName: "BarChartIcon",
+                        status: true,
+                        submodules: [
+                          {
+                            id: "subm-1",
+                            name: "Cierres de caja",
+                            route: "/report/cash-closures",
+                            status: true,
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        },
+        404: {
+          description: "Role not found or no 'ver' permissions assigned",
+          content: {
+            "application/json": {
+              example: { message: "Role not found or no view permissions." },
+            },
+          },
+        },
+      },
+    },
+  },
+
   "DELETE: role/rolePermission/{id}": {
     delete: {
       tags: ["Role Permission"],

@@ -219,3 +219,125 @@ export const deleteRolePermission = asyncHandler(
     });
   }
 );
+
+// ✅ Obtener permisos "ver" por rol y construir el sidebar
+export const getSidebarPermissionsByRoleId = asyncHandler(async (req: Request, res: Response) => {
+  const { roleId } = req.params;
+
+  // 1. Traer todos los permisos del rol
+  const permissions = await prisma.rolePermission.findMany({
+    where: { roleId },
+    include: {
+      action: true,
+      section: true,
+    },
+  });
+
+  // 2. Filtrar solo permisos "ver"
+  const VIEW_ACTION_NAME = 'ver';
+
+  const viewPermissions = permissions
+    .filter((perm) => perm.action.name.toLowerCase() === VIEW_ACTION_NAME)
+    .map((perm) => ({
+      sectionId: perm.section.id,
+      sectionName: perm.section.name,
+      sectionOrder: perm.section.order,
+      sectionStatus: perm.section.status,
+      moduleId: perm.moduleId,
+      submoduleId: perm.submoduleId,
+    }));
+
+  // 3. Construir sidebar
+  const sidebar: {
+    id: string;
+    name: string;
+    order: number;
+    status: boolean;
+    modules: {
+      id: string;
+      name: string;
+      route: string | null;
+      iconName: string;
+      status: boolean;
+      submodules: {
+        id: string;
+        name: string;
+        route: string;
+        status: boolean;
+      }[];
+    }[];
+  }[] = [];
+
+  for (const perm of viewPermissions) {
+    const sectionId = perm.sectionId;
+
+    // Ver si ya existe la sección
+    let sectionItem = sidebar.find((sec) => sec.id === sectionId);
+
+    if (!sectionItem) {
+      sectionItem = {
+        id: perm.sectionId,
+        name: perm.sectionName,
+        order: perm.sectionOrder,
+        status: perm.sectionStatus,
+        modules: [],
+      };
+      sidebar.push(sectionItem);
+    }
+
+    // Si tiene moduleId — buscar module
+    if (perm.moduleId) {
+      const module = await prisma.moduleGroup.findUnique({
+        where: { id: perm.moduleId },
+        select: { id: true, name: true, route: true, iconName: true, status: true },
+      });
+
+      if (!module) continue;
+
+      // Ver si ya existe el module en section.modules
+      let moduleItem = sectionItem.modules.find((mod) => mod.id === module.id);
+
+      if (!moduleItem) {
+        moduleItem = {
+          id: module.id,
+          name: module.name,
+          route: module.route,
+          iconName: module.iconName,
+          status: module.status,
+          submodules: [],
+        };
+        sectionItem.modules.push(moduleItem);
+      }
+
+      // Si tiene submoduleId — buscar submodule
+      if (perm.submoduleId) {
+        const submodule = await prisma.submoduleGroup.findUnique({
+          where: { id: perm.submoduleId },
+          select: { id: true, name: true, route: true, status: true },
+        });
+
+        if (submodule) {
+          const exists = moduleItem.submodules.some((sub) => sub.id === submodule.id);
+          if (!exists) {
+            moduleItem.submodules.push({
+              id: submodule.id,
+              name: submodule.name,
+              route: submodule.route,
+              status: submodule.status,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  res.json({
+    roleId,
+    totalSections: sidebar.length,
+    sections: sidebar,
+  });
+});
+
+
+
+

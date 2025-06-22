@@ -15,7 +15,7 @@ import { createPermissionAction, getAllPermissionActions, getPermissionActionByI
 import { createRoleSchema, getAllRolesQuerySchema, updateRoleSchema } from '../validators/role.validator';
 import { createRole, getRoleById, getRolesBySubsidiary, getRolesByTenant, getRoleWithPermissions, toggleRoleStatus, updateRole } from '../controllers/role.controller';
 import { createRolePermissionSchema, deleteRolePermissionParamsSchema, getRolePermissionParamsSchema } from '../validators/rolePermission.validator';
-import { createRolePermission, deleteRolePermission, getRolePermissionsByRoleId, getRolePermissionsBySubsidiaryId, getRolePermissionsByTenantId } from '../controllers/rolePermission.controller';
+import { createRolePermission, deleteRolePermission, getRolePermissionsByRoleId, getRolePermissionsBySubsidiaryId, getRolePermissionsByTenantId, getSidebarPermissionsByRoleId } from '../controllers/rolePermission.controller';
 
 const roleRouter = express.Router();
 
@@ -64,5 +64,6 @@ roleRouter.get("/rolePermission/:roleId",validateParams(getRolePermissionParamsS
 roleRouter.delete("/rolePermission/:id",validateParams(deleteRolePermissionParamsSchema),deleteRolePermission);
 roleRouter.get("/role-permissions/by-tenant/:tenantId", getRolePermissionsByTenantId);
 roleRouter.get("/role-permissions/by-subsidiary/:subsidiaryId", getRolePermissionsBySubsidiaryId);
+roleRouter.get("/role-permission/sidebar/:roleId", getSidebarPermissionsByRoleId);
 
 export default roleRouter;

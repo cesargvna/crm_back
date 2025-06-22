@@ -48,7 +48,6 @@ export const createRole = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json(role);
 });
 
-
 // ✅ Actualizar rol
 export const updateRole = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
