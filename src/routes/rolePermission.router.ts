@@ -14,8 +14,8 @@ import { createPermissionActionSchema, updatePermissionActionSchema } from '../v
 import { createPermissionAction, getAllPermissionActions, getPermissionActionById, updatePermissionAction } from '../controllers/permissionAction.controller';
 import { createRoleSchema, getAllRolesQuerySchema, updateRoleSchema } from '../validators/role.validator';
 import { createRole, getRoleById, getRolesBySubsidiary, getRolesByTenant, getRoleWithPermissions, toggleRoleStatus, updateRole } from '../controllers/role.controller';
-import { createRolePermissionSchema, deleteRolePermissionParamsSchema, getRolePermissionParamsSchema } from '../validators/rolePermission.validator';
-import { createRolePermission, deleteRolePermission, getRolePermissionsByRoleId, getRolePermissionsBySubsidiaryId, getRolePermissionsByTenantId, getSidebarPermissionsByRoleId } from '../controllers/rolePermission.controller';
+import { assignRolePermissionsSchema, createRolePermissionSchema, deleteRolePermissionParamsSchema, getRolePermissionParamsSchema } from '../validators/rolePermission.validator';
+import { assignRolePermissions, createRolePermission, deleteRolePermission, getRolePermissionsByRoleId, getRolePermissionsBySubsidiaryId, getRolePermissionsByTenantId, getSidebarPermissionsByRoleId } from '../controllers/rolePermission.controller';
 
 const roleRouter = express.Router();
 
@@ -60,6 +60,7 @@ roleRouter.get("/roles/by-tenant/:tenantId", getRolesByTenant);
 
 // ✅ ROLE PERMISSION ROUTES
 roleRouter.post("/rolePermission",validate(createRolePermissionSchema),createRolePermission);
+roleRouter.post("/role-permissions/assign", validate(assignRolePermissionsSchema), assignRolePermissions);
 roleRouter.get("/rolePermission/:roleId",validateParams(getRolePermissionParamsSchema),getRolePermissionsByRoleId);
 roleRouter.delete("/rolePermission/:id",validateParams(deleteRolePermissionParamsSchema),deleteRolePermission);
 roleRouter.get("/role-permissions/by-tenant/:tenantId", getRolePermissionsByTenantId);

@@ -60,6 +60,63 @@ export const createRolePermission = asyncHandler(
   }
 );
 
+// ✅ Asignar múltiples permisos a un rol (reemplaza todos los permisos)
+export const assignRolePermissions = asyncHandler(async (req: Request, res: Response) => {
+  const { roleId, permissions } = req.body;
+
+  if (!roleId || !Array.isArray(permissions)) {
+    return res.status(400).json({
+      message: "roleId and permissions[] are required.",
+    });
+  }
+
+  // 1️⃣ Validar que exista el rol
+  const role = await prisma.role.findUnique({
+    where: { id: roleId },
+  });
+
+  if (!role) {
+    return res.status(404).json({ message: "Role not found." });
+  }
+
+  const tenantId = role.tenantId;
+  const subsidiaryId = role.subsidiaryId;
+
+  // 2️⃣ Borrar TODOS los permisos actuales del rol
+  await prisma.rolePermission.deleteMany({
+    where: { roleId },
+  });
+
+  // 3️⃣ Insertar NUEVOS permisos
+  const dataToCreate = permissions.map((perm: any) => {
+    const normalize = (val: any) => (val === undefined || val === null || val === "" ? null : val);
+
+    const compositeKey = `${roleId}-${perm.actionId}-${perm.sectionId}-${
+      normalize(perm.moduleId) ?? "null"
+    }-${normalize(perm.submoduleId) ?? "null"}`;
+
+    return {
+      roleId,
+      actionId: perm.actionId,
+      sectionId: perm.sectionId,
+      moduleId: normalize(perm.moduleId),
+      submoduleId: normalize(perm.submoduleId),
+      tenantId,
+      subsidiaryId,
+      compositeKey,
+    };
+  });
+
+  await prisma.rolePermission.createMany({
+    data: dataToCreate,
+  });
+
+  return res.json({
+    message: "Role permissions assigned successfully.",
+    total: dataToCreate.length,
+  });
+});
+
 // ✅ Obtener permisos por ID de rol (con tenant, subsidiary y rol info)
 export const getRolePermissionsByRoleId = asyncHandler(
   async (req: Request, res: Response) => {

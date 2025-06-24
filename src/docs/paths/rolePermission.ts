@@ -74,6 +74,89 @@ export const rolePermissionPaths = {
     },
   },
 
+  "POST: role/role-permissions/assign": {
+    post: {
+      tags: ["Role Permission"],
+      summary: "Assign multiple permissions to a role (overwrite)",
+      description:
+        "Assigns a full set of permissions to the role, replacing all previous assignments. The permissions array contains actionId, sectionId, moduleId, submoduleId. The tenant and subsidiary are inferred from the role.",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["roleId", "permissions"],
+              properties: {
+                roleId: { type: "string", format: "uuid", example: "rol-123" },
+                permissions: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    required: ["actionId", "sectionId"],
+                    properties: {
+                      actionId: {
+                        type: "string",
+                        format: "uuid",
+                        example: "act-1",
+                      },
+                      sectionId: {
+                        type: "string",
+                        format: "uuid",
+                        example: "sec-1",
+                      },
+                      moduleId: {
+                        type: "string",
+                        format: "uuid",
+                        nullable: true,
+                        example: "mod-1",
+                      },
+                      submoduleId: {
+                        type: "string",
+                        format: "uuid",
+                        nullable: true,
+                        example: "subm-2",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: "Permissions assigned successfully",
+          content: {
+            "application/json": {
+              example: {
+                message: "Role permissions assigned successfully.",
+                total: 15,
+              },
+            },
+          },
+        },
+        400: {
+          description: "Bad request (missing roleId or permissions)",
+          content: {
+            "application/json": {
+              example: { message: "roleId and permissions[] are required." },
+            },
+          },
+        },
+        404: {
+          description: "Role not found",
+          content: {
+            "application/json": {
+              example: { message: "Role not found." },
+            },
+          },
+        },
+      },
+    },
+  },
+
   "GET: role/rolePermission/{roleId}": {
     get: {
       tags: ["Role Permission"],
