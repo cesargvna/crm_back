@@ -158,7 +158,7 @@ export const getAllPermissionSectionsComplete = asyncHandler(async (req: Request
     return res.status(404).json({ message: "Role not found" });
   }
 
-  const userRoleName = role.name.toLowerCase(); // 👈 CORREGIDO
+  const userRoleName = role.name.toLowerCase();
 
   // 🔸 Buscar sections (filtrar Administracion si no es system.admin)
   const sections = await prisma.permissionSection.findMany({
@@ -167,8 +167,16 @@ export const getAllPermissionSectionsComplete = asyncHandler(async (req: Request
       : {},
     include: {
       modules: {
-        include: {
-          submodules: true,
+        select: {
+          id: true,
+          name: true,
+          iconName: true,   // 👈 Aquí añadimos el campo para mostrar el ícono
+          submodules: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       },
     },
