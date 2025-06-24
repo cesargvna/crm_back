@@ -141,7 +141,30 @@ export const getPermissionSectionById= asyncHandler(async (req: Request, res: Re
 
 // ✅ Get All Permission Sections with Modules and Submodules
 export const getAllPermissionSectionsComplete = asyncHandler(async (req: Request, res: Response) => {
+  // 🔸 Sacar roleId desde query param
+  const roleId = req.query.roleId as string;
+
+  if (!roleId) {
+    return res.status(400).json({ message: "Missing roleId" });
+  }
+
+  // 🔸 Buscar nombre del rol
+  const role = await prisma.role.findUnique({
+    where: { id: roleId },
+    select: { name: true },
+  });
+
+  if (!role) {
+    return res.status(404).json({ message: "Role not found" });
+  }
+
+  const userRoleName = role.name.toLowerCase(); // 👈 CORREGIDO
+
+  // 🔸 Buscar sections (filtrar Administracion si no es system.admin)
   const sections = await prisma.permissionSection.findMany({
+    where: userRoleName !== 'system.admin'
+      ? { name: { not: 'Administración', mode: 'insensitive' } }
+      : {},
     include: {
       modules: {
         include: {

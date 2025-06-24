@@ -314,11 +314,24 @@ export const permissionSectionPaths = {
   "GET: role/permission-sections-complete": {
     get: {
       tags: ["Permission Section"],
-      summary: "Get all permission sections with modules and submodules",
+      summary:
+        "Get all permission sections with modules and submodules (filtered by roleId)",
       description:
-        "Returns the full hierarchy of active permission sections, including their modules and submodules. No pagination.",
+        "Returns the full hierarchy of active permission sections, including their modules and submodules, filtered by roleId (if role is not 'System.Admin', the section 'Administración' is excluded). No pagination.",
+      parameters: [
+        {
+          name: "roleId",
+          in: "query",
+          description: "ID of the role to filter sections (required)",
+          required: true,
+          schema: {
+            type: "string",
+            format: "uuid",
+          },
+        },
+      ],
       responses: {
-        200: {
+        "200": {
           description: "Full permission hierarchy returned",
           content: {
             "application/json": {
@@ -353,6 +366,12 @@ export const permissionSectionPaths = {
               ],
             },
           },
+        },
+        "400": {
+          description: "Missing roleId parameter",
+        },
+        "404": {
+          description: "Role not found",
         },
       },
     },
