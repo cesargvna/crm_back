@@ -194,8 +194,28 @@ export const getRoleWithPermissions = asyncHandler(
   }
 );
 
+export const getRolesBySubsidiary = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { subsidiaryId } = req.params;
+
+    const roles = await prisma.role.findMany({
+      where: {
+        subsidiaryId,
+        status: true, // solo roles activos
+      },
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    res.json(roles); // Ej: [{ id: "...", name: "Admin" }]
+  }
+);
+
 // ✅ Obtener roles por ID de SUBSIDIARY
-export const getRolesBySubsidiary = asyncHandler(async (req: Request, res: Response) => {
+export const getRolesBySubsidiaryComplete = asyncHandler(async (req: Request, res: Response) => {
   const { subsidiaryId } = req.params;
   const {
     page = "1",

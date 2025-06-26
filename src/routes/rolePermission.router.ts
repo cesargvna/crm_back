@@ -13,7 +13,7 @@ import { createSubmoduleGroup, getAllSubmoduleGroups, getAllSubmoduleGroupsCompl
 import { createPermissionActionSchema, updatePermissionActionSchema } from '../validators/permissionAction.validator';
 import { createPermissionAction, getAllPermissionActions, getPermissionActionById, updatePermissionAction } from '../controllers/permissionAction.controller';
 import { createRoleSchema, getAllRolesQuerySchema, updateRoleSchema } from '../validators/role.validator';
-import { createRole, getRoleById, getRolesBySubsidiary, getRolesByTenant, getRoleWithPermissions, toggleRoleStatus, updateRole } from '../controllers/role.controller';
+import { createRole, getRoleById, getRolesBySubsidiary, getRolesBySubsidiaryComplete, getRolesByTenant, getRoleWithPermissions, toggleRoleStatus, updateRole } from '../controllers/role.controller';
 import { assignRolePermissionsSchema, createRolePermissionSchema, deleteRolePermissionParamsSchema, getRolePermissionParamsSchema } from '../validators/rolePermission.validator';
 import { assignRolePermissions, createRolePermission, deleteRolePermission, getRolePermissionsByRoleId, getRolePermissionsBySubsidiaryId, getRolePermissionsByTenantId, getSidebarPermissionsByRoleId } from '../controllers/rolePermission.controller';
 
@@ -55,8 +55,9 @@ roleRouter.put("/roles/:id", validate(updateRoleSchema), updateRole);
 roleRouter.patch("/roles/:id/status", toggleRoleStatus);
 roleRouter.get("/roles/:id/permissions",  getRoleWithPermissions); 
 roleRouter.get("/roles/:id",getRoleById);
-roleRouter.get("/roles/by-subsidiary/:subsidiaryId",validateQuery(getAllRolesQuerySchema),getRolesBySubsidiary);
+roleRouter.get("/rolesBySubsidiaryComplete/:subsidiaryId",validateQuery(getAllRolesQuerySchema),getRolesBySubsidiaryComplete);
 roleRouter.get("/roles/by-tenant/:tenantId", getRolesByTenant);
+roleRouter.get("/rolesBySubsidiary/:subsidiaryId", getRolesBySubsidiary);
 
 // ✅ ROLE PERMISSION ROUTES
 roleRouter.post("/rolePermission",validate(createRolePermissionSchema),createRolePermission);

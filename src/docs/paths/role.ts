@@ -419,4 +419,40 @@ export const rolePaths = {
       },
     },
   },
+
+  "GET: /rolesBySubsidiary/{subsidiaryId}": {
+    get: {
+      tags: ["Role"],
+      summary: "Get active roles (id and name) by subsidiary",
+      description:
+        "Returns a list of active roles (only `id` and `name`) for a specific subsidiary. Useful for dropdown selectors or minimal role listings.",
+      parameters: [
+        {
+          name: "subsidiaryId",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
+      ],
+      responses: {
+        200: {
+          description: "List of active roles returned successfully",
+          content: {
+            "application/json": {
+              example: [
+                {
+                  id: "c0de70a7-9a76-4c27-bb8b-8fa539701a6b",
+                  name: "vendedor",
+                },
+                {
+                  id: "e5a72bd1-b2c2-4a36-bbcb-28c6a4c60b27",
+                  name: "admin",
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+  },
 };

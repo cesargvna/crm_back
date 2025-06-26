@@ -23,12 +23,16 @@ export const createUser = asyncHandler(async (req: Request, res: Response) => {
     subsidiaryId,
   } = req.body;
 
+  // Función segura para campos opcionales
+  const optionalNormalize = (value?: string) =>
+    value ? normalize(value) : undefined;
+
   username = normalize(username.toLowerCase());
   name = normalize(name);
-  lastname = normalize(lastname);
-  description = normalize(description);
-  address = normalize(address);
-  email = normalize(email);
+  lastname = optionalNormalize(lastname);
+  description = optionalNormalize(description);
+  address = optionalNormalize(address);
+  email = optionalNormalize(email);
 
   const usernameRegex = /^[a-z0-9.]+$/;
   if (!usernameRegex.test(username)) {

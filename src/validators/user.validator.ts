@@ -52,25 +52,34 @@ export const userSchema = z.object({
     .nullable(),
 
   cellphone: z
-    .string()
-    .max(20, "Cellphone must not exceed 20 characters.")
-    .regex(/^[+\d][\d\s]*$/, "Invalid cellphone format.")
-    .optional()
-    .nullable(),
+  .string()
+  .transform((v) => (v === "" ? null : v))
+  .nullable()
+  .refine(
+    (val) => val === null || /^\+?\d{7,15}$/.test(val),
+    "Invalid cellphone format."
+  )
+  .optional(),
 
-  telephone: z
-    .string()
-    .max(20, "Telephone must not exceed 20 characters.")
-    .regex(/^[+\d][\d\s]*$/, "Invalid telephone format.")
-    .optional()
-    .nullable(),
+telephone: z
+  .string()
+  .transform((v) => (v === "" ? null : v))
+  .nullable()
+  .refine(
+    (val) => val === null || /^\+?\d{7,15}$/.test(val),
+    "Invalid telephone format."
+  )
+  .optional(),
 
-  email: z
-    .string()
-    .email("Invalid email format.")
-    .max(20, "Email must not exceed 20 characters.")
-    .optional()
-    .nullable(),
+email: z
+  .string()
+  .transform((v) => (v === "" ? null : v))
+  .nullable()
+  .refine(
+    (val) => val === null || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+    "Invalid email format."
+  )
+  .optional(),
 
   status: z.boolean().optional(),
 
