@@ -11,7 +11,13 @@ export const userPaths = {
           "application/json": {
             schema: {
               type: "object",
-              required: ["username", "password", "name", "roleId", "subsidiaryId"],
+              required: [
+                "username",
+                "password",
+                "name",
+                "roleId",
+                "subsidiaryId",
+              ],
               properties: {
                 username: { type: "string", example: "juanperez.123" },
                 password: { type: "string", example: "securePassword123" },
@@ -19,7 +25,10 @@ export const userPaths = {
                 lastname: { type: "string", example: "Pérez" },
                 ci: { type: "string", example: "12345678" },
                 nit: { type: "string", example: "987654321" },
-                description: { type: "string", example: "Usuario encargado de ventas" },
+                description: {
+                  type: "string",
+                  example: "Usuario encargado de ventas",
+                },
                 address: { type: "string", example: "Av. Siempre Viva 742" },
                 cellphone: { type: "string", example: "+59171234567" },
                 telephone: { type: "string", example: "44556677" },
@@ -68,7 +77,12 @@ export const userPaths = {
       tags: ["User"],
       summary: "Get user by ID",
       parameters: [
-        { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
       ],
       responses: {
         200: {
@@ -115,12 +129,71 @@ export const userPaths = {
     },
   },
 
+  "GET: /user/simple/{id}": {
+    get: {
+      tags: ["User"],
+      summary: "Get simplified user by ID",
+      description:
+        "Returns a simplified user object for edit forms, including only essential fields and current role.",
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
+      ],
+      responses: {
+        200: {
+          description: "Simplified user retrieved successfully.",
+          content: {
+            "application/json": {
+              example: {
+                id: "user-001",
+                name: "Juan",
+                lastname: "Pérez",
+                ci: "12345678",
+                nit: "987654321",
+                description: "Encargado de almacén",
+                address: "Av. Siempre Viva 742",
+                cellphone: "+59171234567",
+                telephone: "44556677",
+                email: "juan@example.com",
+                status: true,
+                role: {
+                  id: "rol-001",
+                  name: "Almacén",
+                  status: true,
+                },
+              },
+            },
+          },
+        },
+        404: {
+          description: "User not found.",
+          content: {
+            "application/json": {
+              example: {
+                message: "User not found.",
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+
   "GET: /user/by-tenant/{tenantId}": {
     get: {
       tags: ["User"],
       summary: "Get users by tenant",
       parameters: [
-        { name: "tenantId", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+        {
+          name: "tenantId",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
         { $ref: "#/components/parameters/PaginationQuery" },
       ],
       responses: {
@@ -158,7 +231,12 @@ export const userPaths = {
       tags: ["User"],
       summary: "Get users by subsidiary",
       parameters: [
-        { name: "subsidiaryId", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+        {
+          name: "subsidiaryId",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
         { $ref: "#/components/parameters/PaginationQuery" },
       ],
       responses: {
@@ -198,7 +276,12 @@ export const userPaths = {
       description:
         "Updates user fields. Username, tenantId, subsidiaryId, and password cannot be changed.",
       parameters: [
-        { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
       ],
       requestBody: {
         required: true,
@@ -211,7 +294,10 @@ export const userPaths = {
                 lastname: { type: "string", example: "Pérez" },
                 ci: { type: "string", example: "12345678" },
                 nit: { type: "string", example: "987654321" },
-                description: { type: "string", example: "Encargado de inventario" },
+                description: {
+                  type: "string",
+                  example: "Encargado de inventario",
+                },
                 address: { type: "string", example: "Calle 8 #123" },
                 cellphone: { type: "string", example: "+59178945612" },
                 telephone: { type: "string", example: "4661122" },
@@ -251,7 +337,12 @@ export const userPaths = {
       summary: "Toggle user status",
       description: "Activates or deactivates a user.",
       parameters: [
-        { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
       ],
       responses: {
         200: {
@@ -293,7 +384,12 @@ export const userPaths = {
         },
       },
       parameters: [
-        { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
       ],
       responses: {
         200: {

@@ -158,6 +158,57 @@ export const getUserById = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+export const getUserByIdSimple = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      lastname: true,
+      ci: true,
+      nit: true,
+      description: true,
+      address: true,
+      cellphone: true,
+      telephone: true,
+      email: true,
+      status: true,
+      role: {
+        select: {
+          id: true,
+          name: true,
+          status: true,
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    return res.status(404).json({ message: "User not found." });
+  }
+
+  res.json({
+    id: user.id,
+    name: user.name,
+    lastname: user.lastname,
+    ci: user.ci,
+    nit: user.nit,
+    description: user.description,
+    address: user.address,
+    cellphone: user.cellphone,
+    telephone: user.telephone,
+    email: user.email,
+    status: user.status,
+    role: {
+      id: user.role?.id,
+      name: user.role?.name,
+      status: user.role?.status,
+    },
+  });
+});
+
 export const getAllUsersByTenantId = asyncHandler(
   async (req: Request, res: Response) => {
     const { tenantId } = req.params;
@@ -287,16 +338,17 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
     telephone,
     email,
     roleId,
+    // username, ❌ no extraer
   } = req.body;
 
-  // Normalizar campos
+  // 🔧 Normalizar campos
   name = normalize(name);
-  lastname = normalize(lastname);
-  description = normalize(description);
-  address = normalize(address);
-  email = normalize(email);
+  lastname = lastname ? normalize(lastname) : "";
+  description = description ? normalize(description) : "";
+  address = address ? normalize(address) : "";
+  email = email ? normalize(email) : "";
 
-  // Buscar usuario original
+  // 🔎 Verificar existencia
   const user = await prisma.user.findUnique({
     where: { id },
     select: {
@@ -312,7 +364,7 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
     return res.status(404).json({ message: "User not found." });
   }
 
-  // Actualizar datos
+  // ✅ Actualizar datos (sin tocar username)
   await prisma.user.update({
     where: { id },
     data: {
@@ -329,7 +381,6 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
     },
   });
 
-  // Retornar resumen
   res.json({
     message: "User updated successfully.",
     user: {

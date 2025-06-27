@@ -1,7 +1,7 @@
 import express from 'express';
 import { validate } from '../middleware/validate.middleware';
 import { getAllUsersQuerySchema, updateUserPasswordSchema, userSchema } from '../validators/user.validator';
-import { createUser, getAllUsersByTenantId, getUserById, getUsersBySubsidiary, toggleUserStatus, updateUser, updateUserPassword } from '../controllers/user.controller';
+import { createUser, getAllUsersByTenantId, getUserById, getUserByIdSimple, getUsersBySubsidiary, toggleUserStatus, updateUser, updateUserPassword } from '../controllers/user.controller';
 import { createScheduleUserSchema,  updateScheduleUserSchema } from '../validators/scheduleUser.validator';
 import { createScheduleUser, deleteScheduleUser, getSchedulesByUser, toggleScheduleUserStatus, updateScheduleUser } from '../controllers/scheduleUser.controller';
 
@@ -11,6 +11,7 @@ const userRouter = express.Router();
 
 userRouter.post("/", validate(userSchema), createUser);
 userRouter.get("/:id", getUserById);
+userRouter.get("/simple/:id", getUserByIdSimple);
 userRouter.get("/by-tenant/:tenantId", validate(getAllUsersQuerySchema), getAllUsersByTenantId);
 userRouter.get("/by-subsidiary/:subsidiaryId", validate(getAllUsersQuerySchema), getUsersBySubsidiary);
 userRouter.put("/:id", validate(userSchema.omit( {username: true,password: true,subsidiaryId: true} )), updateUser);
