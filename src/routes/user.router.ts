@@ -3,7 +3,7 @@ import { validate } from '../middleware/validate.middleware';
 import { getAllUsersQuerySchema, updateUserPasswordSchema, userSchema } from '../validators/user.validator';
 import { createUser, getAllUsersByTenantId, getUserById, getUserByIdSimple, getUsersBySubsidiary, toggleUserStatus, updateUser, updateUserPassword } from '../controllers/user.controller';
 import { createScheduleUserSchema,  updateScheduleUserSchema } from '../validators/scheduleUser.validator';
-import { createScheduleUser, deleteScheduleUser, getSchedulesByUser, toggleScheduleUserStatus, updateScheduleUser } from '../controllers/scheduleUser.controller';
+import { createScheduleUser, deleteScheduleUser, getSchedulesByUser, getScheduleUserById, toggleScheduleUserStatus, updateScheduleUser } from '../controllers/scheduleUser.controller';
 
 
 
@@ -20,6 +20,7 @@ userRouter.patch("/:id/password", validate(updateUserPasswordSchema), updateUser
 
 userRouter.post("/:userId/schedules", validate(createScheduleUserSchema), createScheduleUser);
 userRouter.get("/:userId/schedules", getSchedulesByUser);
+userRouter.get("/schedules/:id", getScheduleUserById);
 userRouter.put("/schedules/:id", validate(updateScheduleUserSchema), updateScheduleUser);
 userRouter.delete("/schedules/:id", deleteScheduleUser);
 userRouter.patch("/schedules/:id/status", toggleScheduleUserStatus);

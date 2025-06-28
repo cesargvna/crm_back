@@ -132,6 +132,22 @@ export const getSchedulesByUser = asyncHandler(
   }
 );
 
+export const getScheduleUserById = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    const schedule = await prisma.scheduleUser.findUnique({
+      where: { id },
+    });
+
+    if (!schedule) {
+      return res.status(404).json({ message: "Schedule not found." });
+    }
+
+    res.json(schedule);
+  }
+);
+
 // ✅ Actualizar horario
 export const updateScheduleUser = asyncHandler(
   async (req: Request, res: Response) => {
