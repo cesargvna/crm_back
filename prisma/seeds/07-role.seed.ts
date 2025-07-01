@@ -1,71 +1,90 @@
 import prisma from "../../src/utils/prisma";
-import normalize from "normalize-text";
+import { AllowedAction, Tenant, Subsidiary } from "../../generated/prisma";
 
-type Subsidiary = {
-  id: string;
-  name: string;
-  tenantId: string;
-};
+export async function seedRolesAndPermissions(
+  tenants: Tenant[],
+  subsidiaries: Subsidiary[],
+  allowedActionsSeed: AllowedAction[]
+) {
+  console.log("\n🚀 Seeding SuperAdmin and Admin roles with permissions...");
 
-export async function seedRoles(tenants: any[], subsidiaries: Subsidiary[]) {
-  console.log("⏳ Seeding roles...");
+  // 👉 Lee AllowedActions completos para filtrar por nombre de acción
+  const allowedActions = await prisma.allowedAction.findMany({
+    include: { action: true },
+  });
 
   const rolesBySubsidiary: Record<string, Record<string, any>> = {};
 
-  const roleTemplates = [
-    {
-      name: "super.admin",
-      description: "Rol con acceso completo (excepto administración y eliminar)",
-    },
-    {
-      name: "admin",
-      description: "Administrador con permisos limitados",
-    },
-    {
-      name: "vendedor",
-      description: "Encargado de ventas, caja y cotizaciones",
-    },
-    {
-      name: "almacen",
-      description: "Gestión de inventario y productos",
-    },
-  ];
-
   for (const subsidiary of subsidiaries) {
-    const roleMap: Record<string, any> = {};
+    const { tenantId, id: subsidiaryId } = subsidiary;
 
-    for (const role of roleTemplates) {
-      const normalizedName = normalize(role.name.trim());
-
-      const existing = await prisma.role.findFirst({
-        where: {
-          name: { equals: normalizedName, mode: "insensitive" },
-          tenantId: subsidiary.tenantId,
-          subsidiaryId: subsidiary.id,
-        },
-      });
-
-      if (existing) {
-        console.log(`⚠️ Rol "${normalizedName}" ya existe en "${subsidiary.name}"`);
-        roleMap[normalizedName] = existing;
-        continue;
-      }
-
-      const created = await prisma.role.create({
-        data: {
-          name: normalizedName,
-          description: role.description,
-          tenantId: subsidiary.tenantId,
-          subsidiaryId: subsidiary.id,
-        },
-      });
-
-      console.log(`✅ Rol "${created.name}" creado para "${subsidiary.name}"`);
-      roleMap[normalizedName] = created;
+    if (!rolesBySubsidiary[subsidiaryId]) {
+      rolesBySubsidiary[subsidiaryId] = {};
     }
 
-    rolesBySubsidiary[subsidiary.id] = roleMap;
+    // === SuperAdmin ===
+    const superAdminRole = await prisma.role.create({
+      data: {
+        name: "Super.Admin",
+        description: "Super admin with ALL permissions",
+        tenantId,
+        subsidiaryId,
+      },
+    });
+
+    const superAdminPermissions = allowedActions.map((allowed) => ({
+      roleId: superAdminRole.id,
+      actionId: allowed.actionId,
+      moduleId: allowed.moduleId ?? null,
+      submoduleId: allowed.submoduleId ?? null,
+      tenantId,
+      subsidiaryId,
+      compositeKey: `${superAdminRole.id}_${allowed.actionId}_${allowed.moduleId || ''}_${allowed.submoduleId || ''}`,
+    }));
+
+    await prisma.rolePermission.createMany({
+      data: superAdminPermissions,
+      skipDuplicates: true,
+    });
+
+    console.log(`✅ Super.Admin created for Subsidiary ${subsidiaryId} with ${superAdminPermissions.length} permissions`);
+
+    rolesBySubsidiary[subsidiaryId]["Super.Admin"] = superAdminRole;
+
+    // === Admin ===
+    const adminRole = await prisma.role.create({
+      data: {
+        name: "Admin",
+        description: "Admin with limited permissions",
+        tenantId,
+        subsidiaryId,
+      },
+    });
+
+    const adminPermissions = allowedActions
+      .filter((allowed) =>
+        !["eliminar", "exportar"].includes(allowed.action.name.toLowerCase())
+      )
+      .map((allowed) => ({
+        roleId: adminRole.id,
+        actionId: allowed.actionId,
+        moduleId: allowed.moduleId ?? null,
+        submoduleId: allowed.submoduleId ?? null,
+        tenantId,
+        subsidiaryId,
+        compositeKey: `${adminRole.id}_${allowed.actionId}_${allowed.moduleId || ''}_${allowed.submoduleId || ''}`,
+      }));
+
+    await prisma.rolePermission.createMany({
+      data: adminPermissions,
+      skipDuplicates: true,
+    });
+
+    console.log(`✅ Admin created for Subsidiary ${subsidiaryId} with ${adminPermissions.length} permissions`);
+
+    rolesBySubsidiary[subsidiaryId]["Admin"] = adminRole;
   }
 
+  console.log("🎉 Roles and RolePermissions seeding completed.\n");
   return rolesBySubsidiary;
 }

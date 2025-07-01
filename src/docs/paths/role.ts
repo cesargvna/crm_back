@@ -1,4 +1,5 @@
 export const rolePaths = {
+  // 🚩 Crear rol
   "POST: /roles": {
     post: {
       tags: ["Role"],
@@ -13,11 +14,8 @@ export const rolePaths = {
               type: "object",
               required: ["name", "tenantId", "subsidiaryId"],
               properties: {
-                name: { type: "string", example: "Vendedor" },
-                description: {
-                  type: "string",
-                  example: "Acceso limitado a ventas",
-                },
+                name: { type: "string", example: "vendedor" },
+                description: { type: "string", example: "Acceso limitado a ventas" },
                 tenantId: { type: "string", format: "uuid" },
                 subsidiaryId: { type: "string", format: "uuid" },
               },
@@ -44,23 +42,22 @@ export const rolePaths = {
           },
         },
         400: {
-          description: "Validation or tenant mismatch error",
+          description: "Validation error or tenant mismatch",
           content: {
             "application/json": {
               example: {
-                message:
-                  "The selected subsidiary does not belong to the specified tenant.",
+                message: "The selected subsidiary does not belong to the specified tenant.",
               },
             },
           },
         },
         409: {
-          description: "Role already exists",
+          description: "Role name conflict",
           content: {
             "application/json": {
               example: {
                 message:
-                  "A role with the same name already exists in this tenant and subsidiary.",
+                  "A role with the name \"vendedor\" already exists in this tenant and subsidiary.",
               },
             },
           },
@@ -69,12 +66,13 @@ export const rolePaths = {
     },
   },
 
+  // 🚩 Actualizar rol
   "PUT: /roles/{id}": {
     put: {
       tags: ["Role"],
       summary: "Update a role",
       description:
-        "Updates the name and/or description of a role. Name must remain unique in the same tenant + subsidiary.",
+        "Updates the name and/or description of a role. Name must remain unique per tenant + subsidiary.",
       parameters: [
         { name: "id", in: "path", required: true, schema: { type: "string" } },
       ],
@@ -86,7 +84,7 @@ export const rolePaths = {
               type: "object",
               required: ["name"],
               properties: {
-                name: { type: "string", example: "Administrador" },
+                name: { type: "string", example: "administrador" },
                 description: { type: "string", example: "Permisos completos" },
               },
             },
@@ -119,12 +117,12 @@ export const rolePaths = {
           },
         },
         409: {
-          description: "Name conflict with another role",
+          description: "Name conflict",
           content: {
             "application/json": {
               example: {
                 message:
-                  "Another role with the same name already exists in this tenant and subsidiary.",
+                  "Another role with the name \"administrador\" already exists in this tenant and subsidiary.",
               },
             },
           },
@@ -133,12 +131,13 @@ export const rolePaths = {
     },
   },
 
+  // 🚩 Toggle status
   "PATCH: /roles/{id}/status": {
     patch: {
       tags: ["Role"],
       summary: "Toggle role status",
       description:
-        "Enables or disables a role. All users assigned to the role will also be updated.",
+        "Enables or disables a role. Also updates all users assigned to that role.",
       parameters: [
         { name: "id", in: "path", required: true, schema: { type: "string" } },
       ],
@@ -148,9 +147,11 @@ export const rolePaths = {
           content: {
             "application/json": {
               example: {
+                id: "uuid",
+                name: "vendedor",
+                newStatus: false,
                 message: "Role disabled successfully.",
-                detail:
-                  "All users assigned to this role have also been disabled.",
+                detail: "All users assigned to the role \"vendedor\" have also been disabled.",
               },
             },
           },
@@ -167,82 +168,76 @@ export const rolePaths = {
     },
   },
 
+  // 🚩 Get role with permissions hierarchy
   "GET: /roles/{id}/permissions": {
     get: {
       tags: ["Role"],
-      summary: "Get role with permissions",
+      summary: "Get role with hierarchical permissions",
       description:
-        "Returns a role with its assigned permissions including action, section, module and submodule names. Useful for audit or UI role overview.",
-      parameters: [
-        {
-          name: "id",
-          in: "path",
-          required: true,
-          schema: {
-            type: "string",
-            example: "c361a874-512f-4f82-a501-7a8c7cd9ec94",
-          },
-        },
-      ],
-      responses: {
-        200: {
-          description: "Role found with enriched permissions",
-          content: {
-            "application/json": {
-              example: {
-                id: "c361a874-512f-4f82-a501-7a8c7cd9ec94",
-                name: "admin",
-                status: true,
-                permissions: [
-                  {
-                    id: "4ad53e6c-2a1e-4f10-8f96-3d4b7fbb9a33",
-                    action: "edit",
-                    section: "Usuarios",
-                    module: "Roles",
-                    submodule: "Crear Rol",
-                  },
-                  {
-                    id: "f8be0c45-daa0-43ae-840e-93dca6824109",
-                    action: "view",
-                    section: "Ventas",
-                    module: "Ventas",
-                    submodule: null,
-                  },
-                ],
-              },
-            },
-          },
-        },
-        404: {
-          description: "Role not found",
-          content: {
-            "application/json": {
-              example: { message: "Role not found" },
-            },
-          },
-        },
-      },
-    },
-  },
-
-  "GET: /roles/{id}": {
-    get: {
-      tags: ["Role"],
-      summary: "Get role with full info",
-      description:
-        "Returns role with related users, tenant, subsidiary and assigned permissions.",
+        "Returns the role with its permissions structured by section → module → submodule → actions.",
       parameters: [
         { name: "id", in: "path", required: true, schema: { type: "string" } },
       ],
       responses: {
         200: {
-          description: "Role found with extended info",
+          description: "Role with hierarchical permissions",
+          content: {
+            "application/json": {
+              example: {
+                id: "uuid",
+                name: "vendedor",
+                status: true,
+                permissions: {
+                  Ventas: {
+                    Productos: {
+                      actions: ["view", "create"],
+                    },
+                    "Gestión Ventas": {
+                      "Notas de Crédito": ["create", "delete"],
+                    },
+                  },
+                  Usuarios: {
+                    Roles: {
+                      actions: ["view"],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        404: {
+          description: "Role not found",
+          content: {
+            "application/json": {
+              example: { message: "Role not found" },
+            },
+          },
+        },
+      },
+    },
+  },
+
+  // 🚩 Obtener rol extendido por ID
+  "GET: /roles/{id}": {
+    get: {
+      tags: ["Role"],
+      summary: "Get role with full details",
+      description:
+        "Returns the role with related users, tenant, subsidiary and flat permissions.",
+      parameters: [
+        { name: "id", in: "path", required: true, schema: { type: "string" } },
+      ],
+      responses: {
+        200: {
+          description: "Role with details",
           content: {
             "application/json": {
               example: {
                 role: {
                   id: "uuid",
                   name: "superadmin",
+                  description: "Rol principal",
                   status: true,
                 },
                 tenant: {
@@ -253,11 +248,20 @@ export const rolePaths = {
                   id: "uuid",
                   name: "Sucursal Central",
                 },
+                permissions: [
+                  {
+                    id: "uuid",
+                    action: "edit",
+                    module: "Usuarios",
+                    submodule: "Editar Usuario",
+                    section: "Usuarios",
+                  },
+                ],
                 users: [
                   {
                     id: "uuid",
-                    name: "Luis",
-                    email: "luis@empresa.com",
+                    name: "Tatiana",
+                    email: "tatiana@libreria.com",
                     status: true,
                   },
                 ],
@@ -277,62 +281,40 @@ export const rolePaths = {
     },
   },
 
-  "GET: /roles/by-subsidiary/{subsidiaryId}": {
+  // 🚩 Roles por Subsidiary (completo)
+  "GET: /rolesBySubsidiaryComplete/{subsidiaryId}": {
     get: {
       tags: ["Role"],
-      summary: "Get all roles by subsidiary",
+      summary: "Get roles by subsidiary (full)",
       description:
-        "Returns all roles of a subsidiary, including users and permissions. Includes optional filters and pagination.",
+        "Returns all roles in a subsidiary with users and permissions. Supports filters, search, sort, pagination.",
       parameters: [
-        {
-          name: "subsidiaryId",
-          in: "path",
-          required: true,
-          schema: { type: "string" },
-        },
+        { name: "subsidiaryId", in: "path", required: true, schema: { type: "string" } },
         { name: "page", in: "query", schema: { type: "integer", default: 1 } },
-        {
-          name: "limit",
-          in: "query",
-          schema: { type: "integer", default: 10 },
-        },
+        { name: "limit", in: "query", schema: { type: "integer", default: 10 } },
         { name: "search", in: "query", schema: { type: "string" } },
         {
           name: "status",
           in: "query",
-          schema: {
-            type: "string",
-            enum: ["true", "false", "all"],
-            default: "all",
-          },
+          schema: { type: "string", enum: ["true", "false", "all"], default: "all" },
         },
         {
           name: "orderBy",
           in: "query",
-          schema: {
-            type: "string",
-            enum: ["name", "created_at", "updated_at"],
-          },
+          schema: { type: "string", enum: ["name", "created_at", "updated_at"] },
         },
-        {
-          name: "sort",
-          in: "query",
-          schema: { type: "string", enum: ["asc", "desc"], default: "asc" },
-        },
+        { name: "sort", in: "query", schema: { type: "string", enum: ["asc", "desc"], default: "asc" } },
       ],
       responses: {
         200: {
-          description: "Roles by subsidiary returned",
+          description: "Roles returned",
           content: {
             "application/json": {
               example: {
                 total: 2,
                 page: 1,
                 limit: 10,
-                tenant: {
-                  id: "uuid",
-                  name: "PERU - LIBRERÍA",
-                },
+                tenant: { id: "uuid", name: "PERU - LIBRERÍA" },
                 data: [
                   {
                     id: "uuid",
@@ -340,12 +322,14 @@ export const rolePaths = {
                     users: [
                       {
                         id: "uuid",
-                        name: "Tatiana",
+                        name: "Luis",
                         status: true,
                         permissions: [
                           {
-                            section: { name: "Ventas" },
-                            action: { name: "crear" },
+                            section: "Ventas",
+                            module: "Productos",
+                            submodule: null,
+                            action: "create",
                           },
                         ],
                       },
@@ -360,31 +344,22 @@ export const rolePaths = {
     },
   },
 
-  "GET: /roles/by-tenant/{tenantId}": {
+  // 🚩 Roles por Tenant
+  "GET: /rolesByTenant/{tenantId}": {
     get: {
       tags: ["Role"],
-      summary: "Get all roles by tenant",
-      description:
-        "Returns all roles grouped by subsidiary with assigned permissions. Useful for visualization and audit.",
+      summary: "Get roles grouped by subsidiaries (tenant)",
+      description: "Returns roles grouped by subsidiary for a tenant, including permissions.",
       parameters: [
-        {
-          name: "tenantId",
-          in: "path",
-          required: true,
-          schema: { type: "string" },
-        },
+        { name: "tenantId", in: "path", required: true, schema: { type: "string" } },
       ],
       responses: {
         200: {
-          description: "Roles grouped by subsidiaries",
+          description: "Roles grouped",
           content: {
             "application/json": {
               example: {
-                tenant: {
-                  id: "uuid",
-                  name: "PERU - LIBRERÍA",
-                  description: "Empresa peruana",
-                },
+                tenant: { id: "uuid", name: "PERU - LIBRERÍA", description: "Empresa peruana" },
                 subsidiaries: [
                   {
                     name: "Sucursal Central",
@@ -420,34 +395,23 @@ export const rolePaths = {
     },
   },
 
+  // 🚩 Roles activos básicos por Subsidiary
   "GET: /rolesBySubsidiary/{subsidiaryId}": {
     get: {
       tags: ["Role"],
-      summary: "Get active roles (id and name) by subsidiary",
-      description:
-        "Returns a list of active roles (only `id` and `name`) for a specific subsidiary. Useful for dropdown selectors or minimal role listings.",
+      summary: "Get active roles by subsidiary (simple)",
+      description: "Returns only id and name for active roles of a subsidiary.",
       parameters: [
-        {
-          name: "subsidiaryId",
-          in: "path",
-          required: true,
-          schema: { type: "string", format: "uuid" },
-        },
+        { name: "subsidiaryId", in: "path", required: true, schema: { type: "string" } },
       ],
       responses: {
         200: {
-          description: "List of active roles returned successfully",
+          description: "List of active roles",
           content: {
             "application/json": {
               example: [
-                {
-                  id: "c0de70a7-9a76-4c27-bb8b-8fa539701a6b",
-                  name: "vendedor",
-                },
-                {
-                  id: "e5a72bd1-b2c2-4a36-bbcb-28c6a4c60b27",
-                  name: "admin",
-                },
+                { id: "uuid", name: "vendedor" },
+                { id: "uuid", name: "admin" },
               ],
             },
           },

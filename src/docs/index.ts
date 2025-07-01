@@ -1,7 +1,8 @@
-import { permissionSectionPaths } from "./paths/permissionSection";
-import { moduleGroupPaths } from "./paths/moduleGroup";
-import { submoduleGroupPaths } from "./paths/submoduleGroup";
+import { sectionPaths } from "./paths/section";
+import { modulePaths } from "./paths/module";
+import { submodulePaths } from "./paths/submodule";
 import { permissionActionPaths } from "./paths/permissionAction";
+import { allowedActionPaths } from "./paths/allowedAction";
 import { tenantPaths } from "./paths/tenant";
 import { subsidiaryPaths } from "./paths/subsidiary";
 import { rolePaths } from "./paths/role";
@@ -26,20 +27,24 @@ export const swaggerConfig = {
   ],
   tags: [
     {
-      name: "Permission Section",
+      name: "Section",
       description: "Permission structure grouping modules and submodules",
     },
     {
-      name: "Permission Module",
+      name: "Module",
       description: "Modules grouped under a permission section",
     },
     {
-      name: "Permission Submodule",
+      name: "Submodule",
       description: "Submodules grouped under a permission module",
     },
     {
       name: "Permission Action",
       description: "Atomic permission operations like view, edit, create, etc.",
+    },
+    {
+      name: "Allowed Action",
+      description: "",
     },
     {
       name: "Role",
@@ -87,10 +92,11 @@ export const swaggerConfig = {
     },
   ],
   paths: {
-    ...permissionSectionPaths,
-    ...moduleGroupPaths,
-    ...submoduleGroupPaths,
+    ...sectionPaths,
+    ...modulePaths,
+    ...submodulePaths,
     ...permissionActionPaths,
+    ...allowedActionPaths,
     ...rolePaths,
     ...rolePermissionPaths,
     ...tenantPaths,

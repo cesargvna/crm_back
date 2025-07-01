@@ -1,10 +1,10 @@
 export const permissionActionPaths = {
-  "POST: role/permission-actions": {
+  "POST: role/permission-action": {
     post: {
       tags: ["Permission Action"],
       summary: "Create a permission action",
       description:
-        "Creates a new permission action. The name must be unique, normalized (no tildes), and contain only letters or '.' (no spaces, ñ, or numbers).",
+        "Creates a new permission action. The name must be unique, normalized (no tildes, no ñ), and contain only letters.",
       requestBody: {
         required: true,
         content: {
@@ -25,10 +25,11 @@ export const permissionActionPaths = {
           content: {
             "application/json": {
               example: {
-                id: "a1b2c3d4-e5f6-7890-abcd-1234567890ab",
+                id: "uuid",
                 name: "view",
-                createdAt: "2025-06-15T12:00:00.000Z",
-                updatedAt: "2025-06-15T12:00:00.000Z",
+                status: true,
+                created_at: "2025-06-15T12:00:00.000Z",
+                updated_at: "2025-06-15T12:00:00.000Z",
               },
             },
           },
@@ -57,7 +58,7 @@ export const permissionActionPaths = {
     },
   },
 
-  "PUT: role/permission-actions/{id}": {
+  "PUT: role/permission-action/{id}": {
     put: {
       tags: ["Permission Action"],
       summary: "Update a permission action",
@@ -68,7 +69,7 @@ export const permissionActionPaths = {
           name: "id",
           in: "path",
           required: true,
-          schema: { type: "string", example: "a1b2c3d4-e5f6-7890-abcd-1234567890ab" },
+          schema: { type: "string", format: "uuid" },
         },
       ],
       requestBody: {
@@ -87,14 +88,15 @@ export const permissionActionPaths = {
       },
       responses: {
         200: {
-          description: "Permission action updated",
+          description: "Permission action updated successfully",
           content: {
             "application/json": {
               example: {
-                id: "a1b2c3d4-e5f6-7890-abcd-1234567890ab",
+                id: "uuid",
                 name: "edit",
-                createdAt: "2025-06-10T11:00:00.000Z",
-                updatedAt: "2025-06-15T13:30:00.000Z",
+                status: true,
+                created_at: "2025-06-15T12:00:00.000Z",
+                updated_at: "2025-06-15T13:00:00.000Z",
               },
             },
           },
@@ -104,7 +106,7 @@ export const permissionActionPaths = {
           content: {
             "application/json": {
               example: {
-                message: "Only letters and '.' are allowed. No ñ, spaces, numbers or symbols",
+                message: "Only letters are allowed. No ñ, spaces, numbers or symbols.",
               },
             },
           },
@@ -123,12 +125,52 @@ export const permissionActionPaths = {
     },
   },
 
-  "GET: role/permission-actions": {
+  "PATCH: role/permission-action/{id}/status": {
+    patch: {
+      tags: ["Permission Action"],
+      summary: "Toggle status of a permission action",
+      description:
+        "Toggles the status (active/inactive) of a permission action automatically. No request body needed.",
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
+      ],
+      responses: {
+        200: {
+          description: "Status toggled successfully",
+          content: {
+            "application/json": {
+              example: {
+                id: "uuid",
+                name: "edit",
+                status: false,
+                created_at: "2025-06-15T12:00:00.000Z",
+                updated_at: "2025-06-15T13:30:00.000Z",
+              },
+            },
+          },
+        },
+        404: {
+          description: "Permission action not found",
+          content: {
+            "application/json": {
+              example: { message: "Permission action not found" },
+            },
+          },
+        },
+      },
+    },
+  },
+
+  "GET: role/permission-action": {
     get: {
       tags: ["Permission Action"],
       summary: "Get all permission actions",
-      description:
-        "Returns a full list of available permission actions. No pagination or filters applied.",
+      description: "Returns a list of all permission actions sorted by name.",
       responses: {
         200: {
           description: "List of permission actions",
@@ -136,16 +178,18 @@ export const permissionActionPaths = {
             "application/json": {
               example: [
                 {
-                  id: "11111111-1111-1111-1111-111111111111",
+                  id: "uuid",
                   name: "view",
-                  createdAt: "2025-06-01T10:00:00.000Z",
-                  updatedAt: "2025-06-01T10:00:00.000Z",
+                  status: true,
+                  created_at: "2025-06-15T12:00:00.000Z",
+                  updated_at: "2025-06-15T12:00:00.000Z",
                 },
                 {
-                  id: "22222222-2222-2222-2222-222222222222",
+                  id: "uuid",
                   name: "edit",
-                  createdAt: "2025-06-01T10:05:00.000Z",
-                  updatedAt: "2025-06-01T10:05:00.000Z",
+                  status: false,
+                  created_at: "2025-06-15T12:05:00.000Z",
+                  updated_at: "2025-06-15T12:10:00.000Z",
                 },
               ],
             },
@@ -155,17 +199,17 @@ export const permissionActionPaths = {
     },
   },
 
-  "GET: role/permission-actions/{id}": {
+  "GET: role/permission-action/{id}": {
     get: {
       tags: ["Permission Action"],
       summary: "Get a permission action by ID",
-      description: "Returns a specific permission action by its ID.",
+      description: "Returns a permission action by its ID.",
       parameters: [
         {
           name: "id",
           in: "path",
           required: true,
-          schema: { type: "string", example: "11111111-1111-1111-1111-111111111111" },
+          schema: { type: "string", format: "uuid" },
         },
       ],
       responses: {
@@ -174,10 +218,11 @@ export const permissionActionPaths = {
           content: {
             "application/json": {
               example: {
-                id: "11111111-1111-1111-1111-111111111111",
+                id: "uuid",
                 name: "view",
-                createdAt: "2025-06-01T10:00:00.000Z",
-                updatedAt: "2025-06-01T10:00:00.000Z",
+                status: true,
+                created_at: "2025-06-15T12:00:00.000Z",
+                updated_at: "2025-06-15T12:00:00.000Z",
               },
             },
           },
@@ -186,9 +231,7 @@ export const permissionActionPaths = {
           description: "Permission action not found",
           content: {
             "application/json": {
-              example: {
-                message: "Permission action not found",
-              },
+              example: { message: "Permission action not found" },
             },
           },
         },

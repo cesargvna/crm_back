@@ -1,15 +1,17 @@
 import { z } from "zod";
 
+// Nombre solo minúsculas + punto, SIN espacios
 const nameSchema = z
   .string()
   .trim()
   .min(3, { message: "Role name must be at least 3 characters" })
   .max(40, { message: "Role name must be at most 40 characters" })
-  .regex(/^[A-Za-z. ]+$/, {
+  .regex(/^[a-z.]+$/, {
     message:
-      "Role name can contain only letters, spaces and periods (no ñ, numbers or special characters)",
+      "Role name can contain only lowercase letters and '.' (no ñ, spaces, numbers or special characters).",
   });
 
+// Descripción opcional, permite todo
 const optionalString = (max: number) =>
   z.string().max(max).optional().or(z.literal(""));
 
@@ -43,14 +45,8 @@ export const getAllRolesQuerySchema = z.object({
 
   search: z.string().optional(),
   status: z.enum(["true", "false", "all"]).optional().default("all"),
-  orderBy: z
-    .enum(["name", "created_at", "updated_at"])
-    .optional()
-    .default("name"),
+  orderBy: z.enum(["name", "created_at", "updated_at"]).optional().default("name"),
   sort: z.enum(["asc", "desc"]).optional().default("asc"),
 
-  subsidiaryId: z
-    .string()
-    .uuid({ message: "Invalid subsidiary ID" })
-    .optional(), // <--- nuevo
+  subsidiaryId: z.string().uuid({ message: "Invalid subsidiary ID" }).optional(),
 });
