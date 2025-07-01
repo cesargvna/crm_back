@@ -5,6 +5,9 @@ type SeededTenant = {
   id: string;
   name: string;
   description: string | null;
+  status: boolean;
+  created_at: Date;
+  updated_at: Date;
 };
 
 export async function seedTenant(): Promise<SeededTenant[]> {
@@ -25,7 +28,8 @@ export async function seedTenant(): Promise<SeededTenant[]> {
     },
     {
       name: "PERU - CAFETERÍA CULTURAL",
-      description: "Cafetería que promueve actividades culturales y café peruano.",
+      description:
+        "Cafetería que promueve actividades culturales y café peruano.",
     },
     {
       name: "TENANT TEMPORAL",
@@ -50,6 +54,9 @@ export async function seedTenant(): Promise<SeededTenant[]> {
         id: existing.id,
         name: existing.name,
         description: existing.description,
+        status: existing.status,
+        created_at: existing.created_at,
+        updated_at: existing.updated_at,
       });
       continue;
     }
@@ -66,6 +73,9 @@ export async function seedTenant(): Promise<SeededTenant[]> {
       id: created.id,
       name: created.name,
       description: created.description,
+      status: created.status,
+      created_at: created.created_at,
+      updated_at: created.updated_at,
     });
   }
 

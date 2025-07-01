@@ -4,50 +4,55 @@ import { validate } from '../middleware/validate.middleware';
 import { validateParams } from '../middleware/validateParams.middleware';
 import { validateQuery } from '../middleware/validateQuery.middleware';
 
-import { createPermissionSectionSchema, getAllPermissionSectionsQuerySchema, togglePermissionSectionStatusSchema, updatePermissionSectionSchema } from '../validators/permissionSection.validator';
-import { createPermissionSection, getAllPermissionSections, getAllPermissionSectionsComplete, getPermissionSectionById, togglePermissionSectionStatus, updatePermissionSection } from '../controllers/permissionSection.controller';
-import { createModuleGroup, getAllModuleGroups, getAllModuleGroupsComplete, getModuleGroupById, toggleModuleGroupStatus, updateModuleGroup } from '../controllers/moduleGroup.controller';
-import { createModuleGroupSchema, getAllModuleGroupsQuerySchema, toggleModuleGroupStatusSchema, updateModuleGroupSchema } from '../validators/moduleGroup.validator';
-import { createSubmoduleGroupSchema, getAllSubmoduleGroupsQuerySchema, toggleSubmoduleGroupStatusSchema, updateSubmoduleGroupSchema } from '../validators/submoduleGroup.validator';
-import { createSubmoduleGroup, getAllSubmoduleGroups, getAllSubmoduleGroupsComplete, getSubmoduleGroupById, toggleSubmoduleGroupStatus, updateSubmoduleGroup } from '../controllers/submoduleGroup.controller';
+
+
 import { createPermissionActionSchema, updatePermissionActionSchema } from '../validators/permissionAction.validator';
-import { createPermissionAction, getAllPermissionActions, getPermissionActionById, updatePermissionAction } from '../controllers/permissionAction.controller';
+import { createPermissionAction, getAllPermissionActions, getPermissionActionById, togglePermissionActionStatus, updatePermissionAction } from '../controllers/permissionAction.controller';
 import { createRoleSchema, getAllRolesQuerySchema, updateRoleSchema } from '../validators/role.validator';
 import { createRole, getRoleById, getRolesBySubsidiary, getRolesBySubsidiaryComplete, getRolesByTenant, getRoleWithPermissions, toggleRoleStatus, updateRole } from '../controllers/role.controller';
-import { assignRolePermissionsSchema, createRolePermissionSchema, deleteRolePermissionParamsSchema, getRolePermissionParamsSchema } from '../validators/rolePermission.validator';
-import { assignRolePermissions, createRolePermission, deleteRolePermission, getRolePermissionsByRoleId, getRolePermissionsBySubsidiaryId, getRolePermissionsByTenantId, getSidebarPermissionsByRoleId } from '../controllers/rolePermission.controller';
+
+import { createSection, getHiddenSections, getSidebarSectionsByRole, getVisibleSections, toggleSectionVisibility, updateSection } from '../controllers/section.controller';
+import { createSectionSchema, roleIdParamSchema, toggleSectionVisibilitySchema, updateSectionSchema } from '../validators/section.validator';
+import { createModule, getModuleById, updateModule } from '../controllers/module.controller';
+import { createModuleSchema, updateModuleSchema } from '../validators/module.validator';
+import { createSubmoduleSchema, updateSubmoduleSchema } from '../validators/submodule.validator';
+import { createSubmodule, getSubmoduleById, updateSubmodule } from '../controllers/submodule.controller';
+import { createAllowedActionSchema, getAllAllowedActionsQuerySchema } from '../validators/allowedAction.validator';
+import { createAllowedAction, deleteAllowedAction, getAllAllowedActions } from '../controllers/allowedAction.controller';
+import { createRolePermissionSchema, getRolePermissionsQuerySchema } from '../validators/rolePermission.validator';
+import { createRolePermission, deleteRolePermission, getRolePermissions,  } from '../controllers/rolePermission.controller';
 
 const roleRouter = express.Router();
 
-// ✅ PERMISSION SECTION ROUTES
-roleRouter.post('/permission-sections', validate(createPermissionSectionSchema), createPermissionSection);
-roleRouter.put('/permission-sections/:id', validate(updatePermissionSectionSchema), updatePermissionSection);
-roleRouter.patch('/permission-sections/:id/status', validate(togglePermissionSectionStatusSchema), togglePermissionSectionStatus);
-roleRouter.get('/permission-sections', validateQuery(getAllPermissionSectionsQuerySchema), getAllPermissionSections);
-roleRouter.get('/permission-sections/:id', getPermissionSectionById);
-roleRouter.get('/permission-sections-complete', getAllPermissionSectionsComplete);
+// ✅ SECTION
+roleRouter.post('/sections', validate(createSectionSchema), createSection);
+roleRouter.put('/sections/:id', validate(updateSectionSchema), updateSection);
+roleRouter.patch('/sections/:id/visibility', validate(toggleSectionVisibilitySchema), toggleSectionVisibility);
+roleRouter.get('/sections/visible', getVisibleSections);
+roleRouter.get('/sections/hidden', getHiddenSections);
+roleRouter.get('/sections/sidebar/:roleId', validateParams(roleIdParamSchema), getSidebarSectionsByRole);
 
-// ✅ PERMISSION MODULE ROUTES
-roleRouter.post('/permission-module', validate(createModuleGroupSchema), createModuleGroup);
-roleRouter.put('/permission-module/:id', validate(updateModuleGroupSchema), updateModuleGroup);
-roleRouter.patch('/permission-module/:id/status', validate(toggleModuleGroupStatusSchema), toggleModuleGroupStatus);
-roleRouter.get('/permission-module', validateQuery(getAllModuleGroupsQuerySchema), getAllModuleGroups);
-roleRouter.get('/permission-module/:id', getModuleGroupById);
-roleRouter.get('/permission-module-complete', getAllModuleGroupsComplete);
+// ✅ MODULE
+roleRouter.post('/module', validate(createModuleSchema), createModule);
+roleRouter.put('/module/:id', validate(updateModuleSchema), updateModule);
+roleRouter.get('/module/:id', getModuleById);
 
-// ✅ PERMISSION SUBMODULE ROUTES
-roleRouter.post('/permission-submodule', validate(createSubmoduleGroupSchema), createSubmoduleGroup);
-roleRouter.put('/permission-submodule/:id', validate(updateSubmoduleGroupSchema), updateSubmoduleGroup);
-roleRouter.patch('/permission-submodule/:id/status', validate(toggleSubmoduleGroupStatusSchema), toggleSubmoduleGroupStatus);
-roleRouter.get('/permission-submodule', validateQuery(getAllSubmoduleGroupsQuerySchema), getAllSubmoduleGroups);
-roleRouter.get('/permission-submodule/:id', getSubmoduleGroupById);
-roleRouter.get('/permission-submodule-complete', getAllSubmoduleGroupsComplete);
+// ✅ SUBMODULE
+roleRouter.post('/submodule', validate(createSubmoduleSchema), createSubmodule);
+roleRouter.put('/submodule/:id', validate(updateSubmoduleSchema), updateSubmodule);
+roleRouter.get('/submodule/:id', getSubmoduleById);
 
 // ✅ PERMISSION ACTION ROUTES
-roleRouter.post('/permission-actions', validate(createPermissionActionSchema), createPermissionAction);
-roleRouter.put('/permission-actions/:id', validate(updatePermissionActionSchema), updatePermissionAction);
-roleRouter.get('/permission-actions', getAllPermissionActions);
-roleRouter.get('/permission-actions/:id', getPermissionActionById);
+roleRouter.post('/permission-action', validate(createPermissionActionSchema), createPermissionAction);
+roleRouter.put('/permission-action/:id', validate(updatePermissionActionSchema), updatePermissionAction);
+roleRouter.patch('/permission-action/:id/status', togglePermissionActionStatus);
+roleRouter.get('/permission-action', getAllPermissionActions);
+roleRouter.get('/permission-action/:id', getPermissionActionById);
+
+// ✅ ALLOWED ACTION
+roleRouter.post('/allowed-action', validate(createAllowedActionSchema), createAllowedAction);
+roleRouter.get('/allowed-action', validateQuery(getAllAllowedActionsQuerySchema), getAllAllowedActions);
+roleRouter.delete('/allowed-action/:id', deleteAllowedAction);
 
 // ✅ ROLE ROUTES
 roleRouter.post("/roles", validate(createRoleSchema), createRole);
@@ -56,16 +61,12 @@ roleRouter.patch("/roles/:id/status", toggleRoleStatus);
 roleRouter.get("/roles/:id/permissions",  getRoleWithPermissions); 
 roleRouter.get("/roles/:id",getRoleById);
 roleRouter.get("/rolesBySubsidiaryComplete/:subsidiaryId",validateQuery(getAllRolesQuerySchema),getRolesBySubsidiaryComplete);
-roleRouter.get("/roles/by-tenant/:tenantId", getRolesByTenant);
+roleRouter.get("/rolesByTenant/:tenantId", getRolesByTenant);
 roleRouter.get("/rolesBySubsidiary/:subsidiaryId", getRolesBySubsidiary);
 
 // ✅ ROLE PERMISSION ROUTES
-roleRouter.post("/rolePermission",validate(createRolePermissionSchema),createRolePermission);
-roleRouter.post("/role-permissions/assign", validate(assignRolePermissionsSchema), assignRolePermissions);
-roleRouter.get("/rolePermission/:roleId",validateParams(getRolePermissionParamsSchema),getRolePermissionsByRoleId);
-roleRouter.delete("/rolePermission/:id",validateParams(deleteRolePermissionParamsSchema),deleteRolePermission);
-roleRouter.get("/role-permissions/by-tenant/:tenantId", getRolePermissionsByTenantId);
-roleRouter.get("/role-permissions/by-subsidiary/:subsidiaryId", getRolePermissionsBySubsidiaryId);
-roleRouter.get("/role-permission/sidebar/:roleId", getSidebarPermissionsByRoleId);
+roleRouter.post("/roles/:roleId/permissions", validate(createRolePermissionSchema), createRolePermission);
+roleRouter.get("/roles/:roleId/permissions-list", getRolePermissions);
+roleRouter.delete("/role-permission/:id", deleteRolePermission);
 
 export default roleRouter;

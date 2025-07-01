@@ -1,57 +1,73 @@
-model PermissionSection {
-  id              String        @id @default(uuid()) @db.VarChar(255)
-  name            String        @unique @db.VarChar(40)
-  order           Int           @unique @default(0)
-  status          Boolean       @default(true) // Global status
+model Section {
+  id                String          @id @default(uuid()) @db.VarChar(255)
+  name              String          @unique @db.VarChar(40)
+  order             Int             @unique @default(0)
+  visibility        Boolean         @default(true)
 
-  modules         ModuleGroup[]
-  rolePermissions RolePermission[]
+  modules           Module[]
 
-  created_at      DateTime      @default(now())
-  updated_at      DateTime      @updatedAt
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @updatedAt
 }
 
-model ModuleGroup {
-  id              String        @id @default(uuid()) @db.VarChar(255)
-  name            String        @db.VarChar(40)
-  route           String?       @db.VarChar(255)
-  iconName        String        @db.VarChar(100)
-  status          Boolean       @default(true) // Global status
+model Module {
+  id                String             @id @default(uuid()) @db.VarChar(255)
+  name              String             @db.VarChar(40)
+  route             String?            @db.VarChar(255)
+  iconName          String             @db.VarChar(100)
 
-  sectionId       String        @db.VarChar(255)
-  section         PermissionSection @relation(fields: [sectionId], references: [id])
-
-  submodules      SubmoduleGroup[]
+  sectionId         String             @db.VarChar(255)
+  section           Section            @relation(fields: [sectionId], references: [id])
+  submodules        Submodule[]
+  allowedActions    AllowedAction[]
+  rolePermissions   RolePermission[]
 
   @@unique([name, sectionId])
 
-  created_at      DateTime      @default(now())
-  updated_at      DateTime      @updatedAt
+  created_at        DateTime           @default(now())
+  updated_at        DateTime           @updatedAt
 }
 
-model SubmoduleGroup {
-  id              String        @id @default(uuid()) @db.VarChar(255)
-  name            String        @db.VarChar(40)
-  route           String        @db.VarChar(255)
-  status          Boolean       @default(true) // Global status
+model Submodule {
+  id                String             @id @default(uuid()) @db.VarChar(255)
+  name              String             @db.VarChar(40)
+  route             String             @db.VarChar(255)
 
-  moduleId        String        @db.VarChar(255)
-  module          ModuleGroup   @relation(fields: [moduleId], references: [id])
+  moduleId          String             @db.VarChar(255)
+  module            Module             @relation(fields: [moduleId], references: [id])
+  allowedActions    AllowedAction[] 
+  rolePermissions   RolePermission[]
 
   @@unique([name, moduleId])
 
-  created_at      DateTime      @default(now())
-  updated_at      DateTime      @updatedAt
+  created_at        DateTime           @default(now())
+  updated_at        DateTime           @updatedAt
 }
 
 model PermissionAction {
-  id              String        @id @default(uuid()) @db.VarChar(255)
-  name            String        @unique @db.VarChar(50)
+  id                String             @id @default(uuid()) @db.VarChar(255)
+  name              String             @unique @db.VarChar(50)
+  status            Boolean            @default(true)
 
-  rolePermissions RolePermission[]
+  allowedActions    AllowedAction[]
+  rolePermissions   RolePermission[] 
 
-  created_at      DateTime      @default(now())
-  updated_at      DateTime      @updatedAt
+  created_at        DateTime           @default(now())
+  updated_at        DateTime           @updatedAt
+}
+
+model AllowedAction {
+  id                String             @id @default(uuid())
+  moduleId          String?
+  module            Module?            @relation(fields: [moduleId], references: [id])
+
+  submoduleId       String?
+  submodule         Submodule?         @relation(fields: [submoduleId], references: [id])
+
+  actionId          String
+  action            PermissionAction   @relation(fields: [actionId], references: [id])
+
+  compositeKey      String             @unique @db.VarChar(255) // <<-- Evita duplicados
 }
 
 model Role {
@@ -74,23 +90,26 @@ model Role {
 }
 
 model RolePermission { 
-  id            String            @id @default(uuid()) @db.VarChar(255)
+  id              String             @id @default(uuid()) @db.VarChar(255)
 
-  roleId        String            @db.VarChar(255)
-  actionId      String            @db.VarChar(255)
-  sectionId     String            @db.VarChar(255)
-  moduleId      String?           @db.VarChar(255) // Sin @relation para evitar bucle
-  submoduleId   String?           @db.VarChar(255) // Sin @relation para evitar bucle
-  tenantId      String            @db.VarChar(255)
-  subsidiaryId  String            @db.VarChar(255)
-  compositeKey  String            @unique @db.VarChar(255)
+  roleId          String             @db.VarChar(255)
+  role            Role               @relation(fields: [roleId], references: [id])
 
-  role          Role              @relation(fields: [roleId], references: [id])
-  section       PermissionSection @relation(fields: [sectionId], references: [id])
-  action        PermissionAction  @relation(fields: [actionId], references: [id])
+  actionId        String             @db.VarChar(255)
+  action          PermissionAction   @relation(fields: [actionId], references: [id])
 
-  created_at    DateTime          @default(now())
-  updated_at    DateTime          @updatedAt
+  moduleId        String?            @db.VarChar(255)
+  module          Module?            @relation(fields: [moduleId], references: [id])
+
+  submoduleId     String?            @db.VarChar(255)
+  submodule       Submodule?         @relation(fields: [submoduleId], references: [id])
+
+  tenantId        String             @db.VarChar(255)
+  subsidiaryId    String             @db.VarChar(255)
+  compositeKey    String             @unique @db.VarChar(255)
+
+  created_at      DateTime           @default(now())
+  updated_at      DateTime           @updatedAt
 
   @@index([roleId])
   @@index([tenantId])
