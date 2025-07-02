@@ -2,6 +2,9 @@ model Subsidiary {
   id                    String        @db.VarChar(255) @id  @default(uuid()) 
   status                Boolean       @default(true) 
   subsidiary_type       SubsidiaryType
+  maxUsers              Int           @default(3)
+  maxRoles              Int           @default(3)
+
   name                  String        @db.VarChar(50) 
   allowNegativeStock    Boolean       @default(false)
   

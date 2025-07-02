@@ -3,14 +3,52 @@ import prisma from "../utils/prisma";
 import normalize from "normalize-text";
 import { asyncHandler } from "../utils/asyncHandler";
 
-// ✅ Crear Subsidiary
+// ✔ Subsidiary name (permite ñ, mayúsculas, espacios limpios)
+export function normalizeSubsidiaryName(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") 
+    .replace(/\s+/g, " ")            
+    .trim();
+}
+
+// ✔ Para opcionales (ci, nit, descripción, address, etc)
+export function optionalNormalize(value?: string): string | undefined {
+  if (!value) return undefined;
+  return value.trim().replace(/\s+/g, " ");
+}
+
+// ✔ Validador de email válido
+export function isValidEmail(value: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(value);
+}
+
+// ✔ Validador de teléfono celular internacional
+export function isValidPhoneNumber(value: string): boolean {
+  const phoneRegex = /^\+\d{6,20}$/;
+  return phoneRegex.test(value);
+}
+
+// ✔ Normalizador de nombres de personas (opcional, para users)
+export function normalizeNameSpaces(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") 
+    .replace(/[^a-zA-ZñÑ\s]/g, "")   
+    .replace(/\s+/g, " ")            
+    .trim();
+}
+
 export const createSubsidiary = asyncHandler(
   async (req: Request, res: Response) => {
     const {
+      tenantId,
       name,
       subsidiary_type,
-      tenantId,
-      allowNegativeStock,
+      maxUsers = 3,
+      maxRoles = 3,
+      allowNegativeStock = false,
       ci,
       nit,
       description,
@@ -22,54 +60,72 @@ export const createSubsidiary = asyncHandler(
       email,
     } = req.body;
 
-    const normalized = normalize(name.trim());
+    // ✅ Validar Tenant y límites de roles/users
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) {
+      return res.status(404).json({ message: "Tenant not found" });
+    }
 
-    // 🚀 Validar nombre duplicado
+    // ✅ Normalizar nombre
+    const normalizedName = normalizeSubsidiaryName(name);
+
+    // ✅ Verificar unicidad dentro del tenant
     const exists = await prisma.subsidiary.findFirst({
       where: {
-        name: { equals: normalized, mode: "insensitive" },
         tenantId,
+        name: { equals: normalizedName, mode: "insensitive" },
       },
     });
-
     if (exists) {
       return res.status(409).json({
         message: `Subsidiary "${name}" already exists in this tenant.`,
       });
     }
 
-    // 🚀 Validar si ya existe una MATRIZ en este tenant
-    if (subsidiary_type === "MATRIZ") {
-      const matrizExists = await prisma.subsidiary.findFirst({
-        where: {
-          tenantId,
-          subsidiary_type: "MATRIZ",
-        },
+    // ✅ Validar maxUsers/maxRoles ≤ tenant limits
+    if (maxUsers > tenant.maxUsers) {
+      return res.status(400).json({
+        message: `Cannot set maxUsers to ${maxUsers}. Tenant limit is ${tenant.maxUsers}.`,
       });
-
-      if (matrizExists) {
-        return res.status(409).json({
-          message: `A MATRIZ already exists in this tenant.`,
-        });
-      }
     }
 
-    // ✅ Crear
+    if (maxRoles > tenant.maxRoles) {
+      return res.status(400).json({
+        message: `Cannot set maxRoles to ${maxRoles}. Tenant limit is ${tenant.maxRoles}.`,
+      });
+    }
+
+    // ✅ Validar formatos de teléfono/email
+    if (cellphone && !isValidPhoneNumber(cellphone)) {
+      return res.status(400).json({ message: "Invalid cellphone format." });
+    }
+
+    if (telephone && !isValidPhoneNumber(telephone)) {
+      return res.status(400).json({ message: "Invalid telephone format." });
+    }
+
+    if (email && !isValidEmail(email)) {
+      return res.status(400).json({ message: "Invalid email format." });
+    }
+
+    // ✅ Crear Subsidiary
     const created = await prisma.subsidiary.create({
       data: {
-        name: normalized,
-        subsidiary_type,
         tenantId,
+        name: normalizedName,
+        subsidiary_type,
+        maxUsers,
+        maxRoles,
         allowNegativeStock,
-        ci,
-        nit,
-        description,
-        address,
-        city,
-        country,
-        cellphone,
-        telephone,
-        email,
+        ci: optionalNormalize(ci),
+        nit: optionalNormalize(nit),
+        description: optionalNormalize(description),
+        address: optionalNormalize(address),
+        city: optionalNormalize(city),
+        country: optionalNormalize(country),
+        cellphone: optionalNormalize(cellphone),
+        telephone: optionalNormalize(telephone),
+        email: optionalNormalize(email),
       },
     });
 
@@ -77,13 +133,14 @@ export const createSubsidiary = asyncHandler(
   }
 );
 
-// ✅ Actualizar Subsidiary
 export const updateSubsidiary = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = req.params;
     const {
       name,
       subsidiary_type,
+      maxUsers,
+      maxRoles,
       allowNegativeStock,
       ci,
       nit,
@@ -96,63 +153,101 @@ export const updateSubsidiary = asyncHandler(
       email,
     } = req.body;
 
-    const normalized = normalize(name.trim());
-
-    // 🚀 Validar nombre duplicado (otro que no sea el actual)
-    const exists = await prisma.subsidiary.findFirst({
-      where: {
-        id: { not: id },
-        name: { equals: normalized, mode: "insensitive" },
-      },
-    });
-
-    if (exists) {
-      return res
-        .status(409)
-        .json({ message: `Subsidiary "${name}" already exists.` });
-    }
-
-    // 🚀 Validar si ya hay otra MATRIZ
-    const currentSubsidiary = await prisma.subsidiary.findUnique({
+    // ✅ Subsidiary actual
+    const subsidiary = await prisma.subsidiary.findUnique({
       where: { id },
     });
-
-    if (!currentSubsidiary) {
+    if (!subsidiary) {
       return res.status(404).json({ message: "Subsidiary not found" });
     }
 
-    if (subsidiary_type === "MATRIZ") {
-      const matrizExists = await prisma.subsidiary.findFirst({
-        where: {
-          id: { not: id }, // que no sea la misma que estamos editando
-          tenantId: currentSubsidiary.tenantId,
-          subsidiary_type: "MATRIZ",
-        },
-      });
-
-      if (matrizExists) {
-        return res.status(409).json({
-          message: `Another MATRIZ already exists in this tenant.`,
-        });
-      }
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: subsidiary.tenantId },
+    });
+    if (!tenant) {
+      return res.status(404).json({ message: "Tenant not found" });
     }
 
-    // ✅ Actualizar
+    // ✅ Normalizar nombre
+    const normalizedName = normalizeSubsidiaryName(name);
+
+    // ✅ Verificar unicidad dentro del tenant
+    const exists = await prisma.subsidiary.findFirst({
+      where: {
+        id: { not: id },
+        tenantId: subsidiary.tenantId,
+        name: { equals: normalizedName, mode: "insensitive" },
+      },
+    });
+    if (exists) {
+      return res.status(409).json({
+        message: `Subsidiary "${name}" already exists in this tenant.`,
+      });
+    }
+
+    // ✅ Contar entidades actuales
+    const [currentUsers, currentRoles] = await Promise.all([
+      prisma.user.count({ where: { subsidiaryId: id } }),
+      prisma.role.count({ where: { subsidiaryId: id } }),
+    ]);
+
+    // ✅ Validar que no se baje por debajo de los actuales
+    if (maxUsers < currentUsers) {
+      return res.status(400).json({
+        message: `Cannot set maxUsers to ${maxUsers} because there are already ${currentUsers} users in this Subsidiary.`,
+      });
+    }
+
+    if (maxRoles < currentRoles) {
+      return res.status(400).json({
+        message: `Cannot set maxRoles to ${maxRoles} because there are already ${currentRoles} roles in this Subsidiary.`,
+      });
+    }
+
+    // ✅ Validar que no exceda los límites del Tenant
+    if (maxUsers > tenant.maxUsers) {
+      return res.status(400).json({
+        message: `Cannot set maxUsers to ${maxUsers}. Tenant limit is ${tenant.maxUsers}.`,
+      });
+    }
+
+    if (maxRoles > tenant.maxRoles) {
+      return res.status(400).json({
+        message: `Cannot set maxRoles to ${maxRoles}. Tenant limit is ${tenant.maxRoles}.`,
+      });
+    }
+
+    // ✅ Validar teléfono/email
+    if (cellphone && !isValidPhoneNumber(cellphone)) {
+      return res.status(400).json({ message: "Invalid cellphone format." });
+    }
+
+    if (telephone && !isValidPhoneNumber(telephone)) {
+      return res.status(400).json({ message: "Invalid telephone format." });
+    }
+
+    if (email && !isValidEmail(email)) {
+      return res.status(400).json({ message: "Invalid email format." });
+    }
+
+    // ✅ Actualizar Subsidiary
     const updated = await prisma.subsidiary.update({
       where: { id },
       data: {
-        name: normalized,
+        name: normalizedName,
         subsidiary_type,
+        maxUsers,
+        maxRoles,
         allowNegativeStock,
-        ci,
-        nit,
-        description,
-        address,
-        city,
-        country,
-        cellphone,
-        telephone,
-        email,
+        ci: optionalNormalize(ci),
+        nit: optionalNormalize(nit),
+        description: optionalNormalize(description),
+        address: optionalNormalize(address),
+        city: optionalNormalize(city),
+        country: optionalNormalize(country),
+        cellphone: optionalNormalize(cellphone),
+        telephone: optionalNormalize(telephone),
+        email: optionalNormalize(email),
       },
     });
 
@@ -160,20 +255,19 @@ export const updateSubsidiary = asyncHandler(
   }
 );
 
-// ✅ Cambiar estado (activar/desactivar) con efectos en cascada
 export const toggleSubsidiaryStatus = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = req.params;
 
+    // ✅ Buscar la subsidiary
     const subsidiary = await prisma.subsidiary.findUnique({ where: { id } });
-
     if (!subsidiary) {
       return res.status(404).json({ message: "Subsidiary not found" });
     }
 
     const newStatus = !subsidiary.status;
 
-    // ✅ Actualizar estado de la sucursal
+    // ✅ Actualizar estado de la subsidiary
     const updatedSubsidiary = await prisma.subsidiary.update({
       where: { id },
       data: { status: newStatus },
@@ -191,11 +285,9 @@ export const toggleSubsidiaryStatus = asyncHandler(
       }),
     ]);
 
-    // ✅ Enviar respuesta con detalles explícitos para Postman
+    // ✅ Respuesta clara
     res.json({
-      message: `Subsidiary status updated to ${
-        newStatus ? "active" : "inactive"
-      }`,
+      message: `Subsidiary status updated to ${newStatus ? "active" : "inactive"}`,
       updated: {
         subsidiaryStatus: newStatus,
         affectedEntities: {
@@ -204,50 +296,6 @@ export const toggleSubsidiaryStatus = asyncHandler(
         },
       },
       subsidiary: updatedSubsidiary,
-    });
-  }
-);
-
-export const getSubsidiaryById = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { id } = req.params;
-
-    const subsidiary = await prisma.subsidiary.findUnique({
-      where: { id },
-      include: {
-        schedulesSubsidiaries: true,
-      },
-    });
-
-    if (!subsidiary) {
-      return res.status(404).json({ message: "Subsidiary not found" });
-    }
-
-    const [users, roles] = await Promise.all([
-      prisma.user.findMany({
-        where: { subsidiaryId: id },
-        include: {
-          schedulesUsers: true,
-          role: true,
-        },
-      }),
-      prisma.role.findMany({
-        where: { subsidiaryId: id },
-        include: {
-          rolePermissions: {
-            include: {
-              action: true,
-              section: true,
-            },
-          },
-        },
-      }),
-    ]);
-
-    res.json({
-      subsidiary,
-      users,
-      roles,
     });
   }
 );
@@ -262,46 +310,67 @@ export const getAllSubsidiariesByTenantId = asyncHandler(
       status = "all",
       orderBy = "name",
       sort = "asc",
-      type, // MATRIZ | SUCURSAL | ALMACEN | OFICINA
+      type,
     } = req.query;
 
     if (!tenantId) {
       return res.status(400).json({ message: "tenantId is required" });
     }
 
+    // 🔒 Verificar existencia del tenant (opcional pero recomendado)
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) {
+      return res.status(404).json({ message: "Tenant not found." });
+    }
+
     const take = Math.min(parseInt(limit as string), 1000);
     const skip = (parseInt(page as string) - 1) * take;
 
-    const filters: any = {
-      tenantId,
-      OR: [
+    // ✅ Construir filtros dinámicos
+    const filters: any = { tenantId };
+
+    if (search) {
+      filters.OR = [
         {
           name: {
-            contains: normalize(search as string),
+            contains: normalize(search.toString().trim()),
             mode: "insensitive",
           },
         },
         {
           description: {
-            contains: search as string,
+            contains: normalize(search.toString().trim()),
             mode: "insensitive",
           },
         },
-      ],
-    };
+      ];
+    }
 
     if (status === "true" || status === "false") {
       filters.status = status === "true";
     }
 
-    if ( type && type !== "all" && ["MATRIZ", "SUCURSAL", "ALMACEN", "OFICINA"].includes(type as string)) {
+    if (
+      type &&
+      type !== "all" &&
+      ["MATRIZ", "SUCURSAL", "ALMACEN", "OFICINA"].includes(type as string)
+    ) {
       filters.subsidiary_type = type;
     }
-    
+
+    // 🔒 Validar orderBy y sort
+    const allowedOrderFields = ["name", "created_at", "updated_at"];
+    const safeOrderBy = allowedOrderFields.includes(orderBy as string)
+      ? (orderBy as string)
+      : "name";
+
+    const safeSort = sort === "desc" ? "desc" : "asc";
+
+    // ✅ Consulta principal
     const [data, total] = await Promise.all([
       prisma.subsidiary.findMany({
         where: filters,
-        orderBy: { [orderBy as string]: sort },
+        orderBy: { [safeOrderBy]: safeSort },
         skip,
         take,
         include: {
@@ -325,7 +394,65 @@ export const getAllSubsidiariesByTenantId = asyncHandler(
       total,
       page: Number(page),
       limit: take,
+      totalPages: Math.ceil(total / take),
       data,
     });
+  }
+);
+
+export const getSubsidiaryById = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    // ✅ Buscar Subsidiary con relaciones
+    const subsidiary = await prisma.subsidiary.findUnique({
+      where: { id },
+      include: {
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+          },
+        },
+        users: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            lastname: true,
+            status: true,
+            email: true,
+            cellphone: true,
+            role: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                status: true,
+              },
+            },
+          },
+          orderBy: { created_at: "desc" },
+        },
+        schedulesSubsidiaries: {
+          select: {
+            id: true,
+            start_day: true,
+            end_day: true,
+            opening_hour: true,
+            closing_hour: true,
+            status: true,
+          },
+          orderBy: { start_day: "asc" },
+        },
+      },
+    });
+
+    if (!subsidiary) {
+      return res.status(404).json({ message: "Subsidiary not found." });
+    }
+
+    res.json({ subsidiary });
   }
 );

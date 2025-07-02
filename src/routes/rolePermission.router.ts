@@ -21,6 +21,7 @@ import { createAllowedActionSchema, getAllAllowedActionsQuerySchema } from '../v
 import { createAllowedAction, deleteAllowedAction, getAllAllowedActions } from '../controllers/allowedAction.controller';
 import { createRolePermissionSchema, getRolePermissionsQuerySchema } from '../validators/rolePermission.validator';
 import { createRolePermission, deleteRolePermission, getRolePermissions,  } from '../controllers/rolePermission.controller';
+import { validateTenantLimit } from '../middleware/validateTenantLimits';
 
 const roleRouter = express.Router();
 
@@ -55,7 +56,7 @@ roleRouter.get('/allowed-action', validateQuery(getAllAllowedActionsQuerySchema)
 roleRouter.delete('/allowed-action/:id', deleteAllowedAction);
 
 // ✅ ROLE ROUTES
-roleRouter.post("/roles", validate(createRoleSchema), createRole);
+roleRouter.post("/roles", validateTenantLimit("role"), validate(createRoleSchema), createRole);
 roleRouter.put("/roles/:id", validate(updateRoleSchema), updateRole);
 roleRouter.patch("/roles/:id/status", toggleRoleStatus);
 roleRouter.get("/roles/:id/permissions",  getRoleWithPermissions); 

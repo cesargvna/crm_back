@@ -1,10 +1,15 @@
 export const tenantPaths = {
+  // ✅ CREATE TENANT
   "POST: /tenant": {
     post: {
       tags: ["Tenant"],
       summary: "Create a new tenant",
-      description:
-        "Creates a new tenant. The name must be unique and normalized (no tildes, no espacios, no símbolos).",
+      description: `
+Creates a new tenant.  
+- The \`name\` must be unique, normalized: trims spaces, replaces "ñ" with "n", allows only letters, numbers, ".", ",", "-" and spaces.  
+- Multiple spaces are reduced to one.  
+- Allows setting \`maxSubsidiaries\`, \`maxUsers\`, \`maxRoles\`.
+`,
       requestBody: {
         required: true,
         content: {
@@ -21,6 +26,18 @@ export const tenantPaths = {
                   type: "string",
                   example: "Empresa peruana especializada en libros escolares.",
                 },
+                maxSubsidiaries: {
+                  type: "integer",
+                  example: 3,
+                },
+                maxUsers: {
+                  type: "integer",
+                  example: 50,
+                },
+                maxRoles: {
+                  type: "integer",
+                  example: 5,
+                },
               },
             },
           },
@@ -33,9 +50,11 @@ export const tenantPaths = {
             "application/json": {
               example: {
                 id: "uuid-1",
-                name: "PERU - LIBRERIA",
-                description:
-                  "Empresa peruana especializada en libros escolares.",
+                name: "peru - libreria",
+                description: "Empresa peruana especializada en libros escolares.",
+                maxSubsidiaries: 3,
+                maxUsers: 50,
+                maxRoles: 5,
                 status: true,
                 created_at: "2025-06-15T10:00:00.000Z",
                 updated_at: "2025-06-15T10:00:00.000Z",
@@ -49,12 +68,16 @@ export const tenantPaths = {
     },
   },
 
+  // ✅ UPDATE TENANT
   "PUT: /tenant/{id}": {
     put: {
       tags: ["Tenant"],
       summary: "Update tenant",
-      description:
-        "Updates the name and description of a tenant. Name must remain unique.",
+      description: `
+Updates a tenant's name, description and limits.  
+- Name remains unique and normalized.  
+- Limits (\`maxSubsidiaries\`, \`maxUsers\`, \`maxRoles\`) cannot be set below current usage.
+`,
       parameters: [
         {
           name: "id",
@@ -79,6 +102,18 @@ export const tenantPaths = {
                   type: "string",
                   example: "Distribuidora de útiles de oficina y escolares.",
                 },
+                maxSubsidiaries: {
+                  type: "integer",
+                  example: 2,
+                },
+                maxUsers: {
+                  type: "integer",
+                  example: 10,
+                },
+                maxRoles: {
+                  type: "integer",
+                  example: 4,
+                },
               },
             },
           },
@@ -91,8 +126,11 @@ export const tenantPaths = {
             "application/json": {
               example: {
                 id: "uuid-2",
-                name: "BOLIVIA - MATERIAL DE OFICINA",
+                name: "bolivia - material de oficina",
                 description: "Distribuidora de útiles de oficina y escolares.",
+                maxSubsidiaries: 2,
+                maxUsers: 10,
+                maxRoles: 4,
                 status: true,
                 created_at: "2025-06-10T08:00:00.000Z",
                 updated_at: "2025-06-15T12:00:00.000Z",
@@ -100,18 +138,22 @@ export const tenantPaths = {
             },
           },
         },
-        400: { description: "Validation error" },
+        400: { description: "Validation error or limit too low" },
         409: { description: "Tenant name already exists" },
       },
     },
   },
 
+  // ✅ TOGGLE STATUS TENANT
   "PATCH: /tenant/{id}/status": {
     patch: {
       tags: ["Tenant"],
       summary: "Toggle tenant status",
-      description:
-        "Toggles the tenant `status` (active/inactive). This also updates all related users, roles, and subsidiaries to the same status.",
+      description: `
+Toggles the tenant \`status\` (active/inactive).  
+- Cascades to all related users, roles, and subsidiaries.
+- Also updates users and roles under each subsidiary.
+`,
       parameters: [
         {
           name: "id",
@@ -122,8 +164,7 @@ export const tenantPaths = {
       ],
       responses: {
         200: {
-          description:
-            "Tenant status updated and related entities updated accordingly",
+          description: "Tenant status updated",
           content: {
             "application/json": {
               example: {
@@ -131,14 +172,14 @@ export const tenantPaths = {
                 updated: {
                   tenantStatus: false,
                   affectedEntities: {
-                    users: "All users under tenant set to false",
+                    users: "All users under tenant and subsidiaries set to false",
                     subsidiaries: "All subsidiaries under tenant set to false",
-                    roles: "All roles under tenant set to false",
+                    roles: "All roles under tenant and subsidiaries set to false",
                   },
                 },
                 tenant: {
                   id: "uuid-1",
-                  name: "PERU - LIBRERIA",
+                  name: "peru - libreria",
                   status: false,
                 },
               },
@@ -150,93 +191,26 @@ export const tenantPaths = {
     },
   },
 
-  "DELETE: /tenant/{id}": {
-    delete: {
-      tags: ["Tenant"],
-      summary: "Delete tenant and all related data",
-      description:
-        "Deletes the tenant and all related users, roles, and subsidiaries. Includes a count of deleted records.",
-      parameters: [
-        {
-          name: "id",
-          in: "path",
-          required: true,
-          schema: { type: "string" },
-        },
-      ],
-      responses: {
-        200: {
-          description: "Tenant and related data deleted successfully",
-          content: {
-            "application/json": {
-              example: {
-                message:
-                  'Tenant "TENANT TEMPORAL" and related data deleted successfully.',
-                deletedRelations: {
-                  users: 8,
-                  roles: 2,
-                  subsidiaries: 1,
-                },
-              },
-            },
-          },
-        },
-        404: { description: "Tenant not found" },
-      },
-    },
-  },
-
+  // ✅ GET ALL TENANTS
   "GET: /tenant": {
     get: {
       tags: ["Tenant"],
       summary: "Get all tenants",
-      description:
-        "Returns a paginated list of tenants. Supports filtering by status, searching by name/description, and sorting.",
+      description: `
+Returns a paginated list of tenants.  
+- Supports search by \`name\` (normalized).  
+- Filter by \`status\`: "true", "false", or "all".  
+- Includes pagination: \`page\`, \`limit\`, and \`totalPages\`.
+`,
       parameters: [
-        {
-          name: "search",
-          in: "query",
-          schema: { type: "string" },
-          description: "Search by name or description (normalized)",
-        },
+        { name: "search", in: "query", schema: { type: "string" } },
         {
           name: "status",
           in: "query",
-          schema: {
-            type: "string",
-            enum: ["true", "false", "all"],
-            default: "all",
-          },
-          description: "Filter by active/inactive status",
+          schema: { type: "string", enum: ["true", "false", "all"], default: "all" },
         },
-        {
-          name: "page",
-          in: "query",
-          schema: { type: "integer", default: 1 },
-          description: "Page number (min 1)",
-        },
-        {
-          name: "limit",
-          in: "query",
-          schema: { type: "integer", default: 5, maximum: 500 },
-          description: "Items per page (max 500)",
-        },
-        {
-          name: "orderBy",
-          in: "query",
-          schema: {
-            type: "string",
-            enum: ["name", "created_at", "updated_at"],
-            default: "name",
-          },
-          description: "Field to order results by",
-        },
-        {
-          name: "sort",
-          in: "query",
-          schema: { type: "string", enum: ["asc", "desc"], default: "asc" },
-          description: "Sorting direction",
-        },
+        { name: "page", in: "query", schema: { type: "integer", default: 1 } },
+        { name: "limit", in: "query", schema: { type: "integer", default: 5 } },
       ],
       responses: {
         200: {
@@ -244,49 +218,20 @@ export const tenantPaths = {
           content: {
             "application/json": {
               example: {
-                total: 5,
+                total: 2,
                 page: 1,
-                limit: 10,
-                data: [
+                limit: 5,
+                totalPages: 1,
+                tenants: [
                   {
                     id: "uuid-1",
-                    name: "PERU - LIBRERÍA",
-                    description:
-                      "Empresa peruana especializada en libros escolares.",
+                    name: "peru - libreria",
                     status: true,
-                    subsidiaries: [],
                   },
                   {
                     id: "uuid-2",
-                    name: "BOLIVIA - MATERIAL DE ESCRITORIO",
-                    description:
-                      "Empresa boliviana dedicada a útiles escolares y oficina.",
+                    name: "bolivia - material de oficina",
                     status: true,
-                    subsidiaries: [],
-                  },
-                  {
-                    id: "uuid-3",
-                    name: "PERU - JUGUETERÍA",
-                    description:
-                      "Empresa peruana enfocada en juguetes educativos.",
-                    status: true,
-                    subsidiaries: [],
-                  },
-                  {
-                    id: "uuid-4",
-                    name: "PERU - CAFETERÍA CULTURAL",
-                    description:
-                      "Cafetería que promueve actividades culturales y café peruano.",
-                    status: true,
-                    subsidiaries: [],
-                  },
-                  {
-                    id: "uuid-5",
-                    name: "TENANT TEMPORAL",
-                    description:
-                      "Tenant de prueba para verificar eliminación completa.",
-                    status: true,
-                    subsidiaries: [],
                   },
                 ],
               },
@@ -297,19 +242,18 @@ export const tenantPaths = {
     },
   },
 
+  // ✅ GET TENANT BY ID
   "GET: /tenant/{id}": {
     get: {
       tags: ["Tenant"],
       summary: "Get tenant by ID",
-      description:
-        "Returns full tenant details including subsidiaries, users, schedules, and roles with permissions. Useful for management dashboards.",
+      description: `
+Returns full tenant details.  
+- Includes subsidiaries.  
+- Each subsidiary includes users with role and schedulesSubsidiaries.
+`,
       parameters: [
-        {
-          name: "id",
-          in: "path",
-          required: true,
-          schema: { type: "string" },
-        },
+        { name: "id", in: "path", required: true, schema: { type: "string" } },
       ],
       responses: {
         200: {
@@ -319,74 +263,38 @@ export const tenantPaths = {
               example: {
                 tenant: {
                   id: "uuid-1",
-                  name: "PERU - LIBRERÍA",
-                  description:
-                    "Empresa peruana especializada en libros escolares.",
+                  name: "peru - libreria",
                   status: true,
-                  created_at: "2025-06-01T10:00:00.000Z",
-                  updated_at: "2025-06-15T12:00:00.000Z",
-                },
-                subsidiaries: [
-                  {
-                    id: "sub-uuid-1",
-                    name: "Sucursal Lima",
-                    address: "Av. Siempre Viva 123",
-                    status: true,
-                    tenantId: "uuid-1",
-                    created_at: "2025-06-01T11:00:00.000Z",
-                    updated_at: "2025-06-10T13:00:00.000Z",
-                    schedulesSubsidiaries: [
-                      {
-                        id: "sched-1",
-                        day: "LUNES",
-                        open_time: "08:00",
-                        close_time: "17:00",
-                      },
-                    ],
-                    users: [
-                      {
-                        id: "user-uuid",
-                        name: "Ana",
-                        lastname: "Pérez",
-                        email: "ana@example.com",
-                        status: true,
-                        role: {
-                          id: "role-uuid",
-                          name: "admin",
+                  subsidiaries: [
+                    {
+                      id: "sub-uuid",
+                      name: "Sucursal A",
+                      status: true,
+                      subsidiary_type: "MATRIZ",
+                      users: [
+                        {
+                          id: "user-uuid",
+                          username: "juan",
+                          status: true,
+                          role: {
+                            id: "role-uuid",
+                            name: "admin",
+                          },
                         },
-                        schedulesUsers: [
-                          {
-                            id: "sched-user-uuid",
-                            day: "LUNES",
-                            entry_time: "08:00",
-                            exit_time: "16:00",
-                          },
-                        ],
-                      },
-                    ],
-                    roles: [
-                      {
-                        id: "role-uuid",
-                        name: "admin",
-                        description: "Rol de administrador",
-                        status: true,
-                        rolePermissions: [
-                          {
-                            id: "perm-uuid",
-                            action: {
-                              id: "action-uuid",
-                              name: "ver",
-                            },
-                            section: {
-                              id: "section-uuid",
-                              name: "Usuarios",
-                            },
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                ],
+                      ],
+                      schedulesSubsidiaries: [
+                        {
+                          id: "sched-uuid",
+                          status: true,
+                          start_day: "LUNES",
+                          end_day: "VIERNES",
+                          opening_hour: "08:00",
+                          closing_hour: "16:00",
+                        },
+                      ],
+                    },
+                  ],
+                },
               },
             },
           },

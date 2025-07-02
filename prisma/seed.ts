@@ -13,15 +13,15 @@ async function main() {
   console.log("🌱 Seeding started...");
 
   const tenants = await seedTenant();
-  const subsidiaries = await seedSubsidiaries(tenants);
-  await scheduleSubsidiaries(subsidiaries); 
-  const actions = await seedActions();
-  const sections = await seedSections();
-  const allowedActions = await seedAllowedActions(sections, actions);
-  const roles = await seedRolesAndPermissions(tenants, subsidiaries, allowedActions);
+  //const subsidiaries = await seedSubsidiaries(tenants);
+  //await scheduleSubsidiaries(subsidiaries); 
+  //const actions = await seedActions();
+  //const sections = await seedSections();
+  //const allowedActions = await seedAllowedActions(sections, actions);
+  //const roles = await seedRolesAndPermissions(tenants, subsidiaries, allowedActions);
 
-  const users = await seedUsers(roles, subsidiaries);
-  await seedScheduleUsers(users); 
+  //const users = await seedUsers(roles, subsidiaries);
+  //await seedScheduleUsers(users); 
   
   console.log("✅ Seeding completed.");
 }

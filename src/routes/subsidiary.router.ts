@@ -6,10 +6,11 @@ import { createSubsidiary, getAllSubsidiariesByTenantId, getSubsidiaryById, togg
 import { validateQuery } from "../middleware/validateQuery.middleware";
 import { createScheduleSubsidiarySchema, toggleScheduleStatusSchema, updateScheduleSubsidiarySchema } from "../validators/scheduleSubsidiary.validator";
 import { createScheduleSubsidiary, deleteScheduleSubsidiary, getSchedulesBySubsidiary, getScheduleSubsidiaryById, toggleScheduleStatus, updateScheduleSubsidiary } from "../controllers/scheduleSubsidiary.controller";
+import { validateTenantLimit } from "../middleware/validateTenantLimits";
 
 const subsidiaryRouter = express.Router();
 
-subsidiaryRouter.post("/", validate(createSubsidiarySchema), createSubsidiary);
+subsidiaryRouter.post("/", validateTenantLimit("subsidiary"), validate(createSubsidiarySchema), createSubsidiary);
 subsidiaryRouter.put("/:id", validate(updateSubsidiarySchema), updateSubsidiary);
 subsidiaryRouter.patch("/:id/status", validate(toggleSubsidiaryStatusSchema), toggleSubsidiaryStatus);
 subsidiaryRouter.get("/tenantid/:tenantId",validateQuery(getAllSubsidiariesQuerySchema),getAllSubsidiariesByTenantId);
