@@ -1,3 +1,4 @@
+import prisma from "../src/utils/prisma";
 import { seedTenant } from "./seeds/01-tenant.seed";
 import { seedSubsidiaries } from "./seeds/02-subsidiary.seed";
 import { scheduleSubsidiaries } from "./seeds/03-schedule-subsidiaries";
@@ -13,16 +14,20 @@ async function main() {
   console.log("🌱 Seeding started...");
 
   const tenants = await seedTenant();
-  //const subsidiaries = await seedSubsidiaries(tenants);
-  //await scheduleSubsidiaries(subsidiaries); 
-  //const actions = await seedActions();
-  //const sections = await seedSections();
-  //const allowedActions = await seedAllowedActions(sections, actions);
-  //const roles = await seedRolesAndPermissions(tenants, subsidiaries, allowedActions);
+  const subsidiaries = await seedSubsidiaries(tenants);
+  const subsidiariesFull = await prisma.subsidiary.findMany({
+    where: { id: { in: subsidiaries.map((s) => s.id) } },
+  });
 
-  //const users = await seedUsers(roles, subsidiaries);
-  //await seedScheduleUsers(users); 
-  
+  await scheduleSubsidiaries(subsidiariesFull);
+  const actions = await seedActions();
+  const sections = await seedSections();
+  const allowedActions = await seedAllowedActions(sections, actions);
+  const roles = await seedRolesAndPermissions(tenants, subsidiariesFull, allowedActions);
+
+  const users = await seedUsers(roles, subsidiariesFull);
+  await seedScheduleUsers(users);
+
   console.log("✅ Seeding completed.");
 }
 

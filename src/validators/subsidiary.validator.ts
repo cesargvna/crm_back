@@ -18,6 +18,9 @@ export const createSubsidiarySchema = z.object({
   subsidiary_type: z.enum(["MATRIZ", "SUCURSAL", "ALMACEN", "OFICINA"]),
   allowNegativeStock: z.boolean().optional(),
 
+  maxUsers: z.coerce.number().min(1, "maxUsers must be a positive number").optional(),
+  maxRoles: z.coerce.number().min(1, "maxRoles must be a positive number").optional(),
+
   ci: optionalString(20),
   nit: optionalString(20),
   description: optionalString(100),
@@ -38,6 +41,9 @@ export const updateSubsidiarySchema = z.object({
   name: nameSchema,
   subsidiary_type: z.enum(["MATRIZ", "SUCURSAL", "ALMACEN", "OFICINA"]),
   allowNegativeStock: z.boolean().optional(),
+
+  maxUsers: z.coerce.number().min(1, "maxUsers must be a positive number"),
+  maxRoles: z.coerce.number().min(1, "maxRoles must be a positive number"),
 
   ci: optionalString(20),
   nit: optionalString(20),
@@ -86,5 +92,8 @@ export const getAllSubsidiariesQuerySchema = z.object({
 
   sort: z.enum(["asc", "desc"]).optional().default("asc"),
 
-  type: z.enum(["MATRIZ", "SUCURSAL", "ALMACEN", "OFICINA", "all"]).optional().default("all"),
+  type: z
+    .enum(["MATRIZ", "SUCURSAL", "ALMACEN", "OFICINA", "all"])
+    .optional()
+    .default("all"),
 });

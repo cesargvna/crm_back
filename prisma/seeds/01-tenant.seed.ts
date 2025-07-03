@@ -1,7 +1,7 @@
 import prisma from "../../src/utils/prisma";
 import normalize from "normalize-text";
 
-type SeededTenant = {
+export type SeededTenant = {
   id: string;
   name: string;
   description: string | null;

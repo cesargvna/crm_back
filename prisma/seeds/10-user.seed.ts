@@ -1,4 +1,3 @@
-// seeds/seedUsers.ts
 import prisma from "../../src/utils/prisma";
 import bcrypt from "bcryptjs";
 import normalize from "normalize-text";
@@ -14,16 +13,71 @@ export const seedUsers = async (
   rolesBySubsidiary: Record<string, Record<string, any>>,
   subsidiaries: { id: string; tenantId: string }[]
 ): Promise<SeededUser[]> => {
-  console.log("\n🌱 Seeding users by role, subsidiary and tenant...");
+  console.log("\n🌱 Seeding users by role, subsidiary, and tenant...");
 
-  const defaultPassword = await bcrypt.hash("Password123", 10);
+  const defaultPassword = await bcrypt.hash("123456789", 10);
   const createdUsers: SeededUser[] = [];
 
+  const fixedTenantId = "00000000-0000-0000-0000-000000000000";
+  const fixedSubsidiaryId = "00000000-0000-0000-0000-000000000000";
+
+  // === System.Admin user único ===
+  const systemAdminRole = await prisma.role.findFirst({
+    where: {
+      name: "System.Admin",
+      tenantId: fixedTenantId,
+      subsidiaryId: fixedSubsidiaryId,
+    },
+  });
+
+  if (!systemAdminRole) {
+    throw new Error("❌ System.Admin role not found. Run seedRolesAndPermissions first.");
+  }
+
+  const existingSystemAdminUser = await prisma.user.findFirst({
+    where: { username: "system.admin" },
+  });
+
+  if (!existingSystemAdminUser) {
+    const sysAdminUser = await prisma.user.create({
+      data: {
+        username: "system.admin",
+        password: defaultPassword,
+        name: "System",
+        lastname: "Admin",
+        description: "Unique system admin user",
+        roleId: systemAdminRole.id,
+        subsidiaryId: fixedSubsidiaryId,
+        tenantId: fixedTenantId,
+        email: "system@admin.com",
+      },
+      select: { id: true },
+    });
+
+    createdUsers.push({
+      id: sysAdminUser.id,
+      tenantId: fixedTenantId,
+      subsidiaryId: fixedSubsidiaryId,
+    });
+
+    console.log(`✅ System.Admin user created: system.admin`);
+  } else {
+    console.log("⚠️ System.Admin user already exists.");
+  }
+
+  // === Usuarios por rol por Subsidiary (saltando la fija) ===
   for (const subsidiary of subsidiaries) {
+    if (subsidiary.tenantId === fixedTenantId && subsidiary.id === fixedSubsidiaryId) {
+      console.log(`🔒 Skipping users for fixed Subsidiary ${subsidiary.id}`);
+      continue;
+    }
+
     const { id: subsidiaryId, tenantId } = subsidiary;
     const roles = rolesBySubsidiary[subsidiaryId];
 
     for (const [roleName, role] of Object.entries(roles)) {
+      if (roleName === "System.Admin") continue; // Nunca crear más System.Admin
+
       let username;
       let attempts = 0;
 
@@ -36,6 +90,7 @@ export const seedUsers = async (
           .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
           .replace(/[^a-z0-9.]/g, "")
           .slice(0, 20);
+
         attempts++;
       } while (
         attempts < 5 &&
@@ -64,7 +119,7 @@ export const seedUsers = async (
           address,
           cellphone: `7${faker.string.numeric(7)}`.slice(0, 20),
           telephone: `2${faker.string.numeric(6)}`.slice(0, 20),
-          description: "Automatically generated user",
+          description: `User for role ${roleName}`,
           roleId: role.id,
           subsidiaryId,
           tenantId,
@@ -77,6 +132,6 @@ export const seedUsers = async (
     }
   }
 
-  console.log("✅ User seeding completed.\n");
+  console.log("\n✅ All user seeding completed.\n");
   return createdUsers;
 };

@@ -185,35 +185,55 @@ export const updateSubsidiary = asyncHandler(
       });
     }
 
+    // ✅ Forzar coerción y verificar números válidos
+    console.log("🟢 Raw maxUsers:", maxUsers, "typeof:", typeof maxUsers);
+    console.log("🟢 Raw maxRoles:", maxRoles, "typeof:", typeof maxRoles);
+
+    const parsedMaxUsers = Number(maxUsers);
+    const parsedMaxRoles = Number(maxRoles);
+
+    console.log("🟢 Parsed maxUsers:", parsedMaxUsers, "isNaN:", Number.isNaN(parsedMaxUsers));
+    console.log("🟢 Parsed maxRoles:", parsedMaxRoles, "isNaN:", Number.isNaN(parsedMaxRoles));
+
+    if (Number.isNaN(parsedMaxUsers) || parsedMaxUsers <= 0) {
+      return res.status(400).json({
+        message: "maxUsers debe ser un número válido mayor a 0.",
+      });
+    }
+
+    if (Number.isNaN(parsedMaxRoles) || parsedMaxRoles <= 0) {
+      return res.status(400).json({
+        message: "maxRoles debe ser un número válido mayor a 0.",
+      });
+    }
+
     // ✅ Contar entidades actuales
     const [currentUsers, currentRoles] = await Promise.all([
       prisma.user.count({ where: { subsidiaryId: id } }),
       prisma.role.count({ where: { subsidiaryId: id } }),
     ]);
 
-    // ✅ Validar que no se baje por debajo de los actuales
-    if (maxUsers < currentUsers) {
+    if (parsedMaxUsers < currentUsers) {
       return res.status(400).json({
-        message: `Cannot set maxUsers to ${maxUsers} because there are already ${currentUsers} users in this Subsidiary.`,
+        message: `Cannot set maxUsers to ${parsedMaxUsers} because there are already ${currentUsers} users in this Subsidiary.`,
       });
     }
 
-    if (maxRoles < currentRoles) {
+    if (parsedMaxRoles < currentRoles) {
       return res.status(400).json({
-        message: `Cannot set maxRoles to ${maxRoles} because there are already ${currentRoles} roles in this Subsidiary.`,
+        message: `Cannot set maxRoles to ${parsedMaxRoles} because there are already ${currentRoles} roles in this Subsidiary.`,
       });
     }
 
-    // ✅ Validar que no exceda los límites del Tenant
-    if (maxUsers > tenant.maxUsers) {
+    if (parsedMaxUsers > tenant.maxUsers) {
       return res.status(400).json({
-        message: `Cannot set maxUsers to ${maxUsers}. Tenant limit is ${tenant.maxUsers}.`,
+        message: `Cannot set maxUsers to ${parsedMaxUsers}. Tenant limit is ${tenant.maxUsers}.`,
       });
     }
 
-    if (maxRoles > tenant.maxRoles) {
+    if (parsedMaxRoles > tenant.maxRoles) {
       return res.status(400).json({
-        message: `Cannot set maxRoles to ${maxRoles}. Tenant limit is ${tenant.maxRoles}.`,
+        message: `Cannot set maxRoles to ${parsedMaxRoles}. Tenant limit is ${tenant.maxRoles}.`,
       });
     }
 
@@ -236,8 +256,8 @@ export const updateSubsidiary = asyncHandler(
       data: {
         name: normalizedName,
         subsidiary_type,
-        maxUsers,
-        maxRoles,
+        maxUsers: parsedMaxUsers,
+        maxRoles: parsedMaxRoles,
         allowNegativeStock,
         ci: optionalNormalize(ci),
         nit: optionalNormalize(nit),
@@ -254,6 +274,7 @@ export const updateSubsidiary = asyncHandler(
     res.json(updated);
   }
 );
+
 
 export const toggleSubsidiaryStatus = asyncHandler(
   async (req: Request, res: Response) => {
