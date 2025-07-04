@@ -5,8 +5,8 @@ export const createRolePermissionSchema = z.object({
   actionId: z.string().uuid({ message: "Invalid action ID" }),
   tenantId: z.string().uuid({ message: "Invalid tenant ID" }),
   subsidiaryId: z.string().uuid({ message: "Invalid subsidiary ID" }),
-  moduleId: z.string().uuid().optional(),
-  submoduleId: z.string().uuid().optional(),
+  moduleId: z.string().uuid().nullable().optional(),
+  submoduleId: z.string().uuid().nullable().optional(),
 });
 
 // Query para filtrar

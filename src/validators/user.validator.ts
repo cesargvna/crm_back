@@ -2,121 +2,103 @@ import { z } from "zod";
 
 // ✔️ Crear usuario
 export const createUserSchema = z.object({
-  body: z.object({
-    username: z
-      .string()
-      .min(3, "Username must have at least 3 characters.")
-      .max(20, "Username must not exceed 20 characters.")
-      .regex(
-        /^[a-z0-9.]+$/,
-        "Username can only contain lowercase letters, numbers and a dot."
-      ),
-    password: z
-      .string()
-      .min(6, "Password must have at least 6 characters.")
-      .max(100, "Password must not exceed 100 characters."),
-    name: z
-      .string()
-      .min(2, "Name must have at least 2 characters.")
-      .max(50, "Name must not exceed 50 characters."),
-    lastname: z.string().max(50).optional().nullable(),
-    ci: z.string().max(20).optional().nullable(),
-    nit: z.string().max(20).optional().nullable(),
-    description: z.string().max(100).optional().nullable(),
-    address: z.string().max(100).optional().nullable(),
-    cellphone: z
-      .string()
-      .transform((v) => (v === "" ? null : v))
-      .nullable()
-      .refine(
-        (val) => val === null || /^\+\d{6,20}$/.test(val),
-        "Invalid cellphone format."
-      )
-      .optional(),
-    telephone: z
-      .string()
-      .transform((v) => (v === "" ? null : v))
-      .nullable()
-      .refine(
-        (val) => val === null || /^\+\d{6,20}$/.test(val),
-        "Invalid telephone format."
-      )
-      .optional(),
-    email: z
-      .string()
-      .transform((v) => (v === "" ? null : v))
-      .nullable()
-      .refine(
-        (val) => val === null || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
-        "Invalid email format."
-      )
-      .optional(),
-    roleId: z.string().uuid("Invalid Role ID."),
-    subsidiaryId: z.string().uuid("Invalid Subsidiary ID."),
-  }),
+  username: z.string().min(3).max(20).regex(/^[a-z0-9.]+$/),
+  password: z.string().min(6).max(100),
+  name: z.string().min(2).max(50),
+  lastname: z.string().max(50).optional().nullable(),
+  ci: z.string().max(20).optional().nullable(),
+  nit: z.string().max(20).optional().nullable(),
+  description: z.string().max(100).optional().nullable(),
+  address: z.string().max(100).optional().nullable(),
+  cellphone: z
+    .string()
+    .transform((v) => (v === "" ? null : v))
+    .nullable()
+    .refine(
+      (val) => val === null || /^\+\d{6,20}$/.test(val),
+      "Invalid cellphone format."
+    )
+    .optional(),
+  telephone: z
+    .string()
+    .transform((v) => (v === "" ? null : v))
+    .nullable()
+    .refine(
+      (val) => val === null || /^\+\d{6,20}$/.test(val),
+      "Invalid telephone format."
+    )
+    .optional(),
+  email: z
+    .string()
+    .transform((v) => (v === "" ? null : v))
+    .nullable()
+    .refine(
+      (val) => val === null || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+      "Invalid email format."
+    )
+    .optional(),
+  roleId: z.string().uuid("Invalid Role ID."),
+  subsidiaryId: z.string().uuid("Invalid Subsidiary ID."),
+  tenantId: z.string().uuid(),
 });
 
-// ✔️ Actualizar usuario
-export const updateUserSchema = z.object({
-  body: z.object({
-    name: z.string().min(2).max(50),
-    lastname: z.string().max(50).optional().nullable(),
-    ci: z.string().max(20).optional().nullable(),
-    nit: z.string().max(20).optional().nullable(),
-    description: z.string().max(100).optional().nullable(),
-    address: z.string().max(100).optional().nullable(),
-    cellphone: z
-      .string()
-      .transform((v) => (v === "" ? null : v))
-      .nullable()
-      .refine(
-        (val) => val === null || /^\+\d{6,20}$/.test(val),
-        "Invalid cellphone format."
-      )
-      .optional(),
-    telephone: z
-      .string()
-      .transform((v) => (v === "" ? null : v))
-      .nullable()
-      .refine(
-        (val) => val === null || /^\+\d{6,20}$/.test(val),
-        "Invalid telephone format."
-      )
-      .optional(),
-    email: z
-      .string()
-      .transform((v) => (v === "" ? null : v))
-      .nullable()
-      .refine(
-        (val) => val === null || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
-        "Invalid email format."
-      )
-      .optional(),
-    roleId: z.string().uuid("Invalid Role ID."),
-  }),
-  params: z.object({
-    id: z.string().uuid("Invalid user ID."),
-  }),
+// ✅ Schema para los params: /:id
+export const updateUserParamsSchema = z.object({
+  id: z.string().uuid("Invalid user ID."),
+});
+
+// ✅ Schema para el body
+export const updateUserBodySchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters").max(50),
+  lastname: z.string().max(50).optional().nullable(),
+  ci: z.string().max(20).optional().nullable(),
+  nit: z.string().max(20).optional().nullable(),
+  description: z.string().max(100).optional().nullable(),
+  address: z.string().max(100).optional().nullable(),
+  cellphone: z
+    .string()
+    .transform((v) => (v === "" ? null : v))
+    .nullable()
+    .refine(
+      (val) => val === null || /^\+\d{6,20}$/.test(val),
+      "Invalid cellphone format. Use +CODE########"
+    )
+    .optional(),
+  telephone: z
+    .string()
+    .transform((v) => (v === "" ? null : v))
+    .nullable()
+    .refine(
+      (val) => val === null || /^\+\d{6,20}$/.test(val),
+      "Invalid telephone format. Use +CODE########"
+    )
+    .optional(),
+  email: z
+    .string()
+    .transform((v) => (v === "" ? null : v))
+    .nullable()
+    .refine(
+      (val) => val === null || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+      "Invalid email format."
+    )
+    .optional(),
+  roleId: z.string().uuid("Invalid Role ID."),
+});
+
+export const updateUserPasswordParamsSchema = z.object({
+  id: z.string().uuid("Invalid user ID."),
 });
 
 // ✔️ Cambiar password
 export const updateUserPasswordSchema = z.object({
-  body: z.object({
-    newPassword: z
-      .string()
-      .min(6, "Password must have at least 6 characters.")
-      .max(100, "Password must not exceed 100 characters."),
-  }),
-  params: z.object({
-    id: z.string().uuid("Invalid user ID."),
-  }),
+  newPassword: z
+    .string()
+    .min(6, "Password must have at least 6 characters.")
+    .max(100, "Password must not exceed 100 characters."),
 });
 
-// ✔️ Cambiar estado
-export const toggleUserStatusSchema = z.object({
-  params: z.object({
-    id: z.string().uuid("Invalid user ID."),
-  }),
+export const toggleUserStatusParamsSchema = z.object({
+  id: z.string().uuid("Invalid user ID."),
 });
 
 // ✔️ Queries para listar

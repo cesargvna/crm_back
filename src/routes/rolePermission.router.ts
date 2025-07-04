@@ -3,15 +3,11 @@ import express from 'express';
 import { validate } from '../middleware/validate.middleware';
 import { validateParams } from '../middleware/validateParams.middleware';
 import { validateQuery } from '../middleware/validateQuery.middleware';
-
-
-
 import { createPermissionActionSchema, updatePermissionActionSchema } from '../validators/permissionAction.validator';
 import { createPermissionAction, getAllPermissionActions, getPermissionActionById, togglePermissionActionStatus, updatePermissionAction } from '../controllers/permissionAction.controller';
 import { createRoleSchema, getAllRolesQuerySchema, updateRoleSchema } from '../validators/role.validator';
 import { createRole, getRoleById, getRolesBySubsidiary, getRolesBySubsidiaryComplete, getRolesByTenant, getRoleWithPermissions, toggleRoleStatus, updateRole } from '../controllers/role.controller';
-
-import { createSection, getHiddenSections, getSidebarSectionsByRole, getVisibleSections, toggleSectionVisibility, updateSection } from '../controllers/section.controller';
+import { createSection, getHiddenSections, getSidebarHiddenTree, getSidebarSectionsByRole, getSidebarVisibilityTree, getVisibleSections, toggleSectionVisibility, updateSection } from '../controllers/section.controller';
 import { createSectionSchema, roleIdParamSchema, toggleSectionVisibilitySchema, updateSectionSchema } from '../validators/section.validator';
 import { createModule, getModuleById, updateModule } from '../controllers/module.controller';
 import { createModuleSchema, updateModuleSchema } from '../validators/module.validator';
@@ -31,7 +27,10 @@ roleRouter.put('/sections/:id', validate(updateSectionSchema), updateSection);
 roleRouter.patch('/sections/:id/visibility', validate(toggleSectionVisibilitySchema), toggleSectionVisibility);
 roleRouter.get('/sections/visible', getVisibleSections);
 roleRouter.get('/sections/hidden', getHiddenSections);
-roleRouter.get('/sections/sidebar/:roleId', validateParams(roleIdParamSchema), getSidebarSectionsByRole);
+
+roleRouter.get('/sidebar/:roleId', validateParams(roleIdParamSchema), getSidebarSectionsByRole);
+roleRouter.get('/sidebar-visibility', getSidebarVisibilityTree);
+roleRouter.get('/sidebar-hidden', getSidebarHiddenTree);
 
 // ✅ MODULE
 roleRouter.post('/module', validate(createModuleSchema), createModule);
