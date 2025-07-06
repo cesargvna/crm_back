@@ -4,56 +4,66 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../utils/prisma";
 import { asyncHandler } from "../utils/asyncHandler";
 
-// ✅ Middleware genérico: valida límite según tipo de entidad
+// ✅ Middleware genérico con control por subsidiaria para role y user
+
 export const validateTenantLimit = (entity: "subsidiary" | "user" | "role") =>
   asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    let tenantId: string;
-
-    // Cada entidad puede venir con tenantId diferente
-    switch (entity) {
-      case "subsidiary":
-        tenantId = req.body.tenantId;
-        break;
-      case "user":
-        tenantId = req.body.tenantId;
-        break;
-      case "role":
-        tenantId = req.body.tenantId;
-        break;
-      default:
-        return res.status(400).json({ message: "Invalid entity type" });
-    }
+    const tenantId = req.body.tenantId;
 
     if (!tenantId) {
       return res.status(400).json({ message: "tenantId is required" });
     }
 
-    // Traer Tenant
-    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
-    if (!tenant) {
-      return res.status(404).json({ message: "Tenant not found" });
-    }
-
-    // Contar entidades actuales
-    let currentCount = 0;
-    let maxAllowed = 0;
-
     if (entity === "subsidiary") {
-      currentCount = await prisma.subsidiary.count({ where: { tenantId } });
-      maxAllowed = tenant.maxSubsidiaries;
-    } else if (entity === "user") {
-      currentCount = await prisma.user.count({ where: { tenantId } });
-      maxAllowed = tenant.maxUsers;
-    } else if (entity === "role") {
-      currentCount = await prisma.role.count({ where: { tenantId } });
-      maxAllowed = tenant.maxRoles;
-    }
+      // ➜ Valida global para subsidiaries
+      const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+      if (!tenant) {
+        return res.status(404).json({ message: "Tenant not found" });
+      }
 
-    if (currentCount >= maxAllowed) {
-      return res.status(400).json({
-        message: `Cannot create new ${entity}. Limit reached: ${maxAllowed}`,
+      const currentCount = await prisma.subsidiary.count({ where: { tenantId } });
+      if (currentCount >= tenant.maxSubsidiaries) {
+        return res.status(400).json({
+          message: `Cannot create new subsidiary. Limit reached: ${tenant.maxSubsidiaries}`,
+        });
+      }
+
+    } else if (entity === "role" || entity === "user") {
+      const subsidiaryId = req.body.subsidiaryId;
+      if (!subsidiaryId) {
+        return res.status(400).json({ message: "subsidiaryId is required" });
+      }
+
+      const subsidiary = await prisma.subsidiary.findUnique({
+        where: { id: subsidiaryId },
       });
+
+      if (!subsidiary) {
+        return res.status(404).json({ message: "Subsidiary not found" });
+      }
+
+      if (subsidiary.tenantId !== tenantId) {
+        return res.status(400).json({
+          message: "Subsidiary does not belong to the specified tenant.",
+        });
+      }
+
+      // Contar roles o usuarios de esa subsidiaria
+      const currentCount =
+        entity === "role"
+          ? await prisma.role.count({ where: { subsidiaryId } })
+          : await prisma.user.count({ where: { subsidiaryId } });
+
+      const maxAllowed =
+        entity === "role" ? subsidiary.maxRoles : subsidiary.maxUsers;
+
+      if (currentCount >= maxAllowed) {
+        return res.status(400).json({
+          message: `Cannot create new ${entity}. Subsidiary limit reached: ${maxAllowed}`,
+        });
+      }
     }
 
+    // ✅ Todo OK
     next();
   });
