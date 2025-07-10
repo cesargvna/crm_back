@@ -12,6 +12,8 @@ import { userPaths } from "./paths/user";
 import { scheduleUserPaths } from "./paths/scheduleUser";
 import { expenseCategoryPaths } from "./paths/expenseCategory";
 import { expensePaths } from "./paths/expense";
+import { incomeCategoryPaths } from "./paths/incomeCategory";
+import { incomePaths } from "./paths/income";
 
 export const swaggerConfig = {
   openapi: "3.0.0",
@@ -106,6 +108,22 @@ export const swaggerConfig = {
         - Supports filtering and paginated retrieval by Subsidiary.
         - Includes relations to Expense Category and User for context.`,
     },
+    {
+      name: "Income Category",
+      description: `Manages income categories for subsidiaries.
+    - Each income category belongs to a specific Subsidiary and Tenant.
+    - Names are normalized (lowercase, no accents, "ñ" replaced with "n").
+    - Supports creation, update, status toggle, and list/filter by Subsidiary.`,
+    },
+    {
+      name: "Income",
+      description: `Manages individual incomes for subsidiaries.
+    - Each income must belong to a valid Income Category, User, Subsidiary, and Tenant.
+    - Supports creation with automatic normalization of name and calculation of total amount.
+    - Supports update of fields like quantity, unit price, or category.
+    - Supports filtering and paginated retrieval by Subsidiary.
+    - Includes relations to Income Category and User for context.`,
+    },
   ],
   paths: {
     ...sectionPaths,
@@ -122,5 +140,7 @@ export const swaggerConfig = {
     ...scheduleUserPaths,
     ...expenseCategoryPaths,
     ...expensePaths,
+    ...incomeCategoryPaths,
+    ...incomePaths,
   },
 };

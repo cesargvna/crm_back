@@ -10,6 +10,8 @@ import { seedUsers } from "./seeds/08-user.seed";
 import { seedScheduleUsers } from "./seeds/09-schedule-users.seed";
 import { seedExpenseCategories } from "./seeds/10-expense-category";
 import { seedExpenses } from "./seeds/11-expense";
+import { seedIncomeCategories } from "./seeds/12-income-category";
+import { seedIncomes } from "./seeds/13-income";
 
 async function main() {
   console.log("🌱 Seeding started...");
@@ -31,6 +33,9 @@ async function main() {
 
   const expenseCategories = await seedExpenseCategories(subsidiariesFull);
   const expenses = await seedExpenses(subsidiariesFull, expenseCategories, users);
+
+  const incomeCategories = await seedIncomeCategories(subsidiariesFull);
+  const incomes = await seedIncomes(subsidiariesFull, incomeCategories, users);
 
   console.log("✅ Seeding completed.");
 }
