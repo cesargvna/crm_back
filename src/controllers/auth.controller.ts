@@ -3,6 +3,7 @@ import * as bcrypt from 'bcryptjs';
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../utils/prisma';
 import { getTokenExpireTime, tokenSign } from '../utils/handleToken';
+import { getRolePermissionbyRolId } from './section.controller';
 
 const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -16,7 +17,9 @@ const login = async (req: Request, res: Response, next: NextFunction): Promise<v
 
         const token = await tokenSign(user);
         const expire = getTokenExpireTime();
-        res.status(200).json({token,expire});
+        const permission = await getRolePermissionbyRolId(user?.roleId); 
+        console.log(permission);
+        res.status(200).json({token,expire,"tenantId":user?.tenantId, "subsidiaryId":user?.subsidiaryId, "rolId": user?.roleId, "userId": user?.id, permission});
 
     } catch (error) {
         next(error);

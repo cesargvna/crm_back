@@ -6,9 +6,10 @@ import { seedActions } from "./seeds/04-action.seed";
 import { seedSections } from "./seeds/05-section-module-submodule.seed";
 import { seedAllowedActions } from "./seeds/06-allowed-actions.seed";
 import { seedRolesAndPermissions } from "./seeds/07-role.seed";
-
-import { seedUsers } from "./seeds/10-user.seed";
-import { seedScheduleUsers } from "./seeds/11-schedule-users.seed";
+import { seedUsers } from "./seeds/08-user.seed";
+import { seedScheduleUsers } from "./seeds/09-schedule-users.seed";
+import { seedExpenseCategories } from "./seeds/10-expense-category";
+import { seedExpenses } from "./seeds/11-expense";
 
 async function main() {
   console.log("🌱 Seeding started...");
@@ -27,6 +28,9 @@ async function main() {
 
   const users = await seedUsers(roles, subsidiariesFull);
   await seedScheduleUsers(users);
+
+  const expenseCategories = await seedExpenseCategories(subsidiariesFull);
+  const expenses = await seedExpenses(subsidiariesFull, expenseCategories, users);
 
   console.log("✅ Seeding completed.");
 }

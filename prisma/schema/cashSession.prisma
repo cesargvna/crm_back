@@ -4,7 +4,7 @@ model CashSession {
   tenantId               String      @db.VarChar(255) 
   subsidiaryId           String      @db.VarChar(255) 
 
-  workDate               String      @db.VarChar(10) // 📅 "YYYY-MM-DD", sin hora
+  workDate               String      @db.VarChar(10) 
   openDate               DateTime
   closeDate              DateTime?
   status                 Boolean     @default(true)
@@ -26,5 +26,5 @@ model CashSession {
   @@index([tenantId])
   @@index([subsidiaryId])
   @@index([userId])
-  @@unique([userId, workDate]) // ✅ garantizado
+  @@unique([userId, workDate])
 }

@@ -7,7 +7,7 @@ import { createPermissionActionSchema, updatePermissionActionSchema } from '../v
 import { createPermissionAction, getAllPermissionActions, getPermissionActionById, togglePermissionActionStatus, updatePermissionAction } from '../controllers/permissionAction.controller';
 import { createRoleSchema, getAllRolesQuerySchema, updateRoleSchema } from '../validators/role.validator';
 import { createRole, getRoleById, getRolesBySubsidiary, getRolesBySubsidiaryComplete, getRolesByTenant, getRoleWithPermissions, toggleRoleStatus, updateRole } from '../controllers/role.controller';
-import { createSection, getHiddenSections, getSidebarHiddenTree, getSidebarSectionsByRole, getSidebarVisibilityTree, getVisibleSections, toggleSectionVisibility, updateSection } from '../controllers/section.controller';
+import { createSection, getHiddenSections, getSidebarHiddenTree, getSidebarVisibilityTree, getVisibleSections, toggleSectionVisibility, updateSection } from '../controllers/section.controller';
 import { createSectionSchema, roleIdParamSchema, toggleSectionVisibilitySchema, updateSectionSchema } from '../validators/section.validator';
 import { createModule, getModuleById, updateModule } from '../controllers/module.controller';
 import { createModuleSchema, updateModuleSchema } from '../validators/module.validator';
@@ -28,7 +28,7 @@ roleRouter.patch('/sections/:id/visibility', validate(toggleSectionVisibilitySch
 roleRouter.get('/sections/visible', getVisibleSections);
 roleRouter.get('/sections/hidden', getHiddenSections);
 
-roleRouter.get('/sidebar/:roleId', validateParams(roleIdParamSchema), getSidebarSectionsByRole);
+//roleRouter.get('/sidebar/:roleId', validateParams(roleIdParamSchema), getSidebarSectionsByRole);
 roleRouter.get('/sidebar-visibility', getSidebarVisibilityTree);
 roleRouter.get('/sidebar-hidden', getSidebarHiddenTree);
 

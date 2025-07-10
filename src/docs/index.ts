@@ -10,6 +10,8 @@ import { rolePermissionPaths } from "./paths/rolePermission";
 import { scheduleSubsidiaryPaths } from "./paths/scheduleSubsidiary";
 import { userPaths } from "./paths/user";
 import { scheduleUserPaths } from "./paths/scheduleUser";
+import { expenseCategoryPaths } from "./paths/expenseCategory";
+import { expensePaths } from "./paths/expense";
 
 export const swaggerConfig = {
   openapi: "3.0.0",
@@ -67,8 +69,7 @@ export const swaggerConfig = {
     },
     {
       name: "ScheduleSubsidiary",
-      description:
-        `Manages working schedules for subsidiary based on day and hour range.
+      description: `Manages working schedules for subsidiary based on day and hour range.
         - Fields \`start_day\` and \`end_day\` must be valid days of the week in Spanish:
         \`LUNES\`, \`MARTES\`, \`MIERCOLES\`, \`JUEVES\`, \`VIERNES\`, \`SABADO\`, \`DOMINGO\`.
         - Fields \`opening_hour\` and \`closing_hour\` must follow the \`HH:mm\` 24-hour format (e.g., \`08:00\`, \`16:30\`).
@@ -82,13 +83,28 @@ export const swaggerConfig = {
     },
     {
       name: "ScheduleUser",
-      description: 
-        `Manages working schedules for users based on day and hour range.
+      description: `Manages working schedules for users based on day and hour range.
         - Fields \`start_day\` and \`end_day\` must be valid days of the week in Spanish:
         \`LUNES\`, \`MARTES\`, \`MIERCOLES\`, \`JUEVES\`, \`VIERNES\`, \`SABADO\`, \`DOMINGO\`.
         - Fields \`opening_hour\` and \`closing_hour\` must follow the \`HH:mm\` 24-hour format (e.g., \`08:00\`, \`16:30\`).
         - The start day must not come after the end day.
         - The opening hour must be earlier than the closing hour.`,
+    },
+    {
+      name: "Expense Category",
+      description: `Manages expense categories for subsidiaries.
+        - Each expense category belongs to a specific Subsidiary and Tenant.
+        - Names are normalized (lowercase, no accents, "ñ" replaced with "n").
+        - Supports creation, update, status toggle, and list/filter by Subsidiary.`,
+    },
+    {
+      name: "Expense",
+      description: `Manages individual expenses for subsidiaries.
+        - Each expense must belong to a valid Expense Category, User, Subsidiary, and Tenant.
+        - Supports creation with automatic normalization of name and calculation of total amount.
+        - Supports update of fields like quantity, unit price, or category.
+        - Supports filtering and paginated retrieval by Subsidiary.
+        - Includes relations to Expense Category and User for context.`,
     },
   ],
   paths: {
@@ -104,5 +120,7 @@ export const swaggerConfig = {
     ...scheduleSubsidiaryPaths,
     ...userPaths,
     ...scheduleUserPaths,
+    ...expenseCategoryPaths,
+    ...expensePaths,
   },
 };

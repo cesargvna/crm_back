@@ -137,94 +137,106 @@ export const getHiddenSections = asyncHandler(async (_req: Request, res: Respons
   res.json(sections);
 });
 
-export const getSidebarSectionsByRole = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { roleId } = req.params;
+export const getRolePermissionbyRolId = async (roleId: string | undefined) => {
+  if (!roleId) {
+    return { message: "Missing roleId" };
+  }
 
-    if (!roleId) {
-      return res.status(400).json({ message: "Missing roleId" });
-    }
+  // 1️⃣ Busca el rol
+  const role = await prisma.role.findUnique({
+    where: { id: roleId },
+    select: { name: true },
+  });
 
-    // 1️⃣ Busca el rol
-    const role = await prisma.role.findUnique({
-      where: { id: roleId },
-      select: { name: true },
-    });
+  if (!role) {
+    return { message: "Role not found." };
+  }
 
-    if (!role) {
-      return res.status(404).json({ message: "Role not found." });
-    }
-
-    // 2️⃣ Obtén todos los permisos con acción 'ver'
-    const rolePermissions = await prisma.rolePermission.findMany({
-      where: {
-        roleId,
-        action: { name: "ver" },
+  // 2️⃣ Obtén todos los permisos con acción 'ver'
+  const rolePermissions = await prisma.rolePermission.findMany({
+    where: {
+      roleId,
+      action: { name: "ver" },
+    },
+    include: {
+      module: {
+        include: {
+          section: true,
+        },
       },
-      include: {
-        module: { include: { section: true } },
-        submodule: {
-          include: {
-            module: { include: { section: true } },
+      submodule: {
+        include: {
+          module: {
+            include: {
+              section: true,
+            },
           },
         },
       },
-    });
+    },
+  });
 
-    // 3️⃣ Construye árbol Section → Module → Submodule
-    const sidebar: Record<string, any> = {};
+  // 3️⃣ Construye árbol Section → Module → Submodule
+  const sidebar: Record<string, any> = {};
 
-    for (const rp of rolePermissions) {
-      const section = rp.module?.section || rp.submodule?.module?.section;
-      const module = rp.module || rp.submodule?.module;
-      const submodule = rp.submodule;
+  for (const rp of rolePermissions) {
+    const section = rp.module?.section || rp.submodule?.module?.section;
+    const module = rp.module || rp.submodule?.module;
+    const submodule = rp.submodule;
 
-      if (!section || !module) continue;
+    if (!section || !module) continue;
 
-      if (!sidebar[section.id]) {
-        sidebar[section.id] = {
-          id: section.id,
-          name: section.name,
-          order: section.order ?? 999, // fallback si falta
-          modules: {},
-        };
-      }
-
-      if (!sidebar[section.id].modules[module.id]) {
-        sidebar[section.id].modules[module.id] = {
-          id: module.id,
-          name: module.name,
-          submodules: {},
-        };
-      }
-
-      if (submodule) {
-        sidebar[section.id].modules[module.id].submodules[submodule.id] = {
-          id: submodule.id,
-          name: submodule.name,
-        };
-      }
-    }
-
-    // 4️⃣ Convierte a array y ordénalo por Section.order
-    const sidebarArray = Object.values(sidebar)
-      .map((section: any) => ({
+    if (!sidebar[section.id]) {
+      sidebar[section.id] = {
         id: section.id,
         name: section.name,
-        order: section.order ?? 999,
-        modules: Object.values(section.modules).map((module: any) => ({
-          id: module.id,
-          name: module.name,
-          submodules: Object.values(module.submodules),
-        })),
-      }))
-      .sort((a, b) => a.order - b.order);
+        order: section.order ?? 999, // fallback
+        modules: {},
+      };
+    }
 
-    res.json(sidebarArray);
+    if (!sidebar[section.id].modules[module.id]) {
+      sidebar[section.id].modules[module.id] = {
+        id: module.id,
+        name: module.name,
+        route: module.route,
+        iconName: module.iconName,
+        submodules: {},
+      };
+    }
+
+    if (submodule) {
+      sidebar[section.id].modules[module.id].submodules[submodule.id] = {
+        id: submodule.id,
+        name: submodule.name,
+        route: submodule.route,
+      };
+    }
   }
-);
 
-// ✅ GET: /sidebar-visibility
+  // 4️⃣ Convierte a array ordenado por Section.order
+  const sidebarArray = Object.values(sidebar)
+    .map((section: any) => ({
+      id: section.id,
+      name: section.name,
+      order: section.order ?? 999,
+      modules: Object.values(section.modules).map((module: any) => ({
+        id: module.id,
+        name: module.name,
+        route: module.route,
+        iconName: module.iconName,
+        submodules: Object.values(module.submodules).map((sub: any) => ({
+          id: sub.id,
+          name: sub.name,
+          route: sub.route,
+        })),
+      })),
+    }))
+    .sort((a, b) => a.order - b.order);
+
+  return sidebarArray;
+};
+
 export const getSidebarVisibilityTree = asyncHandler(async (_req: Request, res: Response) => {
   const sections = await prisma.section.findMany({
     where: { visibility: true },

@@ -40,7 +40,7 @@ export async function seedTenant(): Promise<SeededTenant[]> {
     },
     {
       name: "PERU - CAFETERÍA CULTURAL",
-      description: "Cafetería que promueve actividades culturales y café peruano.",
+      description: "Cafetería que promueve actividades culturales y café.",
       maxSubsidiaries: 3,
       maxRoles: 9,
       maxUsers: 20,

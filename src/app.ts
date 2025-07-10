@@ -11,6 +11,7 @@ import userRouter from './routes/user.router';
 import { swaggerConfig } from "./docs";
 import swaggerUi from 'swagger-ui-express';
 import authRouter from './routes/auth.router';
+import expenseRouter from './routes/expense.router';
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerConfig));
 
@@ -22,6 +23,7 @@ app.use('/role', rolePermissionRouter);
 app.use('/tenant', tenatRouter);
 app.use('/subsidiary', subsidiaryRouter);
 app.use('/user', userRouter);
+app.use('/expense', expenseRouter);
 
 app.use(errorHandler);
 

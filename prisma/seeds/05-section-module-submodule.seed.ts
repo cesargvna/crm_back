@@ -160,10 +160,10 @@ export async function seedSections() {
             iconName: 'BarChartIcon',
             submodules: {
               create: [
-                { name: 'Cierres de Caja', route: '/report/cash-closures' },
-                { name: 'Actividad de Ventas', route: '/report/sales-activity' },
-                { name: 'Inactividad de productos', route: '/report/inactive-products' },
-                { name: 'Ventas por producto', route: '/report/sales-by-product' },
+                { name: 'Cierres de Caja', route: '/report-cash-closures' },
+                { name: 'Actividad de Ventas', route: '/report-sales-activity' },
+                { name: 'Inactividad de productos', route: '/report-inactive-products' },
+                { name: 'Ventas por producto', route: '/report-sales-by-product' },
               ],
             },
           },
@@ -172,7 +172,7 @@ export async function seedSections() {
             iconName: 'SummarizeIcon',
             submodules: {
               create: [
-                { name: 'Actividad de Clientes', route: '/report/client-activity' },
+                { name: 'Actividad de Clientes', route: '/report-client-activity' },
               ],
             },
           },
@@ -181,8 +181,8 @@ export async function seedSections() {
             iconName: 'InsightsOutlinedIcon',
             submodules: {
               create: [
-                { name: 'Compras por proveedor', route: '/report/purchases-by-supplier' },
-                { name: 'Compras por producto', route: '/report/purchases-by-product' },
+                { name: 'Compras por proveedor', route: '/report-purchases-by-supplier' },
+                { name: 'Compras por producto', route: '/report-purchases-by-product' },
               ],
             },
           },
@@ -191,7 +191,7 @@ export async function seedSections() {
             iconName: 'SummarizeIcon',
             submodules: {
               create: [
-                { name: 'Actividad por sucursal', route: '/report/subsidiary-activity' },
+                { name: 'Actividad por sucursal', route: '/report-subsidiary' },
               ],
             },
           },
@@ -200,7 +200,7 @@ export async function seedSections() {
             iconName: 'PersonOutlineIcon',
             submodules: {
               create: [
-                { name: 'Actividad por usuario', route: '/report/user-activity' },
+                { name: 'Actividad por usuario', route: '/report-user' },
               ],
             },
           },
@@ -209,8 +209,8 @@ export async function seedSections() {
             iconName: 'PaidIcon',
             submodules: {
               create: [
-                { name: 'Reporte de gastos', route: '/report/expense' },
-                { name: 'Reporte de ingresos', route: '/report/income' },
+                { name: 'Reporte de gastos', route: '/report-expense' },
+                { name: 'Reporte de ingresos', route: '/report-income' },
               ],
             },
           },
@@ -228,10 +228,8 @@ export async function seedSections() {
       visibility: false,
       modules: {
         create: [
-          { name: 'Tenant', route: '/admin/tenant', iconName: 'GroupWorkIcon' },
-          { name: 'Sucursales', route: '/admin/subsidiary', iconName: 'StoreIcon' },
-          { name: 'Roles y Permisos', route: '/admin/roles-permissions', iconName: 'AdminPanelSettingsIcon' },
-          { name: 'Configuracion', route: '/admin/settings', iconName: 'SettingsIcon' },
+          { name: 'Tenant', route: '/admin-tenant', iconName: 'GroupWorkIcon' },
+          { name: 'Configuracion', route: '/admin-settings', iconName: 'SettingsIcon' },
         ],
       },
     },
