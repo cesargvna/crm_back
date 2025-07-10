@@ -27,10 +27,10 @@ model User {
   
   schedulesUsers    ScheduleUser[]    @relation(name: "ScheduleUserForUser")
   cashSessions    CashSession[] 
-  //sales           Sale[]
+  sales           Sale[]
   expenses        Expense[]
   incomes         Income[]
-  //purchases       Purchase[]
+  purchases       Purchase[]
 
   @@index([tenantId]) 
   @@index([subsidiaryId])

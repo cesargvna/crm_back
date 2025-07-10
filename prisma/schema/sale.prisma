@@ -1,15 +1,17 @@
 model Sale {
   id                   String               @id @default(uuid()) @db.VarChar(255)
-  clientId             String               @db.VarChar(255)
-  userId               String               @db.VarChar(255)
+  clientId             String               @db.VarChar(255) // FK a cliente
+  userId               String               @db.VarChar(255) // FK a usuario
+  total                Decimal              @db.Decimal(10, 2) // Total venta
+  note                 String?              @db.VarChar(255) // Nota opcional
 
-  total                Decimal              @db.Decimal(10, 2)
-  note                 String?              @db.VarChar(255)
-  
-  saleDate             DateTime             @default(now())
-  paymentType          PaymentType
-  dispatchStatus       DispatchStatus
-  paymentStatus        PaymentStatus 
+  saleDate             DateTime             @default(now()) // Fecha de venta
+  paymentType          PaymentType          // Enum CONTADO / CREDITO
+  dispatchStatus       DispatchStatus       // Enum COMPLETADA / ANULADA
+  paymentStatus        PaymentStatus        // Enum PENDIENTE / PARCIAL / COMPLETO
+
+  tenantId             String               @db.VarChar(255) // Tenant dueño de la venta
+  subsidiaryId         String               @db.VarChar(255) // Sucursal específica
 
   created_at           DateTime             @default(now())
   updated_at           DateTime             @updatedAt
@@ -17,7 +19,11 @@ model Sale {
   client               Client               @relation(fields: [clientId], references: [id])
   user                 User                 @relation(fields: [userId], references: [id])
   saleDetails          SaleDetail[]
-  creditPayments       CreditPayment[]     
+  creditPayments       CreditPayment[]
+
+  @@index([tenantId])
+  @@index([subsidiaryId])
+  @@index([userId])
 }
 
 enum PaymentType {
@@ -44,11 +50,17 @@ model SaleDetail {
   quantity              Int
   subtotal              Decimal              @db.Decimal(10, 2)
 
+  tenantId              String               @db.VarChar(255) // Tenant dueño de la venta
+  subsidiaryId          String               @db.VarChar(255) // Sucursal específica
+
   created_at            DateTime             @default(now())
   updated_at            DateTime             @updatedAt
 
   sale                  Sale                 @relation(fields: [saleId], references: [id])
   product               Product              @relation(fields: [productId], references: [id])
+
+  @@index([tenantId])
+  @@index([subsidiaryId])
 }
 
 model CreditPayment {
@@ -57,5 +69,11 @@ model CreditPayment {
   amount               Decimal      @db.Decimal(10, 2)
   paymentDate          DateTime     @default(now())
 
+  tenantId             String       @db.VarChar(255) // Tenant dueño del pago
+  subsidiaryId         String       @db.VarChar(255) // Sucursal específica
+
   sale                 Sale         @relation(fields: [saleId], references: [id])
+
+  @@index([tenantId])
+  @@index([subsidiaryId])
 }

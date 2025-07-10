@@ -2,11 +2,15 @@ model CashSession {
   id                     String      @id @default(uuid()) @db.VarChar(255)
   userId                 String      @db.VarChar(255)
   tenantId               String      @db.VarChar(255) 
-  subsidiaryId           String      @db.VarChar(255) 
+  subsidiaryId           String      @db.VarChar(255)
 
-  workDate               String      @db.VarChar(10) 
-  openDate               DateTime
-  closeDate              DateTime?
+  workDate               DayOfWeek   // Día patrón de trabajo (ejemplo: LUNES)
+  openDate               String      @db.VarChar(5) // Hora planificada apertura: "08:00"
+  closeDate              String?     @db.VarChar(5) // Hora planificada cierre: "18:00"
+
+  openDateTime           DateTime    @default(now()) // Fecha y hora reales de apertura
+  closeDateTime          DateTime?   // Fecha y hora reales de cierre (solo se actualiza al cerrar)
+
   status                 Boolean     @default(true)
 
   initialAmount          Decimal     @db.Decimal(10, 2)
@@ -19,12 +23,12 @@ model CashSession {
   note                   String?     @db.VarChar(100)
 
   created_at             DateTime    @default(now())
-  updated_at             DateTime    @updatedAt
+  updated_at             DateTime    @updatedAt // Correcto: controla la última edición de cualquier campo
 
   user                   User        @relation(fields: [userId], references: [id])
 
   @@index([tenantId])
   @@index([subsidiaryId])
   @@index([userId])
-  @@unique([userId, workDate])
+  @@unique([userId, openDateTime])
 }

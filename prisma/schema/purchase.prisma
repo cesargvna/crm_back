@@ -1,8 +1,5 @@
 model Purchase {
   id               String                  @id @default(uuid()) @db.VarChar(255)
-  supplierId       String                  @db.VarChar(255)
-  userId           String                  @db.VarChar(255)
-
   total            Decimal                 @db.Decimal(10, 2)
   note             String?                 @db.VarChar(100)
 
@@ -14,10 +11,19 @@ model Purchase {
   created_at       DateTime                @default(now())
   updated_at       DateTime                @updatedAt
 
+  supplierId       String                  @db.VarChar(255)
+  userId           String                  @db.VarChar(255)
+  tenantId         String                  @db.VarChar(255) 
+  subsidiaryId     String                  @db.VarChar(255)
+
   supplier         Supplier                @relation(fields: [supplierId], references: [id])
   user             User                    @relation(fields: [userId], references: [id])
   purchaseDetails  PurchaseDetail[]
   creditPayments   PurchaseCreditPayment[]
+
+  @@index([tenantId])
+  @@index([subsidiaryId])
+  @@index([userId])
 }
 
 enum PurchaseStatus {
@@ -31,20 +37,35 @@ model PurchaseCreditPayment {
   amount         Decimal       @db.Decimal(10, 2)
   paymentDate    DateTime      @default(now())
 
+  tenantId       String        @db.VarChar(255) // Tenant dueño del pago
+  subsidiaryId   String        @db.VarChar(255) // Sucursal específica
+
   purchase       Purchase      @relation(fields: [purchaseId], references: [id])
+
+  @@index([tenantId])
+  @@index([subsidiaryId])
 }
 
 model PurchaseDetail {
   id           String       @id @default(uuid()) @db.VarChar(255)
-  purchaseId   String       @db.VarChar(255)
-  productId    String       @db.VarChar(255)
+  
   unit_price   Decimal      @db.Decimal(10, 2)
   quantity     Int
   sub_total    Decimal      @db.Decimal(10, 2)
 
-  created_at   DateTime     @default(now())
-  updated_at   DateTime     @updatedAt
+  purchaseId             String       @db.VarChar(255)
+  productId              String       @db.VarChar(255)
+  userId                 String       @db.VarChar(255)
+  tenantId               String       @db.VarChar(255) 
+  subsidiaryId           String       @db.VarChar(255)
 
-  purchase     Purchase     @relation(fields: [purchaseId], references: [id])
-  product      Product      @relation(fields: [productId], references: [id])
+  created_at             DateTime     @default(now())
+  updated_at             DateTime     @updatedAt
+
+  purchase               Purchase     @relation(fields: [purchaseId], references: [id])
+  product                Product      @relation(fields: [productId], references: [id])
+
+  @@index([tenantId])
+  @@index([subsidiaryId])
+  @@index([userId])
 }
