@@ -16,6 +16,8 @@ import { incomeCategoryPaths } from "./paths/incomeCategory";
 import { incomePaths } from "./paths/income";
 import { clientPaths } from "./paths/client";
 import { clientCategoryPaths } from "./paths/clientCategory";
+import { supplierCategoryPaths } from "./paths/supplierCategory";
+import { supplierPaths } from "./paths/supplier";
 
 export const swaggerConfig = {
   openapi: "3.0.0",
@@ -142,6 +144,24 @@ export const swaggerConfig = {
         - Supports create, update, status toggle, and list/filter by Subsidiary.
         - Includes automatic validation for unique names within a tenant and subsidiary.`,
     },
+    {
+      name: "SupplierCategory",
+      description: `Manages supplier categories for subsidiaries.
+        - Each category belongs to a Subsidiary and Tenant.
+        - Names are normalized: lowercase, no accents, "ñ" replaced with "n".
+        - Supports create, update, toggle status (which cascades to related suppliers), and list/filter by Subsidiary.
+        - Includes endpoints to list only active categories or all categories without pagination.`,
+    },
+    {
+      name: "Supplier",
+      description: `Manages individual suppliers.
+        - Each supplier belongs to a SupplierCategory, Subsidiary, and Tenant.
+        - Names are normalized: no accents, "ñ" replaced with "n".
+        - Email is trimmed and lowercased.
+        - Supports create, update, status toggle, and list/filter by Subsidiary.
+        - Supports search by name, company, or phone.
+        - Includes automatic validation for unique names within a tenant and subsidiary.`,
+    },
   ],
   paths: {
     ...sectionPaths,
@@ -160,7 +180,9 @@ export const swaggerConfig = {
     ...expensePaths,
     ...incomeCategoryPaths,
     ...incomePaths,
-    ...clientCategoryPaths, 
-    ...clientPaths,         
+    ...clientCategoryPaths,
+    ...clientPaths,
+    ...supplierCategoryPaths,  
+    ...supplierPaths,      
   },
 };

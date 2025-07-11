@@ -14,6 +14,7 @@ import authRouter from './routes/auth.router';
 import expenseRouter from './routes/expense.router';
 import incomeRouter from './routes/income.router';
 import clientRouter from './routes/client.router';
+import supplierRouter from './routes/supplier.router';
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerConfig));
 
@@ -28,6 +29,7 @@ app.use('/user', userRouter);
 app.use('/expense', expenseRouter);
 app.use('/income', incomeRouter);
 app.use('/client', clientRouter);
+app.use('/supplier', supplierRouter);
 app.use(errorHandler);
 
 export default app;

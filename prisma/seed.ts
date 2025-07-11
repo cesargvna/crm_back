@@ -14,6 +14,8 @@ import { seedIncomeCategories } from "./seeds/12-income-category";
 import { seedIncomes } from "./seeds/13-income";
 import { seedClientCategories } from "./seeds/14-client-category";
 import { seedClients } from "./seeds/15-client";
+import { seedSupplierCategories } from "./seeds/16-supplier-category";
+import { seedSuppliers } from "./seeds/17-supplier";
 
 async function main() {
   console.log("🌱 Seeding started...");
@@ -41,6 +43,8 @@ async function main() {
 
   const clientCategories = await seedClientCategories(subsidiariesFull);
   const clients = await seedClients(subsidiariesFull, clientCategories);
+  const supplierCategories = await seedSupplierCategories(subsidiariesFull);
+  const suppliers = await seedSuppliers(subsidiariesFull, supplierCategories);
 
   console.log("✅ Seeding completed.");
 }
