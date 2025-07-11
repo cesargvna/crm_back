@@ -55,7 +55,7 @@ model ProductCategory {
 
   products              Product[] // Productos que pertenecen a esta categoría
 
-  @@unique([name, tenantId, subsidiaryId]) // Nombre único por tenant y sucursal
+  @@unique([name, subsidiaryId]) // Nombre único por sucursal
   @@index([tenantId]) // Índice por tenant
   @@index([subsidiaryId]) // Índice por sucursal
 }
@@ -74,7 +74,7 @@ model UnitMeasurement {
 
   products              Product[] // Productos que usan esta unidad
 
-  @@unique([name, tenantId, subsidiaryId]) // Nombre único por tenant y sucursal
+  @@unique([name, subsidiaryId])  // Nombre único por sucursal
   @@index([tenantId]) // Índice por tenant
   @@index([subsidiaryId]) // Índice por sucursal
 }
@@ -116,13 +116,14 @@ model PriceType {
   tenantId              String           @db.VarChar(255) // Tenant dueño del precio
   subsidiaryId          String           @db.VarChar(255) // Sucursal específica
 
+  @@unique([name, subsidiaryId])
   @@index([tenantId]) // Índice por tenant
   @@index([subsidiaryId]) // Índice por sucursal
 }
 
 model Currency {
   id                    String           @id @default(uuid()) @db.VarChar(255) // ID único de la moneda
-  code                  String           @unique @db.VarChar(10) // Código de moneda (USD, BOB)
+  code                  String           @db.VarChar(10) // Código de moneda (USD, BOB)
   name                  String           @db.VarChar(50) // Nombre completo de la moneda
   status                Boolean          @default(true) // Activa o inactiva
   created_at            DateTime         @default(now()) // Creación
@@ -136,6 +137,7 @@ model Currency {
   tenantId              String           @db.VarChar(255) // Tenant dueño del precio
   subsidiaryId          String           @db.VarChar(255) // Sucursal específica
 
+  @@unique([name, code, subsidiaryId])
   @@index([tenantId]) // Índice por tenant
   @@index([subsidiaryId]) // Índice por sucursal
 }

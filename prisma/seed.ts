@@ -16,6 +16,14 @@ import { seedClientCategories } from "./seeds/14-client-category";
 import { seedClients } from "./seeds/15-client";
 import { seedSupplierCategories } from "./seeds/16-supplier-category";
 import { seedSuppliers } from "./seeds/17-supplier";
+import { seedCurrencies } from "./seeds/18-currency.seed";
+import { seedExchangeRates } from "./seeds/19-exchange-rate.seed";
+import { seedPriceTypes } from "./seeds/20-price-type.seed";
+import { seedPriceMargins } from "./seeds/21-price-margin.seed";
+import { seedProductCategories } from "./seeds/22-product-category.seed";
+import { seedUnitMeasurements } from "./seeds/23-unit-measurement.seed";
+import { seedProducts } from "./seeds/24-product.seed";
+import { seedProductPrices } from "./seeds/25-product-price.seed";
 
 async function main() {
   console.log("🌱 Seeding started...");
@@ -37,7 +45,6 @@ async function main() {
 
   const expenseCategories = await seedExpenseCategories(subsidiariesFull);
   const expenses = await seedExpenses(subsidiariesFull, expenseCategories, users);
-
   const incomeCategories = await seedIncomeCategories(subsidiariesFull);
   const incomes = await seedIncomes(subsidiariesFull, incomeCategories, users);
 
@@ -45,6 +52,24 @@ async function main() {
   const clients = await seedClients(subsidiariesFull, clientCategories);
   const supplierCategories = await seedSupplierCategories(subsidiariesFull);
   const suppliers = await seedSuppliers(subsidiariesFull, supplierCategories);
+
+  const currencies = await seedCurrencies(subsidiariesFull);
+  const exchangeRates = await seedExchangeRates(subsidiariesFull, currencies);
+
+  const priceTypes = await seedPriceTypes(subsidiariesFull);
+  const priceMargins = await seedPriceMargins(subsidiariesFull, priceTypes);
+
+  const productCategories = await seedProductCategories(subsidiariesFull);
+  const units = await seedUnitMeasurements(subsidiariesFull);
+
+  const products = await seedProducts(subsidiariesFull, productCategories, units);
+  const productPrices = await seedProductPrices(
+    subsidiariesFull,
+    products,
+    priceTypes,
+    currencies,
+    priceMargins
+  );
 
   console.log("✅ Seeding completed.");
 }
