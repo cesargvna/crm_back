@@ -13,6 +13,7 @@ import swaggerUi from 'swagger-ui-express';
 import authRouter from './routes/auth.router';
 import expenseRouter from './routes/expense.router';
 import incomeRouter from './routes/income.router';
+import clientRouter from './routes/client.router';
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerConfig));
 
@@ -26,7 +27,7 @@ app.use('/subsidiary', subsidiaryRouter);
 app.use('/user', userRouter);
 app.use('/expense', expenseRouter);
 app.use('/income', incomeRouter);
-
+app.use('/client', clientRouter);
 app.use(errorHandler);
 
 export default app;

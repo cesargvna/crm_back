@@ -14,6 +14,8 @@ import { expenseCategoryPaths } from "./paths/expenseCategory";
 import { expensePaths } from "./paths/expense";
 import { incomeCategoryPaths } from "./paths/incomeCategory";
 import { incomePaths } from "./paths/income";
+import { clientPaths } from "./paths/client";
+import { clientCategoryPaths } from "./paths/clientCategory";
 
 export const swaggerConfig = {
   openapi: "3.0.0",
@@ -111,18 +113,34 @@ export const swaggerConfig = {
     {
       name: "Income Category",
       description: `Manages income categories for subsidiaries.
-    - Each income category belongs to a specific Subsidiary and Tenant.
-    - Names are normalized (lowercase, no accents, "ñ" replaced with "n").
-    - Supports creation, update, status toggle, and list/filter by Subsidiary.`,
+        - Each income category belongs to a specific Subsidiary and Tenant.
+        - Names are normalized (lowercase, no accents, "ñ" replaced with "n").
+        - Supports creation, update, status toggle, and list/filter by Subsidiary.`,
     },
     {
       name: "Income",
       description: `Manages individual incomes for subsidiaries.
-    - Each income must belong to a valid Income Category, User, Subsidiary, and Tenant.
-    - Supports creation with automatic normalization of name and calculation of total amount.
-    - Supports update of fields like quantity, unit price, or category.
-    - Supports filtering and paginated retrieval by Subsidiary.
-    - Includes relations to Income Category and User for context.`,
+        - Each income must belong to a valid Income Category, User, Subsidiary, and Tenant.
+        - Supports creation with automatic normalization of name and calculation of total amount.
+        - Supports update of fields like quantity, unit price, or category.
+        - Supports filtering and paginated retrieval by Subsidiary.
+        - Includes relations to Income Category and User for context.`,
+    },
+    {
+      name: "ClientCategory",
+      description: `Manages client categories for subsidiaries.
+        - Each category belongs to a Subsidiary and Tenant.
+        - Names are normalized: lowercase, no accents, "ñ" replaced with "n".
+        - Supports create, update, toggle status (which cascades to clients), and list/filter by Subsidiary.`,
+    },
+    {
+      name: "Client",
+      description: `Manages individual clients.
+        - Each client belongs to a ClientCategory, Subsidiary, and Tenant.
+        - Names are normalized: no accents, "ñ" replaced with "n".
+        - Email is trimmed and lowercased.
+        - Supports create, update, status toggle, and list/filter by Subsidiary.
+        - Includes automatic validation for unique names within a tenant and subsidiary.`,
     },
   ],
   paths: {
@@ -142,5 +160,7 @@ export const swaggerConfig = {
     ...expensePaths,
     ...incomeCategoryPaths,
     ...incomePaths,
+    ...clientCategoryPaths, 
+    ...clientPaths,         
   },
 };
