@@ -18,6 +18,7 @@ import { clientPaths } from "./paths/client";
 import { clientCategoryPaths } from "./paths/clientCategory";
 import { supplierCategoryPaths } from "./paths/supplierCategory";
 import { supplierPaths } from "./paths/supplier";
+import { productCategoryPaths } from "./paths/productCategory";
 
 export const swaggerConfig = {
   openapi: "3.0.0",
@@ -162,6 +163,13 @@ export const swaggerConfig = {
         - Supports search by name, company, or phone.
         - Includes automatic validation for unique names within a tenant and subsidiary.`,
     },
+    {
+      name: "Product Category",
+      description: `Manages product categories for subsidiaries.
+        - Each category belongs to a Subsidiary and Tenant.
+        - Names are normalized: lowercase, no accents, "ñ" replaced with "n".
+        - Supports create, update, toggle status, and list/filter by Subsidiary.`,
+    },
   ],
   paths: {
     ...sectionPaths,
@@ -183,6 +191,7 @@ export const swaggerConfig = {
     ...clientCategoryPaths,
     ...clientPaths,
     ...supplierCategoryPaths,  
-    ...supplierPaths,      
+    ...supplierPaths,  
+    ...productCategoryPaths,    
   },
 };
