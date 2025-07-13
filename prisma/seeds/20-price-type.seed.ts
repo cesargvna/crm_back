@@ -17,13 +17,11 @@ export async function seedPriceTypes(subsidiaries) {
     await prisma.priceType.createMany({
       data: [
         {
-          id: `minorista-${s.id}`,
           name: "Minorista",
           tenantId: s.tenantId,
           subsidiaryId: s.id,
         },
         {
-          id: `mayorista-${s.id}`,
           name: "Mayorista",
           tenantId: s.tenantId,
           subsidiaryId: s.id,

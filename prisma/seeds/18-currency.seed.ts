@@ -17,14 +17,12 @@ export async function seedCurrencies(subsidiaries) {
     await prisma.currency.createMany({
       data: [
         {
-          id: `currency-USD-${s.id}`,
           code: "USD",
           name: "Dólar americano",
           tenantId: s.tenantId,
           subsidiaryId: s.id,
         },
         {
-          id: `currency-BOB-${s.id}`,
           code: "BOB",
           name: "Boliviano",
           tenantId: s.tenantId,

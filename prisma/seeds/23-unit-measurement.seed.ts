@@ -17,21 +17,18 @@ export async function seedUnitMeasurements(subsidiaries) {
     await prisma.unitMeasurement.createMany({
       data: [
         {
-          id: `unit-unidad-${s.id}`,
           name: "Unidad",
           quantity: 1,
           tenantId: s.tenantId,
           subsidiaryId: s.id,
         },
         {
-          id: `unit-pack-${s.id}`,
           name: "Pack",
           quantity: 5,
           tenantId: s.tenantId,
           subsidiaryId: s.id,
         },
         {
-          id: `unit-caja-${s.id}`,
           name: "Caja",
           quantity: 12,
           tenantId: s.tenantId,

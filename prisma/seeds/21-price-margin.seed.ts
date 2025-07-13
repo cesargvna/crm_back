@@ -25,7 +25,6 @@ export async function seedPriceMargins(subsidiaries, priceTypes) {
     if (minorista) {
       const margin = await prisma.productPriceMargin.create({
         data: {
-          id: `margin-minorista-${s.id}`,
           priceTypeId: minorista.id,
           marginPercent: 25.0,
           tenantId: s.tenantId,
@@ -41,7 +40,6 @@ export async function seedPriceMargins(subsidiaries, priceTypes) {
     if (mayorista) {
       const margin = await prisma.productPriceMargin.create({
         data: {
-          id: `margin-mayorista-${s.id}`,
           priceTypeId: mayorista.id,
           marginPercent: 15.0,
           tenantId: s.tenantId,

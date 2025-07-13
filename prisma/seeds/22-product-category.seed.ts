@@ -17,21 +17,18 @@ export async function seedProductCategories(subsidiaries) {
     await prisma.productCategory.createMany({
       data: [
         {
-          id: `cat-escritura-${s.id}`,
           name: "Escritura",
           description: "Lápices, bolígrafos, plumones",
           tenantId: s.tenantId,
           subsidiaryId: s.id,
         },
         {
-          id: `cat-cuadernos-${s.id}`,
           name: "Cuadernos y Libretas",
           description: "Cuadernos, agendas, blocks",
           tenantId: s.tenantId,
           subsidiaryId: s.id,
         },
         {
-          id: `cat-adhesivos-${s.id}`,
           name: "Adhesivos y Cintas",
           description: "Cinta adhesiva, pegamento",
           tenantId: s.tenantId,

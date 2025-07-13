@@ -33,7 +33,6 @@ export async function seedProducts(subsidiaries, categories, units) {
 
     await prisma.product.create({
       data: {
-        id: `prod-bic-blu-${s.id}`,
         code: "LAP-BIC-BLU",
         barcode: "7701234567890",
         name: "Bolígrafo BIC Azul",
