@@ -19,6 +19,7 @@ import { clientCategoryPaths } from "./paths/clientCategory";
 import { supplierCategoryPaths } from "./paths/supplierCategory";
 import { supplierPaths } from "./paths/supplier";
 import { productCategoryPaths } from "./paths/productCategory";
+import { unitMeasurementPaths } from "./paths/unitMeasurement";
 
 export const swaggerConfig = {
   openapi: "3.0.0",
@@ -170,6 +171,14 @@ export const swaggerConfig = {
         - Names are normalized: lowercase, no accents, "ñ" replaced with "n".
         - Supports create, update, toggle status, and list/filter by Subsidiary.`,
     },
+    {
+      name: "UnitMeasurement",
+      description: `Manages unit measurements for subsidiaries.
+        - Each unit measurement belongs to a Subsidiary and Tenant.
+        - Names are normalized: lowercase, accents removed, and "ñ" replaced with "n".
+        - Supports create, update, toggle status, and list/filter by Subsidiary.
+        - Includes quantity as an integer field representing unit scale (e.g., pieces per pack).`,
+    },
   ],
   paths: {
     ...sectionPaths,
@@ -190,8 +199,9 @@ export const swaggerConfig = {
     ...incomePaths,
     ...clientCategoryPaths,
     ...clientPaths,
-    ...supplierCategoryPaths,  
-    ...supplierPaths,  
-    ...productCategoryPaths,    
+    ...supplierCategoryPaths,
+    ...supplierPaths,
+    ...productCategoryPaths,
+    ...unitMeasurementPaths,
   },
 };
