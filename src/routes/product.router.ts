@@ -5,6 +5,8 @@ import { createProductCategory, getActiveProductCategoriesBySubsidiary, getProdu
 import { createProductCategorySchema, getProductCategoriesBySubsidiarySchema, getProductCategoryByIdSchema, toggleProductCategoryStatusParamsSchema, updateProductCategorySchema } from '../validators/productCategory.validation';
 import { createUnitMeasurementSchema, getUnitMeasurementByIdSchema, getUnitMeasurementsBySubsidiarySchema, toggleUnitMeasurementStatusParamsSchema, updateUnitMeasurementSchema } from '../validators/unitMeasurement.validatior';
 import { createUnitMeasurement, getActiveUnitMeasurementsBySubsidiary, getUnitMeasurementById, getUnitMeasurementsBySubsidiary, toggleUnitMeasurementStatus, updateUnitMeasurement } from '../controllers/unitMeasurement.controller';
+import { createPriceTypeSchema, getPriceTypeByIdSchema, getPriceTypesBySubsidiarySchema, togglePriceTypeStatusParamsSchema, updatePriceTypeSchema } from '../validators/priceType.validatior';
+import { createPriceType, getActivePriceTypesBySubsidiary, getPriceTypeById, getPriceTypesBySubsidiary, togglePriceTypeStatus, updatePriceType } from '../controllers/priceType.controller';
 
 const productRouter = express.Router();
 
@@ -22,5 +24,12 @@ productRouter.get("/unitMeasurements/bySubsidiary/:subsidiaryId", validateParams
 productRouter.get("/unitMeasurements/:id", validateParams(getUnitMeasurementByIdSchema), getUnitMeasurementById);
 productRouter.patch("/unitMeasurements/:id/status", validateParams(toggleUnitMeasurementStatusParamsSchema), toggleUnitMeasurementStatus);
 productRouter.get("/unitMeasurementsActive/bySubsidiary/:subsidiaryId", validateParams(getUnitMeasurementsBySubsidiarySchema), getActiveUnitMeasurementsBySubsidiary);
+
+productRouter.post("/priceTypes", validate(createPriceTypeSchema), createPriceType);
+productRouter.put("/priceTypes/:id", validate(updatePriceTypeSchema), updatePriceType);
+productRouter.get("/priceTypes/bySubsidiary/:subsidiaryId", validateParams(getPriceTypesBySubsidiarySchema), getPriceTypesBySubsidiary);
+productRouter.get("/priceTypes/:id", validateParams(getPriceTypeByIdSchema), getPriceTypeById);
+productRouter.patch("/priceTypes/:id/status", validateParams(togglePriceTypeStatusParamsSchema), togglePriceTypeStatus);
+productRouter.get("/priceTypesActive/bySubsidiary/:subsidiaryId", validateParams(getPriceTypesBySubsidiarySchema), getActivePriceTypesBySubsidiary);
 
 export default productRouter;

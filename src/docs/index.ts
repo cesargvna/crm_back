@@ -20,6 +20,7 @@ import { supplierCategoryPaths } from "./paths/supplierCategory";
 import { supplierPaths } from "./paths/supplier";
 import { productCategoryPaths } from "./paths/productCategory";
 import { unitMeasurementPaths } from "./paths/unitMeasurement";
+import { priceTypePaths } from "./paths/priceType";
 
 export const swaggerConfig = {
   openapi: "3.0.0",
@@ -179,6 +180,14 @@ export const swaggerConfig = {
         - Supports create, update, toggle status, and list/filter by Subsidiary.
         - Includes quantity as an integer field representing unit scale (e.g., pieces per pack).`,
     },
+    {
+      name: "PriceType",
+      description: `Manages price types for subsidiaries.
+        - Each price type belongs to a Subsidiary and Tenant.
+        - Names are normalized: lowercase, accents removed, and "ñ" replaced with "n".
+        - Supports create, update, toggle status, and list/filter by Subsidiary.
+        - Typical examples include retail, wholesale, special prices, etc.`,
+    },
   ],
   paths: {
     ...sectionPaths,
@@ -203,5 +212,6 @@ export const swaggerConfig = {
     ...supplierPaths,
     ...productCategoryPaths,
     ...unitMeasurementPaths,
+    ...priceTypePaths,
   },
 };
