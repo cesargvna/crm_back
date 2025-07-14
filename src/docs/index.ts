@@ -22,6 +22,7 @@ import { productCategoryPaths } from "./paths/productCategory";
 import { unitMeasurementPaths } from "./paths/unitMeasurement";
 import { priceTypePaths } from "./paths/priceType";
 import { currencyPaths } from "./paths/currency";
+import { productPaths } from "./paths/product";
 
 export const swaggerConfig = {
   openapi: "3.0.0",
@@ -199,6 +200,19 @@ export const swaggerConfig = {
         - Includes relations for exchange rates and product prices.
         - Ensures unique name + code per Subsidiary.`,
     },
+    {
+      name: "Product",
+      description: `Manages products for subsidiaries.
+        - Each product belongs to a Subsidiary and Tenant.
+        - Each product is linked to a Product Category and Unit Measurement.
+        - Names are normalized: accents removed, "ñ" replaced with "n", extra spaces trimmed.
+        - Codes are automatically uppercased (e.g., SKU or internal code).
+        - Ensures unique combination of name + code within the same Tenant and Subsidiary.
+        - Supports create, update, toggle status, and list/filter by Subsidiary.
+        - Includes optional barcode and description fields.
+        - Provides paginated listing with search by name, code, or barcode.
+        - Active-only endpoint available for dropdowns or quick selectors.`,
+    },
   ],
   paths: {
     ...sectionPaths,
@@ -225,5 +239,6 @@ export const swaggerConfig = {
     ...unitMeasurementPaths,
     ...priceTypePaths,
     ...currencyPaths,
+    ...productPaths,
   },
 };

@@ -1,4 +1,3 @@
-
 export const productCategoryPaths = {
   "POST: /product/categories": {
     post: {
@@ -288,6 +287,53 @@ No pagination is applied.
                     id: "uuid",
                     name: "Lacteos",
                     description: "Categoría para productos lácteos",
+                  },
+                ],
+              },
+            },
+          },
+        },
+        400: { description: "Validation error." },
+      },
+    },
+  },
+  
+  "GET: /product/allCategories/bySubsidiary/{subsidiaryId}": {
+    get: {
+      tags: ["Product Category"],
+      summary: "Get ALL product categories by subsidiary",
+      description: `
+Returns all product categories for a given subsidiary, without pagination.
+Includes active and inactive categories.
+Useful for dropdowns, reports, or complete listings.
+    `,
+      parameters: [
+        {
+          name: "subsidiaryId",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
+      ],
+      responses: {
+        200: {
+          description: "List of all product categories.",
+          content: {
+            "application/json": {
+              example: {
+                total: 2,
+                categories: [
+                  {
+                    id: "uuid",
+                    name: "Lacteos",
+                    description: "Categoría para productos lácteos",
+                    status: true,
+                  },
+                  {
+                    id: "uuid",
+                    name: "Embutidos",
+                    description: "Carnes procesadas",
+                    status: false,
                   },
                 ],
               },

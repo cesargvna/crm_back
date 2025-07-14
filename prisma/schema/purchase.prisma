@@ -68,4 +68,5 @@ model PurchaseDetail {
   @@index([tenantId])
   @@index([subsidiaryId])
   @@index([userId])
+  @@index([productId])
 }

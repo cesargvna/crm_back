@@ -61,6 +61,8 @@ model SaleDetail {
 
   @@index([tenantId])
   @@index([subsidiaryId])
+  @@index([userId])
+  @@index([productId])
 }
 
 model CreditPayment {

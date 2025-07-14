@@ -215,3 +215,29 @@ export const getActiveProductCategoriesBySubsidiary = asyncHandler(
     });
   }
 );
+
+export const getAllProductCategoriesBySubsidiary = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { subsidiaryId } = req.params;
+
+    if (!subsidiaryId) {
+      return res.status(400).json({ message: "subsidiaryId is required." });
+    }
+
+    const categories = await prisma.productCategory.findMany({
+      where: { subsidiaryId },
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        status: true,
+      },
+    });
+
+    res.json({
+      total: categories.length,
+      categories,
+    });
+  }
+);
