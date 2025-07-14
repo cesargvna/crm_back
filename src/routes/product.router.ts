@@ -7,6 +7,8 @@ import { createUnitMeasurementSchema, getUnitMeasurementByIdSchema, getUnitMeasu
 import { createUnitMeasurement, getActiveUnitMeasurementsBySubsidiary, getUnitMeasurementById, getUnitMeasurementsBySubsidiary, toggleUnitMeasurementStatus, updateUnitMeasurement } from '../controllers/unitMeasurement.controller';
 import { createPriceTypeSchema, getPriceTypeByIdSchema, getPriceTypesBySubsidiarySchema, togglePriceTypeStatusParamsSchema, updatePriceTypeSchema } from '../validators/priceType.validatior';
 import { createPriceType, getActivePriceTypesBySubsidiary, getPriceTypeById, getPriceTypesBySubsidiary, togglePriceTypeStatus, updatePriceType } from '../controllers/priceType.controller';
+import { createCurrencySchema, getCurrenciesBySubsidiarySchema, getCurrencyByIdSchema, toggleCurrencyStatusParamsSchema, updateCurrencySchema } from '../validators/currency.validatior';
+import { createCurrency, getActiveCurrenciesBySubsidiary, getCurrenciesBySubsidiary, getCurrencyById, toggleCurrencyStatus, updateCurrency } from '../controllers/currency.controller';
 
 const productRouter = express.Router();
 
@@ -31,5 +33,12 @@ productRouter.get("/priceTypes/bySubsidiary/:subsidiaryId", validateParams(getPr
 productRouter.get("/priceTypes/:id", validateParams(getPriceTypeByIdSchema), getPriceTypeById);
 productRouter.patch("/priceTypes/:id/status", validateParams(togglePriceTypeStatusParamsSchema), togglePriceTypeStatus);
 productRouter.get("/priceTypesActive/bySubsidiary/:subsidiaryId", validateParams(getPriceTypesBySubsidiarySchema), getActivePriceTypesBySubsidiary);
+
+productRouter.post("/currencies", validate(createCurrencySchema), createCurrency);
+productRouter.put("/currencies/:id", validate(updateCurrencySchema), updateCurrency);
+productRouter.get("/currencies/bySubsidiary/:subsidiaryId", validateParams(getCurrenciesBySubsidiarySchema), getCurrenciesBySubsidiary);
+productRouter.get("/currencies/:id", validateParams(getCurrencyByIdSchema), getCurrencyById);
+productRouter.patch("/currencies/:id/status", validateParams(toggleCurrencyStatusParamsSchema), toggleCurrencyStatus);
+productRouter.get("/currenciesActive/bySubsidiary/:subsidiaryId", validateParams(getCurrenciesBySubsidiarySchema), getActiveCurrenciesBySubsidiary);
 
 export default productRouter;

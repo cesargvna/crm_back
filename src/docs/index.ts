@@ -21,6 +21,7 @@ import { supplierPaths } from "./paths/supplier";
 import { productCategoryPaths } from "./paths/productCategory";
 import { unitMeasurementPaths } from "./paths/unitMeasurement";
 import { priceTypePaths } from "./paths/priceType";
+import { currencyPaths } from "./paths/currency";
 
 export const swaggerConfig = {
   openapi: "3.0.0",
@@ -188,6 +189,16 @@ export const swaggerConfig = {
         - Supports create, update, toggle status, and list/filter by Subsidiary.
         - Typical examples include retail, wholesale, special prices, etc.`,
     },
+    {
+      name: "Currency",
+      description: `Manages currencies for subsidiaries.
+        - Each currency belongs to a Subsidiary and Tenant.
+        - Names are normalized: lowercase, accents removed, "ñ" replaced with "n".
+        - Codes are automatically uppercased (e.g., USD, BOB).
+        - Supports create, update, toggle status, and list/filter by Subsidiary.
+        - Includes relations for exchange rates and product prices.
+        - Ensures unique name + code per Subsidiary.`,
+    },
   ],
   paths: {
     ...sectionPaths,
@@ -213,5 +224,6 @@ export const swaggerConfig = {
     ...productCategoryPaths,
     ...unitMeasurementPaths,
     ...priceTypePaths,
+    ...currencyPaths,
   },
 };
