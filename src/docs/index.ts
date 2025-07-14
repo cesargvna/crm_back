@@ -23,6 +23,7 @@ import { unitMeasurementPaths } from "./paths/unitMeasurement";
 import { priceTypePaths } from "./paths/priceType";
 import { currencyPaths } from "./paths/currency";
 import { productPaths } from "./paths/product";
+import { exchangeRatePaths } from "./paths/ExchangeRate";
 
 export const swaggerConfig = {
   openapi: "3.0.0",
@@ -213,6 +214,15 @@ export const swaggerConfig = {
         - Provides paginated listing with search by name, code, or barcode.
         - Active-only endpoint available for dropdowns or quick selectors.`,
     },
+    {
+      name: "ExchangeRate",
+      description: `Manages currency exchange rates for subsidiaries.
+        - Each exchange rate belongs to a Subsidiary and Tenant.
+        - Each exchange rate links two currencies: \`fromCurrency\` and \`toCurrency\`.
+        - Supports creation with uniqueness validation: no duplicate pairs in the same Subsidiary.
+        - Supports update of the \`rate\` value.
+        - Provides list and detail endpoints, including currency info for both sides.`,
+    },
   ],
   paths: {
     ...sectionPaths,
@@ -240,5 +250,6 @@ export const swaggerConfig = {
     ...priceTypePaths,
     ...currencyPaths,
     ...productPaths,
+    ...exchangeRatePaths,
   },
 };

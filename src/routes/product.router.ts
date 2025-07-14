@@ -11,6 +11,8 @@ import { createCurrencySchema, getCurrenciesBySubsidiarySchema, getCurrencyByIdS
 import { createCurrency, getActiveCurrenciesBySubsidiary, getCurrenciesBySubsidiary, getCurrencyById, toggleCurrencyStatus, updateCurrency } from '../controllers/currency.controller';
 import { createProductSchema, getProductByIdSchema, getProductsBySubsidiarySchema, toggleProductStatusParamsSchema, updateProductSchema } from '../validators/product.validatior';
 import { createProduct, getActiveProductsBySubsidiary, getProductById, getProductsBySubsidiary, toggleProductStatus, updateProduct } from '../controllers/product.controller';
+import { createExchangeRateSchema, getExchangeRateByIdSchema, getExchangeRatesBySubsidiarySchema, updateExchangeRateSchema } from '../validators/exchangeRate.validatior';
+import { createExchangeRate, getExchangeRateById, getExchangeRatesBySubsidiary, updateExchangeRate } from '../controllers/exchangeRate.controller';
 
 const productRouter = express.Router();
 
@@ -50,5 +52,10 @@ productRouter.get("/products/bySubsidiary/:subsidiaryId", validateParams(getProd
 productRouter.get("/products/:id", validateParams(getProductByIdSchema), getProductById);
 productRouter.patch("/products/:id/status", validateParams(toggleProductStatusParamsSchema), toggleProductStatus);
 productRouter.get("/productsActive/bySubsidiary/:subsidiaryId", validateParams(getProductsBySubsidiarySchema), getActiveProductsBySubsidiary);
+
+productRouter.post("/exchangeRates", validate(createExchangeRateSchema), createExchangeRate);
+productRouter.put("/exchangeRates/:id", validate(updateExchangeRateSchema), updateExchangeRate);
+productRouter.get("/exchangeRates/bySubsidiary/:subsidiaryId", validateParams(getExchangeRatesBySubsidiarySchema), getExchangeRatesBySubsidiary);
+productRouter.get("/exchangeRates/:id", validateParams(getExchangeRateByIdSchema), getExchangeRateById);
 
 export default productRouter;

@@ -122,7 +122,7 @@ model ProductPrice {
   priceType             PriceType        @relation(fields: [priceTypeId], references: [id]) // Relación con tipo de precio
   currency              Currency         @relation(fields: [currencyId], references: [id]) // Relación con moneda
 
-  @@unique([productId, priceTypeId, currencyId, tenantId, subsidiaryId])
+  @@unique([productId, priceTypeId, currencyId, subsidiaryId])
   @@index([tenantId]) // Índice por tenant
   @@index([subsidiaryId]) // Índice por sucursal
 }
@@ -141,6 +141,7 @@ model ExchangeRate {
   tenantId              String           @db.VarChar(255) // Tenant dueño del precio
   subsidiaryId          String           @db.VarChar(255) // Sucursal específica
 
+  @@unique([fromCurrencyId, toCurrencyId, rate, subsidiaryId])
   @@index([tenantId]) // Índice por tenant
   @@index([subsidiaryId]) // Índice por sucursal
 }
