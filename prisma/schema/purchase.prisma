@@ -41,6 +41,7 @@ model PurchaseDetail {
   purchaseId             String       @db.VarChar(255)
   productId              String       @db.VarChar(255)
   userId                 String       @db.VarChar(255)
+  supplierId       String                  @db.VarChar(255)
   tenantId               String       @db.VarChar(255) 
   subsidiaryId           String       @db.VarChar(255)
 
@@ -53,6 +54,7 @@ model PurchaseDetail {
   @@index([tenantId])
   @@index([subsidiaryId])
   @@index([userId])
+  @@index([supplierId])
   @@index([productId])
 }
 
