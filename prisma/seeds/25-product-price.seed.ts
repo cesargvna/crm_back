@@ -5,8 +5,7 @@ export async function seedProductPrices(
   subsidiaries,
   products,
   priceTypes,
-  currencies,
-  priceMargins
+  currencies
 ) {
   console.log("🏷️ Seeding ProductPrices...");
 

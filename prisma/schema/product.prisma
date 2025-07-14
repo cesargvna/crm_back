@@ -69,11 +69,11 @@ model PriceType {
   id                    String           @id @default(uuid()) @db.VarChar(255) // ID único del tipo de precio
   name                  String           @db.VarChar(50) // Nombre (Minorista, Mayorista, etc.)
   status                Boolean          @default(true) // Activo o inactivo
+  marginPercent         Decimal          @db.Decimal(5, 2)
   created_at            DateTime         @default(now()) // Fecha de creación
   updated_at            DateTime         @updatedAt // Fecha de actualización
 
   productPrices         ProductPrice[] // Lista de precios de productos asociados
-  productPriceMargins   ProductPriceMargin[] // Márgenes asociados
 
   tenantId              String           @db.VarChar(255) // Tenant dueño del precio
   subsidiaryId          String           @db.VarChar(255) // Sucursal específica
@@ -102,19 +102,6 @@ model Currency {
   @@unique([name, code, subsidiaryId])
   @@index([tenantId]) // Índice por tenant
   @@index([subsidiaryId]) // Índice por sucursal
-}
-
-model ProductPriceMargin {
-  id                    String           @id @default(uuid()) @db.VarChar(255) // ID único del margen
-  priceTypeId           String           @db.VarChar(255) // FK al tipo de precio (minorista, mayorista, etc.)
-  marginPercent         Decimal          @db.Decimal(5, 2) // Margen de ganancia en porcentaje
-
-  tenantId              String           @db.VarChar(255) // ID del tenant al que pertenece
-  subsidiaryId          String           @db.VarChar(255) // ID de la sucursal donde aplica
-
-  priceType             PriceType        @relation(fields: [priceTypeId], references: [id]) // Relación con PriceType
-  @@index([tenantId]) // Índice para filtrar por tenant
-  @@index([subsidiaryId]) // Índice para filtrar por sucursal
 }
 
 model ProductPrice {

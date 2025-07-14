@@ -19,7 +19,6 @@ import { seedSuppliers } from "./seeds/17-supplier";
 import { seedCurrencies } from "./seeds/18-currency.seed";
 import { seedExchangeRates } from "./seeds/19-exchange-rate.seed";
 import { seedPriceTypes } from "./seeds/20-price-type.seed";
-import { seedPriceMargins } from "./seeds/21-price-margin.seed";
 import { seedProductCategories } from "./seeds/22-product-category.seed";
 import { seedUnitMeasurements } from "./seeds/23-unit-measurement.seed";
 import { seedProducts } from "./seeds/24-product.seed";
@@ -57,19 +56,16 @@ async function main() {
   const exchangeRates = await seedExchangeRates(subsidiariesFull, currencies);
 
   const priceTypes = await seedPriceTypes(subsidiariesFull);
-  const priceMargins = await seedPriceMargins(subsidiariesFull, priceTypes);
-
   const productCategories = await seedProductCategories(subsidiariesFull);
   const units = await seedUnitMeasurements(subsidiariesFull);
 
   const products = await seedProducts(subsidiariesFull, productCategories, units);
-  const productPrices = await seedProductPrices(
+ /*const productPrices = await seedProductPrices(
     subsidiariesFull,
     products,
     priceTypes,
-    currencies,
-    priceMargins
-  );
+    currencies
+  );*/
 
   console.log("✅ Seeding completed.");
 }

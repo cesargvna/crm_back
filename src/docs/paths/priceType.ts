@@ -4,10 +4,11 @@ export const priceTypePaths = {
       tags: ["PriceType"],
       summary: "Create a new price type",
       description: `
-Creates a new price type linked to a specific subsidiary and tenant.  
-- The \`name\` is normalized to lowercase, without accents, and "ñ" is converted to "n".  
-- \`name\` must be unique per subsidiary.  
+Creates a new price type linked to a specific subsidiary and tenant.
+- The \`name\` is normalized to lowercase, accents are removed, and "ñ" is converted to "n".
+- \`name\` must be unique per subsidiary.
 - The subsidiary must exist and belong to the given tenant.
+- \`marginPercent\` is required and defines the percentage profit margin.
       `,
       requestBody: {
         required: true,
@@ -15,9 +16,10 @@ Creates a new price type linked to a specific subsidiary and tenant.
           "application/json": {
             schema: {
               type: "object",
-              required: ["name", "tenantId", "subsidiaryId"],
+              required: ["name", "marginPercent", "tenantId", "subsidiaryId"],
               properties: {
                 name: { type: "string", example: "Mayorista" },
+                marginPercent: { type: "number", example: 25.5 },
                 tenantId: { type: "string", format: "uuid" },
                 subsidiaryId: { type: "string", format: "uuid" },
               },
@@ -31,11 +33,12 @@ Creates a new price type linked to a specific subsidiary and tenant.
           content: {
             "application/json": {
               example: {
-                message: "Price type created successfully.",
+                message: "PriceType created successfully.",
                 priceType: {
                   id: "uuid",
                   name: "mayorista",
                   status: true,
+                  marginPercent: 25.5,
                   tenantId: "uuid",
                   subsidiaryId: "uuid",
                   created_at: "2024-07-10T12:00:00.000Z",
@@ -54,12 +57,12 @@ Creates a new price type linked to a specific subsidiary and tenant.
   "PUT: /product/priceTypes/{id}": {
     put: {
       tags: ["PriceType"],
-      summary: "Update price type",
+      summary: "Update a price type",
       description: `
-Updates the name of a price type.  
-- The \`name\` is normalized.  
+Updates the name and/or \`marginPercent\` of a price type.
+- The \`name\` is normalized if provided.
 - Cannot update tenantId or subsidiaryId.
-- If name changes, uniqueness is re-validated within the same subsidiary.
+- If the name changes, uniqueness is re-validated within the same subsidiary.
       `,
       parameters: [
         {
@@ -77,6 +80,7 @@ Updates the name of a price type.
               type: "object",
               properties: {
                 name: { type: "string", example: "Minorista actualizado" },
+                marginPercent: { type: "number", example: 35.0 },
               },
             },
           },
@@ -88,17 +92,18 @@ Updates the name of a price type.
           content: {
             "application/json": {
               example: {
-                message: "Price type updated successfully.",
+                message: "PriceType updated successfully.",
                 priceType: {
                   id: "uuid",
                   name: "minorista actualizado",
                   status: true,
+                  marginPercent: 35.0,
                 },
               },
             },
           },
         },
-        404: { description: "Price type not found." },
+        404: { description: "PriceType not found." },
         409: { description: "Duplicate name for this subsidiary." },
       },
     },
@@ -109,8 +114,9 @@ Updates the name of a price type.
       tags: ["PriceType"],
       summary: "Get price types by subsidiary",
       description: `
-Returns a paginated list of price types for the given subsidiary.  
+Returns a paginated list of price types for the given subsidiary.
 Supports search by \`name\` and filtering by \`status\`.
+Includes \`marginPercent\` for each type.
       `,
       parameters: [
         {
@@ -143,11 +149,13 @@ Supports search by \`name\` and filtering by \`status\`.
                     id: "uuid",
                     name: "mayorista",
                     status: true,
+                    marginPercent: 25.5,
                   },
                   {
                     id: "uuid",
                     name: "minorista",
                     status: true,
+                    marginPercent: 35.0,
                   },
                 ],
               },
@@ -163,7 +171,7 @@ Supports search by \`name\` and filtering by \`status\`.
       tags: ["PriceType"],
       summary: "Get active price types by subsidiary",
       description: `
-Returns only active price types for the given subsidiary.
+Returns only active price types for the given subsidiary, including their \`marginPercent\`.
       `,
       parameters: [
         {
@@ -184,6 +192,7 @@ Returns only active price types for the given subsidiary.
                   {
                     id: "uuid",
                     name: "mayorista",
+                    marginPercent: 25.5,
                   },
                 ],
               },
@@ -199,7 +208,7 @@ Returns only active price types for the given subsidiary.
       tags: ["PriceType"],
       summary: "Get price type by ID",
       description: `
-Returns a price type by its ID.
+Returns a price type by its ID, including its \`marginPercent\`.
       `,
       parameters: [
         {
@@ -218,13 +227,14 @@ Returns a price type by its ID.
                 id: "uuid",
                 name: "mayorista",
                 status: true,
+                marginPercent: 25.5,
                 tenantId: "uuid",
                 subsidiaryId: "uuid",
               },
             },
           },
         },
-        404: { description: "Price type not found." },
+        404: { description: "PriceType not found." },
       },
     },
   },
@@ -250,17 +260,18 @@ Toggles the \`status\` of a price type between active and inactive.
           content: {
             "application/json": {
               example: {
-                message: "Price type status changed to inactive.",
+                message: "PriceType status changed to inactive.",
                 priceType: {
                   id: "uuid",
                   name: "mayorista",
                   status: false,
+                  marginPercent: 25.5,
                 },
               },
             },
           },
         },
-        404: { description: "Price type not found." },
+        404: { description: "PriceType not found." },
       },
     },
   },

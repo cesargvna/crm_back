@@ -4,7 +4,7 @@ export async function seedPriceTypes(subsidiaries) {
   console.log("💲 Seeding PriceTypes...");
 
   for (const s of subsidiaries) {
-    // ✅ Ignora subsidiaries o tenants inválidos
+    // ⚠️ Ignora subsidiarias o tenants inválidos
     if (
       s.id === "00000000-0000-0000-0000-000000000000" ||
       s.tenantId === "00000000-0000-0000-0000-000000000000"
@@ -13,16 +13,18 @@ export async function seedPriceTypes(subsidiaries) {
       continue;
     }
 
-    // ✅ Inserta tipos de precio solo para sucursales válidas
+    // ✅ Inserta tipos de precio con margen por defecto
     await prisma.priceType.createMany({
       data: [
         {
           name: "Minorista",
+          marginPercent: 40.0, // 💰 Margen por defecto
           tenantId: s.tenantId,
           subsidiaryId: s.id,
         },
         {
           name: "Mayorista",
+          marginPercent: 25.0, // 💰 Margen por defecto
           tenantId: s.tenantId,
           subsidiaryId: s.id,
         },
@@ -33,7 +35,7 @@ export async function seedPriceTypes(subsidiaries) {
     console.log(`✅ PriceTypes created for subsidiary ${s.id}`);
   }
 
-  // ✅ Filtra para traer solo las subsidiarias válidas
+  // ✅ Verificación final
   const validSubsidiaries = subsidiaries.filter(
     (s) =>
       s.id !== "00000000-0000-0000-0000-000000000000" &&
