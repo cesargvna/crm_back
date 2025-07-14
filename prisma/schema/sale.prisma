@@ -1,7 +1,5 @@
 model Sale {
   id                   String               @id @default(uuid()) @db.VarChar(255)
-  clientId             String               @db.VarChar(255) // FK a cliente
-  userId               String               @db.VarChar(255) // FK a usuario
   total                Decimal              @db.Decimal(10, 2) // Total venta
   note                 String?              @db.VarChar(255) // Nota opcional
 
@@ -9,13 +7,15 @@ model Sale {
   paymentType          PaymentType          // Enum CONTADO / CREDITO
   dispatchStatus       DispatchStatus       // Enum COMPLETADA / ANULADA
   paymentStatus        PaymentStatus        // Enum PENDIENTE / PARCIAL / COMPLETO
-
-  tenantId             String               @db.VarChar(255) // Tenant dueño de la venta
-  subsidiaryId         String               @db.VarChar(255) // Sucursal específica
-
+  
   created_at           DateTime             @default(now())
   updated_at           DateTime             @updatedAt
-
+  
+  tenantId             String               @db.VarChar(255) // Tenant dueño de la venta
+  subsidiaryId         String               @db.VarChar(255) // Sucursal específica
+  clientId             String               @db.VarChar(255) // FK a cliente
+  userId               String               @db.VarChar(255) // FK a usuario
+  
   client               Client               @relation(fields: [clientId], references: [id])
   user                 User                 @relation(fields: [userId], references: [id])
   saleDetails          SaleDetail[]
@@ -44,15 +44,18 @@ enum PaymentStatus {
 
 model SaleDetail {
   id                    String               @id @default(uuid()) @db.VarChar(255)
-  saleId                String               @db.VarChar(255)
-  productId             String               @db.VarChar(255)
+ 
   unit_price            Decimal              @db.Decimal(10, 2)
   quantity              Int
   subtotal              Decimal              @db.Decimal(10, 2)
-
+  
+  saleId                String               @db.VarChar(255)
+  productId             String               @db.VarChar(255)
+  userId                String               @db.VarChar(255)
   tenantId              String               @db.VarChar(255) // Tenant dueño de la venta
   subsidiaryId          String               @db.VarChar(255) // Sucursal específica
-
+  
+  
   created_at            DateTime             @default(now())
   updated_at            DateTime             @updatedAt
 

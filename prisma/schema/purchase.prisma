@@ -31,27 +31,12 @@ enum PurchaseStatus {
   DEVUELTA     
 }
 
-model PurchaseCreditPayment {
-  id             String        @id @default(uuid()) @db.VarChar(255)
-  purchaseId     String        @db.VarChar(255)
-  amount         Decimal       @db.Decimal(10, 2)
-  paymentDate    DateTime      @default(now())
-
-  tenantId       String        @db.VarChar(255) // Tenant dueño del pago
-  subsidiaryId   String        @db.VarChar(255) // Sucursal específica
-
-  purchase       Purchase      @relation(fields: [purchaseId], references: [id])
-
-  @@index([tenantId])
-  @@index([subsidiaryId])
-}
-
 model PurchaseDetail {
-  id           String       @id @default(uuid()) @db.VarChar(255)
+  id                     String       @id @default(uuid()) @db.VarChar(255)
   
-  unit_price   Decimal      @db.Decimal(10, 2)
-  quantity     Int
-  sub_total    Decimal      @db.Decimal(10, 2)
+  unit_price             Decimal      @db.Decimal(10, 2)
+  quantity               Int
+  sub_total              Decimal      @db.Decimal(10, 2)
 
   purchaseId             String       @db.VarChar(255)
   productId              String       @db.VarChar(255)
@@ -69,4 +54,19 @@ model PurchaseDetail {
   @@index([subsidiaryId])
   @@index([userId])
   @@index([productId])
+}
+
+model PurchaseCreditPayment {
+  id             String        @id @default(uuid()) @db.VarChar(255)
+  purchaseId     String        @db.VarChar(255)
+  amount         Decimal       @db.Decimal(10, 2)
+  paymentDate    DateTime      @default(now())
+
+  tenantId       String        @db.VarChar(255) // Tenant dueño del pago
+  subsidiaryId   String        @db.VarChar(255) // Sucursal específica
+
+  purchase       Purchase      @relation(fields: [purchaseId], references: [id])
+
+  @@index([tenantId])
+  @@index([subsidiaryId])
 }
