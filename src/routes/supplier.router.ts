@@ -1,10 +1,10 @@
 import express from 'express';
 import { validate } from '../middleware/validate.middleware';
 import { validateParams } from '../middleware/validateParams.middleware';
-import { createSupplierCategory, getActiveSupplierCategoriesBySubsidiary, getSupplierCategoriesBySubsidiary, getSupplierCategoryById, toggleSupplierCategoryStatus, updateSupplierCategory } from '../controllers/supplierCategory.controller';
-import { createSupplierCategorySchema, getSupplierCategoriesBySubsidiarySchema, getSupplierCategoryByIdSchema, toggleSupplierCategoryStatusParamsSchema, updateSupplierCategorySchema } from '../validators/supplierCategory.validator';
-import { createSupplier, getActiveSuppliersBySubsidiary, getAllSupplierCategoriesBySubsidiary, getSupplierById, getSuppliersBySubsidiary, toggleSupplierStatus, updateSupplier } from '../controllers/supplier.controller';
-import { createSupplierSchema, getSupplierByIdSchema, getSuppliersBySubsidiarySchema, toggleSupplierStatusParamsSchema, updateSupplierSchema } from '../validators/supplier.validator';
+import { createSupplierCategory, getActiveSupplierCategoriesBySubsidiary, getSupplierCategoriesBySubsidiary, getSupplierCategoryById, toggleSupplierCategoryStatus, updateSupplierCategory } from '../controllers/supplier/supplierCategory.controller';
+import { createSupplierCategorySchema, getSupplierCategoriesBySubsidiarySchema, getSupplierCategoryByIdSchema, toggleSupplierCategoryStatusParamsSchema, updateSupplierCategorySchema } from '../validators/supplier/supplierCategory.validator';
+import { createSupplier, getActiveSuppliersBySubsidiary, getAllSupplierCategoriesBySubsidiary, getSupplierById, getSuppliersBySubsidiary, toggleSupplierStatus, updateSupplier } from '../controllers/supplier/supplier.controller';
+import { createSupplierSchema, getSupplierByIdSchema, getSuppliersBySubsidiarySchema, toggleSupplierStatusParamsSchema, updateSupplierSchema } from '../validators/supplier/supplier.validator';
 
 const supplierRouter = express.Router();
 

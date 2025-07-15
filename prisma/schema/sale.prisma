@@ -19,7 +19,7 @@ model Sale {
   client               Client               @relation(fields: [clientId], references: [id])
   user                 User                 @relation(fields: [userId], references: [id])
   saleDetails          SaleDetail[]
-  creditPayments       CreditPayment[]
+  saleCreditPayments       SaleCreditPayment[]
 
   @@index([tenantId])
   @@index([subsidiaryId])
@@ -68,7 +68,7 @@ model SaleDetail {
   @@index([productId])
 }
 
-model CreditPayment {
+model SaleCreditPayment {
   id                   String       @id @default(uuid()) @db.VarChar(255)
   saleId               String       @db.VarChar(255)
   amount               Decimal      @db.Decimal(10, 2)

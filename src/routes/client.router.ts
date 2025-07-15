@@ -1,10 +1,10 @@
 import express from 'express';
 import { validate } from '../middleware/validate.middleware';
 import { validateParams } from '../middleware/validateParams.middleware';
-import { createClientCategory, getActiveClientCategoriesBySubsidiary, getAllClientCategoriesBySubsidiary, getClientCategoriesBySubsidiary, getClientCategoryById, toggleClientCategoryStatus, updateClientCategory } from '../controllers/clientCategory.controller';
-import { createClientCategorySchema, getClientCategoriesBySubsidiarySchema, getClientCategoryByIdSchema, toggleClientCategoryStatusParamsSchema, updateClientCategorySchema } from '../validators/clientCategory.validator';
-import { createClientSchema, getClientByIdSchema, getClientsBySubsidiarySchema, toggleClientStatusParamsSchema, updateClientSchema } from '../validators/client.validator';
-import { createClient, getActiveClientsBySubsidiary, getClientById, getClientsBySubsidiary, toggleClientStatus, updateClient } from '../controllers/client.controller';
+import { createClientCategory, getActiveClientCategoriesBySubsidiary, getAllClientCategoriesBySubsidiary, getClientCategoriesBySubsidiary, getClientCategoryById, toggleClientCategoryStatus, updateClientCategory } from '../controllers/client/clientCategory.controller';
+import { createClientCategorySchema, getClientCategoriesBySubsidiarySchema, getClientCategoryByIdSchema, toggleClientCategoryStatusParamsSchema, updateClientCategorySchema } from '../validators/client/clientCategory.validator';
+import { createClientSchema, getClientByIdSchema, getClientsBySubsidiarySchema, toggleClientStatusParamsSchema, updateClientSchema } from '../validators/client/client.validator';
+import { createClient, getActiveClientsBySubsidiary, getClientById, getClientsBySubsidiary, toggleClientStatus, updateClient } from '../controllers/client/client.controller';
 
 const clientRouter = express.Router();
 

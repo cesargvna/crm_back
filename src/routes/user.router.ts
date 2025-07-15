@@ -1,10 +1,10 @@
 import express from 'express';
 import { validate } from '../middleware/validate.middleware';
 
-import { createScheduleUserSchema,  updateScheduleUserSchema } from '../validators/scheduleUser.validator';
-import { createScheduleUser, deleteScheduleUser, getSchedulesByUser, getScheduleUserById, toggleScheduleUserStatus, updateScheduleUser } from '../controllers/scheduleUser.controller';
-import { createUser, getUserById, getUserByIdSimple, getUsersBySubsidiary, toggleUserStatus, updateUser, updateUserPassword } from '../controllers/user.controller';
-import { createUserSchema, getAllUsersQuerySchema, toggleUserStatusParamsSchema, updateUserBodySchema, updateUserParamsSchema, updateUserPasswordParamsSchema, updateUserPasswordSchema } from '../validators/user.validator';
+import { createScheduleUserSchema,  updateScheduleUserSchema } from '../validators/user/scheduleUser.validator';
+import { createScheduleUser, deleteScheduleUser, getSchedulesByUser, getScheduleUserById, toggleScheduleUserStatus, updateScheduleUser } from '../controllers/user/scheduleUser.controller';
+import { createUser, getUserById, getUserByIdSimple, getUsersBySubsidiary, toggleUserStatus, updateUser, updateUserPassword } from '../controllers/user/user.controller';
+import { createUserSchema, getAllUsersQuerySchema, toggleUserStatusParamsSchema, updateUserBodySchema, updateUserParamsSchema, updateUserPasswordParamsSchema, updateUserPasswordSchema } from '../validators/user/user.validator';
 import { validateQuery } from '../middleware/validateQuery.middleware';
 import { validateTenantLimit } from '../middleware/validateTenantLimits';
 import { validateParams } from '../middleware/validateParams.middleware';

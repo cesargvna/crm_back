@@ -1,9 +1,9 @@
 import express from 'express';
 import { validate } from '../middleware/validate.middleware';
-import { createExpenseCategory, getActiveExpenseCategoriesBySubsidiary, getExpenseCategoriesBySubsidiary, getExpenseCategoryById, toggleExpenseCategoryStatus, updateExpenseCategory } from '../controllers/expenseCategory.controller';
-import { createExpense, getExpenseById, getExpensesBySubsidiary, updateExpense } from '../controllers/expense.controller';
-import { createExpenseSchema, getExpenseByIdSchema, getExpensesBySubsidiarySchema, updateExpenseSchema } from '../validators/expense.validator';
-import { createExpenseCategorySchema, getExpenseCategoriesBySubsidiarySchema, getExpenseCategoryByIdSchema, toggleExpenseCategoryStatusParamsSchema, updateExpenseCategorySchema } from '../validators/expenseCategory.validator';
+import { createExpenseCategory, getActiveExpenseCategoriesBySubsidiary, getExpenseCategoriesBySubsidiary, getExpenseCategoryById, toggleExpenseCategoryStatus, updateExpenseCategory } from '../controllers/expense/expenseCategory.controller';
+import { createExpense, getExpenseById, getExpensesBySubsidiary, updateExpense } from '../controllers/expense/expense.controller';
+import { createExpenseSchema, getExpenseByIdSchema, getExpensesBySubsidiarySchema, updateExpenseSchema } from '../validators/expense/expense.validator';
+import { createExpenseCategorySchema, getExpenseCategoriesBySubsidiarySchema, getExpenseCategoryByIdSchema, toggleExpenseCategoryStatusParamsSchema, updateExpenseCategorySchema } from '../validators/expense/expenseCategory.validator';
 import { validateParams } from '../middleware/validateParams.middleware';
 
 const expenseRouter = express.Router();

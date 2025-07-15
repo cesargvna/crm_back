@@ -1,8 +1,8 @@
 import express from "express";
 import { validate } from "../middleware/validate.middleware";
 import { validateQuery } from "../middleware/validateQuery.middleware";
-import { createTenantSchema, getAllTenantsQuerySchema, toggleTenantStatusSchema, updateTenantSchema } from "../validators/tenant.validator";
-import { createTenant, getAllTenants, getTenantById, toggleTenantStatus, updateTenant } from "../controllers/tenant.controller";
+import { createTenantSchema, getAllTenantsQuerySchema, toggleTenantStatusSchema, updateTenantSchema } from "../validators/tenant/tenant.validator";
+import { createTenant, getAllTenants, getTenantById, toggleTenantStatus, updateTenant } from "../controllers/tenant/tenant.controller";
 
 
 const tenantRouter = express.Router();

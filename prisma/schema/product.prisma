@@ -20,7 +20,7 @@ model Product {
   productPrices         ProductPrice[] // Lista de precios configurados para este producto
   saleDetails           SaleDetail[] // Detalles de ventas relacionados
   purchaseDetails       PurchaseDetail[] // Detalles de compras relacionados
-  inventory             Inventory? // Relación 1:1 con inventario
+  inventory             Inventory[] // Relación 1:1 con inventario
 
   @@unique([name, code, tenantId, subsidiaryId]) // Nombre y código únicos por tenant y sucursal
   @@index([tenantId]) // Índice para filtrar por tenant

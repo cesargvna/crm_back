@@ -1,18 +1,24 @@
 import express from 'express';
 import { validate } from '../middleware/validate.middleware';
 import { validateParams } from '../middleware/validateParams.middleware';
-import { createProductCategory, getActiveProductCategoriesBySubsidiary, getAllProductCategoriesBySubsidiary, getProductCategoriesBySubsidiary, getProductCategoryById, toggleProductCategoryStatus, updateProductCategory } from '../controllers/productCategory.controller';
-import { createProductCategorySchema, getProductCategoriesBySubsidiarySchema, getProductCategoryByIdSchema, toggleProductCategoryStatusParamsSchema, updateProductCategorySchema } from '../validators/productCategory.validation';
-import { createUnitMeasurementSchema, getUnitMeasurementByIdSchema, getUnitMeasurementsBySubsidiarySchema, toggleUnitMeasurementStatusParamsSchema, updateUnitMeasurementSchema } from '../validators/unitMeasurement.validatior';
-import { createUnitMeasurement, getActiveUnitMeasurementsBySubsidiary, getUnitMeasurementById, getUnitMeasurementsBySubsidiary, toggleUnitMeasurementStatus, updateUnitMeasurement } from '../controllers/unitMeasurement.controller';
-import { createPriceTypeSchema, getPriceTypeByIdSchema, getPriceTypesBySubsidiarySchema, togglePriceTypeStatusParamsSchema, updatePriceTypeSchema } from '../validators/priceType.validatior';
-import { createPriceType, getActivePriceTypesBySubsidiary, getPriceTypeById, getPriceTypesBySubsidiary, togglePriceTypeStatus, updatePriceType } from '../controllers/priceType.controller';
-import { createCurrencySchema, getCurrenciesBySubsidiarySchema, getCurrencyByIdSchema, toggleCurrencyStatusParamsSchema, updateCurrencySchema } from '../validators/currency.validatior';
-import { createCurrency, getActiveCurrenciesBySubsidiary, getCurrenciesBySubsidiary, getCurrencyById, toggleCurrencyStatus, updateCurrency } from '../controllers/currency.controller';
-import { createProductSchema, getProductByIdSchema, getProductsBySubsidiarySchema, toggleProductStatusParamsSchema, updateProductSchema } from '../validators/product.validatior';
-import { createProduct, getActiveProductsBySubsidiary, getProductById, getProductsBySubsidiary, toggleProductStatus, updateProduct } from '../controllers/product.controller';
-import { createExchangeRateSchema, getExchangeRateByIdSchema, getExchangeRatesBySubsidiarySchema, updateExchangeRateSchema } from '../validators/exchangeRate.validatior';
-import { createExchangeRate, getExchangeRateById, getExchangeRatesBySubsidiary, updateExchangeRate } from '../controllers/exchangeRate.controller';
+import { createProductCategory, getActiveProductCategoriesBySubsidiary, getAllProductCategoriesBySubsidiary, getProductCategoriesBySubsidiary, getProductCategoryById, toggleProductCategoryStatus, updateProductCategory } from '../controllers/product/productCategory.controller';
+import { createProductCategorySchema, getProductCategoriesBySubsidiarySchema, getProductCategoryByIdSchema, toggleProductCategoryStatusParamsSchema, updateProductCategorySchema } from '../validators/product/productCategory.validation';
+import { createUnitMeasurementSchema, getUnitMeasurementByIdSchema, getUnitMeasurementsBySubsidiarySchema, toggleUnitMeasurementStatusParamsSchema, updateUnitMeasurementSchema } from '../validators/product/unitMeasurement.validatior';
+import { createUnitMeasurement, getActiveUnitMeasurementsBySubsidiary, getUnitMeasurementById, getUnitMeasurementsBySubsidiary, toggleUnitMeasurementStatus, updateUnitMeasurement } from '../controllers/product/unitMeasurement.controller';
+import { createPriceTypeSchema, getPriceTypeByIdSchema, getPriceTypesBySubsidiarySchema, togglePriceTypeStatusParamsSchema, updatePriceTypeSchema } from '../validators/product/priceType.validatior';
+import { createPriceType, getActivePriceTypesBySubsidiary, getPriceTypeById, getPriceTypesBySubsidiary, togglePriceTypeStatus, updatePriceType } from '../controllers/product/priceType.controller';
+import { createCurrencySchema, getCurrenciesBySubsidiarySchema, getCurrencyByIdSchema, toggleCurrencyStatusParamsSchema, updateCurrencySchema } from '../validators/product/currency.validatior';
+import { createCurrency, getActiveCurrenciesBySubsidiary, getCurrenciesBySubsidiary, getCurrencyById, toggleCurrencyStatus, updateCurrency } from '../controllers/product/currency.controller';
+import { createProductSchema, getProductByIdSchema, getProductsBySubsidiarySchema, toggleProductStatusParamsSchema, updateProductSchema } from '../validators/product/product.validatior';
+import { createProduct, getActiveProductsBySubsidiary, getProductById, getProductsBySubsidiary, toggleProductStatus, updateProduct } from '../controllers/product/product.controller';
+import { createExchangeRateSchema, getExchangeRateByIdSchema, getExchangeRatesBySubsidiarySchema, updateExchangeRateSchema } from '../validators/product/exchangeRate.validatior';
+import { createExchangeRate, getExchangeRateById, getExchangeRatesBySubsidiary, updateExchangeRate } from '../controllers/product/exchangeRate.controller';
+import { createCreditPayment, getCreditPaymentsBySale } from '../controllers/sale/saleCreditPayment.controller';
+import { createSale, getSalesBySubsidiary } from '../controllers/sale/sale.controller';
+import { createPurchaseCreditPayment, getPurchaseCreditPaymentsByPurchase } from '../controllers/purchase/purchaseCreditPayment.controller';
+import { createPurchase, getPurchasesBySubsidiary } from '../controllers/purchase/purchase.controller';
+import { getPurchaseDetailsByPurchase } from '../controllers/purchase/purchaseDetail.controller';
+import { createInventory, getInventoriesBySubsidiary } from '../controllers/inventory/inventory.controller';
 
 const productRouter = express.Router();
 
@@ -57,5 +63,28 @@ productRouter.post("/exchangeRates", validate(createExchangeRateSchema), createE
 productRouter.put("/exchangeRates/:id", validate(updateExchangeRateSchema), updateExchangeRate);
 productRouter.get("/exchangeRates/bySubsidiary/:subsidiaryId", validateParams(getExchangeRatesBySubsidiarySchema), getExchangeRatesBySubsidiary);
 productRouter.get("/exchangeRates/:id", validateParams(getExchangeRateByIdSchema), getExchangeRateById);
+
+// ✅ INVENTORY
+productRouter.post("/inventories", createInventory);
+productRouter.get("/inventories/bySubsidiary/:subsidiaryId",  getInventoriesBySubsidiary);
+
+// ✅ PURCHASE
+productRouter.post("/purchases", createPurchase);
+productRouter.get("/purchases/bySubsidiary/:subsidiaryId", getPurchasesBySubsidiary);
+
+// ✅ PURCHASE DETAILS
+productRouter.get("/purchaseDetails/byPurchase/:purchaseId", getPurchaseDetailsByPurchase);
+
+// ✅ PURCHASE CREDIT PAYMENTS
+productRouter.post("/purchaseCreditPayments", createPurchaseCreditPayment);
+productRouter.get("/purchaseCreditPayments/byPurchase/:purchaseId", getPurchaseCreditPaymentsByPurchase);
+
+// ✅ SALES
+productRouter.post("/sales",  createSale);
+productRouter.get("/sales/bySubsidiary/:subsidiaryId",  getSalesBySubsidiary);
+
+// ✅ CREDIT PAYMENTS
+productRouter.post("/creditPayments", createCreditPayment);
+productRouter.get("/creditPayments/bySale/:saleId", getCreditPaymentsBySale);
 
 export default productRouter;

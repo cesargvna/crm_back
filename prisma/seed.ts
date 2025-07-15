@@ -19,10 +19,15 @@ import { seedSuppliers } from "./seeds/17-supplier";
 import { seedCurrencies } from "./seeds/18-currency.seed";
 import { seedExchangeRates } from "./seeds/19-exchange-rate.seed";
 import { seedPriceTypes } from "./seeds/20-price-type.seed";
-import { seedProductCategories } from "./seeds/22-product-category.seed";
-import { seedUnitMeasurements } from "./seeds/23-unit-measurement.seed";
-import { seedProducts } from "./seeds/24-product.seed";
-import { seedProductPrices } from "./seeds/25-product-price.seed";
+import { seedProductCategories } from "./seeds/21-product-category.seed";
+import { seedUnitMeasurements } from "./seeds/22-unit-measurement.seed";
+import { seedProducts } from "./seeds/23-product.seed";
+import { seedProductPrices } from "./seeds/24-product-price.seed";
+import { seedPurchases } from "./seeds/25-purchase.seed";
+import { seedSales } from "./seeds/26-sale.seed";
+import { seedCreditPayments } from "./seeds/27-credit-payment.seed";
+import { seedPurchaseCreditPayments } from "./seeds/28-purchase-credit-payment.seed";
+import { seedInventory } from "./seeds/29-inventory.seed";
 
 async function main() {
   console.log("🌱 Seeding started...");
@@ -60,12 +65,18 @@ async function main() {
   const units = await seedUnitMeasurements(subsidiariesFull);
 
   const products = await seedProducts(subsidiariesFull, productCategories, units);
- /*const productPrices = await seedProductPrices(
+  const productPrices = await seedProductPrices(
     subsidiariesFull,
     products,
     priceTypes,
     currencies
-  );*/
+  );
+
+const purchases = await seedPurchases(subsidiariesFull, suppliers, products, users);
+const purchasePayments = await seedPurchaseCreditPayments(purchases);
+const inventories = await seedInventory(subsidiariesFull, products, users);
+const sales = await seedSales(subsidiariesFull, clients, products, users);
+const creditPayments = await seedCreditPayments(sales);
 
   console.log("✅ Seeding completed.");
 }

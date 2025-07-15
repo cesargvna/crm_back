@@ -1,10 +1,10 @@
 import express from 'express';
 import { validate } from '../middleware/validate.middleware';
 import { validateParams } from '../middleware/validateParams.middleware';
-import { createIncomeCategory, getActiveIncomeCategoriesBySubsidiary, getIncomeCategoriesBySubsidiary, getIncomeCategoryById, toggleIncomeCategoryStatus, updateIncomeCategory } from '../controllers/incomeCategory.controller';
-import { createIncomeCategorySchema, getIncomeCategoriesBySubsidiarySchema, getIncomeCategoryByIdSchema, toggleIncomeCategoryStatusParamsSchema, updateIncomeCategorySchema } from '../validators/incomeCategory.validator';
-import { createIncomeSchema, getIncomeByIdSchema, getIncomesBySubsidiarySchema, updateIncomeSchema } from '../validators/income.validator';
-import { createIncome, getIncomeById, getIncomesBySubsidiary, updateIncome } from '../controllers/income.controller';
+import { createIncomeCategory, getActiveIncomeCategoriesBySubsidiary, getIncomeCategoriesBySubsidiary, getIncomeCategoryById, toggleIncomeCategoryStatus, updateIncomeCategory } from '../controllers/income/incomeCategory.controller';
+import { createIncomeCategorySchema, getIncomeCategoriesBySubsidiarySchema, getIncomeCategoryByIdSchema, toggleIncomeCategoryStatusParamsSchema, updateIncomeCategorySchema } from '../validators/income/incomeCategory.validator';
+import { createIncomeSchema, getIncomeByIdSchema, getIncomesBySubsidiarySchema, updateIncomeSchema } from '../validators/income/income.validator';
+import { createIncome, getIncomeById, getIncomesBySubsidiary, updateIncome } from '../controllers/income/income.controller';
 
 const incomeRouter = express.Router();
 

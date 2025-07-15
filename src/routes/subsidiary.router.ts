@@ -1,11 +1,11 @@
 // ✅ subsidiary.router.ts
 import express from "express";
 import { validate } from "../middleware/validate.middleware";
-import { createSubsidiarySchema, getAllSubsidiariesQuerySchema, toggleSubsidiaryStatusSchema, updateSubsidiarySchema } from "../validators/subsidiary.validator";
-import { createSubsidiary, getAllSubsidiariesByTenantId, getSubsidiaryById, toggleSubsidiaryStatus, updateSubsidiary } from "../controllers/subsidiary.controller";
+import { createSubsidiarySchema, getAllSubsidiariesQuerySchema, toggleSubsidiaryStatusSchema, updateSubsidiarySchema } from "../validators/subsidiary/subsidiary.validator";
+import { createSubsidiary, getAllSubsidiariesByTenantId, getSubsidiaryById, toggleSubsidiaryStatus, updateSubsidiary } from "../controllers/subsidiary/subsidiary.controller";
 import { validateQuery } from "../middleware/validateQuery.middleware";
-import { createScheduleSubsidiarySchema, toggleScheduleStatusSchema, updateScheduleSubsidiarySchema } from "../validators/scheduleSubsidiary.validator";
-import { createScheduleSubsidiary, deleteScheduleSubsidiary, getSchedulesBySubsidiary, getScheduleSubsidiaryById, toggleScheduleStatus, updateScheduleSubsidiary } from "../controllers/scheduleSubsidiary.controller";
+import { createScheduleSubsidiarySchema, toggleScheduleStatusSchema, updateScheduleSubsidiarySchema } from "../validators/subsidiary/scheduleSubsidiary.validator";
+import { createScheduleSubsidiary, deleteScheduleSubsidiary, getSchedulesBySubsidiary, getScheduleSubsidiaryById, toggleScheduleStatus, updateScheduleSubsidiary } from "../controllers/subsidiary/scheduleSubsidiary.controller";
 import { validateTenantLimit } from "../middleware/validateTenantLimits";
 
 const subsidiaryRouter = express.Router();
