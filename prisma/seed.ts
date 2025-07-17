@@ -28,6 +28,7 @@ import { seedSales } from "./seeds/26-sale.seed";
 import { seedCreditPayments } from "./seeds/27-credit-payment.seed";
 import { seedPurchaseCreditPayments } from "./seeds/28-purchase-credit-payment.seed";
 import { seedInventory } from "./seeds/29-inventory.seed";
+import { seedCashSessions } from "./seeds/30-cash-session";
 
 async function main() {
   console.log("🌱 Seeding started...");
@@ -65,18 +66,14 @@ async function main() {
   const units = await seedUnitMeasurements(subsidiariesFull);
 
   const products = await seedProducts(subsidiariesFull, productCategories, units);
-  const productPrices = await seedProductPrices(
-    subsidiariesFull,
-    products,
-    priceTypes,
-    currencies
-  );
+  const productPrices = await seedProductPrices(subsidiariesFull, products, priceTypes, currencies);
+  const purchases = await seedPurchases(subsidiariesFull, suppliers, products, users);
+  const purchasePayments = await seedPurchaseCreditPayments(purchases);
+  const inventories = await seedInventory(subsidiariesFull, products, users);
+  const sales = await seedSales(subsidiariesFull, clients, products, users);
+  const creditPayments = await seedCreditPayments(sales);
 
-const purchases = await seedPurchases(subsidiariesFull, suppliers, products, users);
-const purchasePayments = await seedPurchaseCreditPayments(purchases);
-const inventories = await seedInventory(subsidiariesFull, products, users);
-const sales = await seedSales(subsidiariesFull, clients, products, users);
-const creditPayments = await seedCreditPayments(sales);
+  await seedCashSessions(users);
 
   console.log("✅ Seeding completed.");
 }

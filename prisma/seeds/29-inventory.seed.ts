@@ -2,10 +2,12 @@ import prisma from "../../src/utils/prisma";
 import { Prisma } from "../../generated/prisma";
 
 export async function seedInventory(subsidiaries, products, users) {
-  console.log("📦 Seeding Inventory...");
+  console.log("📦 Seeding Inventory (1 por producto)...");
 
   type InventoryType = Prisma.InventoryGetPayload<{}>;
   const createdInventories: InventoryType[] = [];
+
+  const usedProductIds = new Set<string>();
 
   for (const s of subsidiaries) {
     if (
@@ -17,7 +19,9 @@ export async function seedInventory(subsidiaries, products, users) {
     }
 
     for (const product of products) {
-      const user = users[0];
+      if (usedProductIds.has(product.id)) continue;
+
+      const user = users[0]; // puedes cambiar la lógica si quieres alternar usuarios
 
       const inventory = await prisma.inventory.create({
         data: {
@@ -32,6 +36,7 @@ export async function seedInventory(subsidiaries, products, users) {
         },
       });
 
+      usedProductIds.add(product.id);
       createdInventories.push(inventory);
     }
   }

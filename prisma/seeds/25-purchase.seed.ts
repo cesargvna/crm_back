@@ -15,9 +15,14 @@ export async function seedPurchases(subsidiaries, suppliers, products, users) {
       continue;
     }
 
-    const supplier = suppliers[0];
-    const user = users[0];
-    const product = products[0];
+    const supplier = suppliers.find(sup => sup.subsidiaryId === s.id);
+    const user = users.find(u => u.subsidiaryId === s.id);
+    const product = products.find(p => p.subsidiaryId === s.id);
+
+    if (!supplier || !user || !product) {
+      console.warn(`⚠️ Missing data for subsidiary ${s.id}`);
+      continue;
+    }
 
     const purchase = await prisma.purchase.create({
       data: {

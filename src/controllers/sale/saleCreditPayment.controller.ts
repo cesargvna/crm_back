@@ -3,7 +3,7 @@ import prisma from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 
 // ✅ Crear
-export const createCreditPayment = asyncHandler(async (req: Request, res: Response) => {
+export const createSaleCreditPayment = asyncHandler(async (req: Request, res: Response) => {
   const { saleId, amount, paymentDate, tenantId, subsidiaryId } = req.body;
 
   const created = await prisma.saleCreditPayment.create({
@@ -14,7 +14,7 @@ export const createCreditPayment = asyncHandler(async (req: Request, res: Respon
 });
 
 // ✅ Obtener por Sale ID
-export const getCreditPaymentsBySale = asyncHandler(async (req: Request, res: Response) => {
+export const getSaleCreditPaymentsBySale = asyncHandler(async (req: Request, res: Response) => {
   const { saleId } = req.params;
 
   const payments = await prisma.saleCreditPayment.findMany({

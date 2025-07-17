@@ -30,5 +30,5 @@ model CashSession {
   @@index([tenantId])
   @@index([subsidiaryId])
   @@index([userId])
-  @@unique([userId, openDateTime])
+  @@unique([userId, workDate, openDateTime])
 }

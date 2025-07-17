@@ -13,12 +13,7 @@ import { createProductSchema, getProductByIdSchema, getProductsBySubsidiarySchem
 import { createProduct, getActiveProductsBySubsidiary, getProductById, getProductsBySubsidiary, toggleProductStatus, updateProduct } from '../controllers/product/product.controller';
 import { createExchangeRateSchema, getExchangeRateByIdSchema, getExchangeRatesBySubsidiarySchema, updateExchangeRateSchema } from '../validators/product/exchangeRate.validatior';
 import { createExchangeRate, getExchangeRateById, getExchangeRatesBySubsidiary, updateExchangeRate } from '../controllers/product/exchangeRate.controller';
-import { createCreditPayment, getCreditPaymentsBySale } from '../controllers/sale/saleCreditPayment.controller';
-import { createSale, getSalesBySubsidiary } from '../controllers/sale/sale.controller';
-import { createPurchaseCreditPayment, getPurchaseCreditPaymentsByPurchase } from '../controllers/purchase/purchaseCreditPayment.controller';
-import { createPurchase, getPurchasesBySubsidiary } from '../controllers/purchase/purchase.controller';
-import { getPurchaseDetailsByPurchase } from '../controllers/purchase/purchaseDetail.controller';
-import { createInventory, getInventoriesBySubsidiary } from '../controllers/inventory/inventory.controller';
+import { getProductPriceById, getProductPricesByProductId, getProductPricesBySubsidiary } from '../controllers/product/productPrice.controller';
 
 const productRouter = express.Router();
 
@@ -64,27 +59,9 @@ productRouter.put("/exchangeRates/:id", validate(updateExchangeRateSchema), upda
 productRouter.get("/exchangeRates/bySubsidiary/:subsidiaryId", validateParams(getExchangeRatesBySubsidiarySchema), getExchangeRatesBySubsidiary);
 productRouter.get("/exchangeRates/:id", validateParams(getExchangeRateByIdSchema), getExchangeRateById);
 
-// ✅ INVENTORY
-productRouter.post("/inventories", createInventory);
-productRouter.get("/inventories/bySubsidiary/:subsidiaryId",  getInventoriesBySubsidiary);
+productRouter.get("/productPrices/bySubsidiary/:subsidiaryId", getProductPricesBySubsidiary);
+productRouter.get("/productPrices/:id", getProductPriceById);
+productRouter.get("/productPrices/byProduct/:productId", getProductPricesByProductId);
 
-// ✅ PURCHASE
-productRouter.post("/purchases", createPurchase);
-productRouter.get("/purchases/bySubsidiary/:subsidiaryId", getPurchasesBySubsidiary);
-
-// ✅ PURCHASE DETAILS
-productRouter.get("/purchaseDetails/byPurchase/:purchaseId", getPurchaseDetailsByPurchase);
-
-// ✅ PURCHASE CREDIT PAYMENTS
-productRouter.post("/purchaseCreditPayments", createPurchaseCreditPayment);
-productRouter.get("/purchaseCreditPayments/byPurchase/:purchaseId", getPurchaseCreditPaymentsByPurchase);
-
-// ✅ SALES
-productRouter.post("/sales",  createSale);
-productRouter.get("/sales/bySubsidiary/:subsidiaryId",  getSalesBySubsidiary);
-
-// ✅ CREDIT PAYMENTS
-productRouter.post("/creditPayments", createCreditPayment);
-productRouter.get("/creditPayments/bySale/:saleId", getCreditPaymentsBySale);
 
 export default productRouter;

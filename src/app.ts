@@ -16,6 +16,10 @@ import incomeRouter from './routes/income.router';
 import clientRouter from './routes/client.router';
 import supplierRouter from './routes/supplier.router';
 import productRouter from './routes/product.router';
+import cashSessionRouter from './routes/cashSession.router';
+import inventoryRouter from './routes/inventory.router';
+import purchaseRouter from './routes/purchase.router';
+import saleRouter from './routes/sale.router';
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerConfig));
 
@@ -32,6 +36,11 @@ app.use('/income', incomeRouter);
 app.use('/client', clientRouter);
 app.use('/supplier', supplierRouter);
 app.use('/product', productRouter);
+app.use('/inventory', inventoryRouter);
+app.use('/purchase', purchaseRouter);
+app.use('/sale', saleRouter);
+app.use('/cashSession', cashSessionRouter);
+
 app.use(errorHandler);
 
 export default app;

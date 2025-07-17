@@ -2,17 +2,17 @@ import { Request, Response } from "express";
 import prisma from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 
-// ✅ Obtener PurchaseDetails por PurchaseId
-export const getPurchaseDetailsByPurchaseId = asyncHandler(
+// ✅ Obtener SaleDetails por SaleId
+export const getSaleDetailsBySaleId = asyncHandler(
   async (req: Request, res: Response) => {
-    const { purchaseId } = req.params;
+    const { saleId } = req.params;
 
-    if (!purchaseId) {
-      return res.status(400).json({ message: "purchaseId is required." });
+    if (!saleId) {
+      return res.status(400).json({ message: "saleId is required." });
     }
 
-    const purchaseDetails = await prisma.purchaseDetail.findMany({
-      where: { purchaseId },
+    const saleDetails = await prisma.saleDetail.findMany({
+      where: { saleId },
       include: {
         product: {
           select: {
@@ -33,15 +33,15 @@ export const getPurchaseDetailsByPurchaseId = asyncHandler(
       orderBy: { created_at: "asc" },
     });
 
-    if (purchaseDetails.length === 0) {
+    if (saleDetails.length === 0) {
       return res.status(404).json({
-        message: "No PurchaseDetails found for the specified Purchase ID.",
+        message: "No SaleDetails found for the specified Sale ID.",
       });
     }
 
     res.json({
-      total: purchaseDetails.length,
-      purchaseDetails,
+      total: saleDetails.length,
+      saleDetails,
     });
   }
 );

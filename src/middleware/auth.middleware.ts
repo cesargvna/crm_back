@@ -42,7 +42,7 @@ export const hasPermission = (group: string, action: string) => {
 
     const permission = await prisma.rolePermission.findFirst({
       where: {
-        roleId: user.roleId,
+        roleId: user?.roleId,
         group: { name: group },
         action: { name: action },
       },

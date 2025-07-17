@@ -5,6 +5,8 @@ model Product {
   name                  String           @db.VarChar(100) // Nombre comercial del producto
   status                Boolean          @default(true) // Activo o inactivo
   description           String?          @db.VarChar(255) // Descripción opcional del producto
+  lastPurchasePriceUSD  Decimal?         @db.Decimal(10, 2) //Pero si deseas guardar el último precio de compra sin tener que hacer un findMany cada vez, info sacada de purchase Details
+  lastPurchaseDate      DateTime?                           //fecha de tu ultima compra sacada de purchase Details
 
   productCategoryId     String           @db.VarChar(255) // FK a categoría del producto
   unitMeasurementId     String           @db.VarChar(255) // FK a unidad de medida
