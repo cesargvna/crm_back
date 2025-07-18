@@ -1,3 +1,4 @@
+import { User } from "../generated/prisma";
 import prisma from "../src/utils/prisma";
 import { seedTenant } from "./seeds/01-tenant.seed";
 import { seedSubsidiaries } from "./seeds/02-subsidiary.seed";
@@ -22,58 +23,85 @@ import { seedPriceTypes } from "./seeds/20-price-type.seed";
 import { seedProductCategories } from "./seeds/21-product-category.seed";
 import { seedUnitMeasurements } from "./seeds/22-unit-measurement.seed";
 import { seedProducts } from "./seeds/23-product.seed";
-import { seedProductPrices } from "./seeds/24-product-price.seed";
+import { seedInventories } from "./seeds/24-inventory.seed";
+import { seedProductPrices } from "./seeds/26-product-price.seed";
 import { seedPurchases } from "./seeds/25-purchase.seed";
 import { seedSales } from "./seeds/26-sale.seed";
-import { seedCreditPayments } from "./seeds/27-credit-payment.seed";
-import { seedPurchaseCreditPayments } from "./seeds/28-purchase-credit-payment.seed";
-import { seedInventory } from "./seeds/29-inventory.seed";
 import { seedCashSessions } from "./seeds/30-cash-session";
 
 async function main() {
   console.log("🌱 Seeding started...");
 
+  // 1️⃣ Tenants, Subsidiarias y estructura
   const tenants = await seedTenant();
   const subsidiaries = await seedSubsidiaries(tenants);
   const subsidiariesFull = await prisma.subsidiary.findMany({
     where: { id: { in: subsidiaries.map((s) => s.id) } },
   });
-
   await scheduleSubsidiaries(subsidiariesFull);
+
+  // 2️⃣ Seguridad, usuarios, sesiones
   const actions = await seedActions();
   const sections = await seedSections();
   const allowedActions = await seedAllowedActions(sections, actions);
-  const roles = await seedRolesAndPermissions(tenants, subsidiariesFull, allowedActions);
-
-  const users = await seedUsers(roles, subsidiariesFull);
+  const roles = await seedRolesAndPermissions(
+    tenants,
+    subsidiariesFull,
+    allowedActions
+  );
+  const users: User[] = await seedUsers(roles, subsidiariesFull);
   await seedScheduleUsers(users);
+  await seedCashSessions(users);
 
+  // 3️⃣ Categorías, clientes, proveedores
   const expenseCategories = await seedExpenseCategories(subsidiariesFull);
-  const expenses = await seedExpenses(subsidiariesFull, expenseCategories, users);
+  await seedExpenses(subsidiariesFull, expenseCategories, users);
   const incomeCategories = await seedIncomeCategories(subsidiariesFull);
-  const incomes = await seedIncomes(subsidiariesFull, incomeCategories, users);
-
+  await seedIncomes(subsidiariesFull, incomeCategories, users);
   const clientCategories = await seedClientCategories(subsidiariesFull);
   const clients = await seedClients(subsidiariesFull, clientCategories);
   const supplierCategories = await seedSupplierCategories(subsidiariesFull);
   const suppliers = await seedSuppliers(subsidiariesFull, supplierCategories);
 
+  // 4️⃣ Datos económicos
   const currencies = await seedCurrencies(subsidiariesFull);
   const exchangeRates = await seedExchangeRates(subsidiariesFull, currencies);
-
   const priceTypes = await seedPriceTypes(subsidiariesFull);
+
+  // 5️⃣ Productos y compras
   const productCategories = await seedProductCategories(subsidiariesFull);
   const units = await seedUnitMeasurements(subsidiariesFull);
+  const products = await seedProducts(
+    subsidiariesFull,
+    productCategories,
+    units
+  );
 
-  const products = await seedProducts(subsidiariesFull, productCategories, units);
-  const productPrices = await seedProductPrices(subsidiariesFull, products, priceTypes, currencies);
-  const purchases = await seedPurchases(subsidiariesFull, suppliers, products, users);
-  const purchasePayments = await seedPurchaseCreditPayments(purchases);
-  const inventories = await seedInventory(subsidiariesFull, products, users);
-  const sales = await seedSales(subsidiariesFull, clients, products, users);
-  const creditPayments = await seedCreditPayments(sales);
+  // 6️⃣ Compras que actualizan `lastPurchasePriceUSD`
+  await seedPurchases({
+    tenants,
+    subsidiaries: subsidiariesFull,
+    users,
+    suppliers,
+    products,
+    currencies,
+  });
 
-  await seedCashSessions(users);
+  // 7️⃣ 🔄 Recargar productos actualizados desde la BD
+  const updatedProducts = await prisma.product.findMany();
+
+  // 8️⃣ Ahora que ya tienen precio → seeder de precios de venta
+  await seedProductPrices({
+    products: updatedProducts,
+    subsidiaries: subsidiariesFull,
+    currencies,
+    priceTypes,
+    exchangeRates,
+  });
+
+  // 9️⃣ Finalmente, ya puedes crear inventario con productos que sí tienen precios
+  await seedInventories(updatedProducts, users);
+
 
   console.log("✅ Seeding completed.");
 }

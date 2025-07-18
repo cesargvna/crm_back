@@ -1,63 +1,63 @@
 import prisma from "../../src/utils/prisma";
 
+type ExchangeRateSeed = {
+  fromCurrencyId: string;
+  toCurrencyId: string;
+  rate: number;
+  tenantId: string;
+  subsidiaryId: string;
+};
+
 export async function seedExchangeRates(subsidiaries, currencies) {
   console.log("💱 Seeding ExchangeRates...");
 
-  let totalCreated = 0; // Contador total para mostrar resumen al final
+  const allExchangeRates: {
+    id: string;
+    tenantId: string;
+    subsidiaryId: string;
+    fromCurrencyId: string;
+    toCurrencyId: string;
+    rate: any;
+    created_at: Date;
+    updated_at: Date;
+  }[] = [];
 
-  for (const subsidiary of subsidiaries) {
-    // ✅ 1) Ignorar tenant/subsidiary dummy de prueba
+  for (const s of subsidiaries) {
     if (
-      subsidiary.id === "00000000-0000-0000-0000-000000000000" ||
-      subsidiary.tenantId === "00000000-0000-0000-0000-000000000000"
-    ) {
-      console.log(`⏭️ Skipping subsidiary ${subsidiary.id} for exchange rates.`);
-      continue;
-    }
+      s.id === "00000000-0000-0000-0000-000000000000" ||
+      s.tenantId === "00000000-0000-0000-0000-000000000000"
+    ) continue;
 
-    // ✅ 2) Asegurarse de que currencies esté definido y sea un array
-    if (!Array.isArray(currencies)) {
-      console.warn(`⚠️ currencies está undefined o no es un array. No se procesarán exchange rates para ${subsidiary.id}`);
-      continue;
-    }
+    const usd = currencies.find(c => c.code === "USD" && c.subsidiaryId === s.id);
+    const bob = currencies.find(c => c.code === "BOB" && c.subsidiaryId === s.id);
+    const pen = currencies.find(c => c.code === "PEN" && c.subsidiaryId === s.id);
+    const clp = currencies.find(c => c.code === "CLP" && c.subsidiaryId === s.id);
 
-    // ✅ 3) Buscar la moneda USD y BOB para esta subsidiaria
-    const usd = currencies.find(
-      (c) => c.code === "USD" && c.subsidiaryId === subsidiary.id
-    );
-    const bob = currencies.find(
-      (c) => c.code === "BOB" && c.subsidiaryId === subsidiary.id
-    );
+    const data: ExchangeRateSeed[] = [];
 
-    // ✅ 4) Validar que ambas existan
-    if (!usd || !bob) {
-      console.warn(`⚠️ Skipping subsidiary ${subsidiary.id} → USD or BOB not found.`);
-      continue;
-    }
+    if (usd && bob) data.push({ fromCurrencyId: usd.id, toCurrencyId: bob.id, rate: 6.96, tenantId: s.tenantId, subsidiaryId: s.id });
+    if (usd && pen) data.push({ fromCurrencyId: usd.id, toCurrencyId: pen.id, rate: 3.7, tenantId: s.tenantId, subsidiaryId: s.id });
+    if (usd && clp) data.push({ fromCurrencyId: usd.id, toCurrencyId: clp.id, rate: 890.0, tenantId: s.tenantId, subsidiaryId: s.id });
 
-    // ✅ 5) Crear tasa de cambio USD → BOB
-    const result = await prisma.exchangeRate.createMany({
-      data: [
-        {
-          fromCurrencyId: usd.id, // FK de la moneda origen USD
-          toCurrencyId: bob.id,   // FK de la moneda destino BOB
-          rate: 6.96,             // Valor de la tasa fija
-          tenantId: subsidiary.tenantId, // Respetar el tenant real
-          subsidiaryId: subsidiary.id,   // Subsidiaria real
+    for (const d of data) {
+      const existing = await prisma.exchangeRate.findFirst({
+        where: {
+          fromCurrencyId: d.fromCurrencyId,
+          toCurrencyId: d.toCurrencyId,
+          subsidiaryId: d.subsidiaryId,
         },
-      ],
-      skipDuplicates: true, // Evita error si ya existe
-    });
+      });
 
-    console.log(
-      `✅ Created exchange rates for subsidiary ${subsidiary.id}:`,
-      result
-    );
-
-    // ✅ 6) Sumar al contador total el resultado devuelto por createMany
-    totalCreated += result.count || 0;
+      if (!existing) {
+        const created = await prisma.exchangeRate.create({ data: d });
+        allExchangeRates.push(created);
+        console.log(`✅ ExchangeRate ${d.fromCurrencyId} → ${d.toCurrencyId} for subsidiary ${s.id}`);
+      } else {
+        allExchangeRates.push(existing);
+      }
+    }
   }
 
-  console.log(`✅ Total exchange rates created: ${totalCreated}`);
-  return totalCreated; // Siempre devuelve un número
+  console.log(`✅ Total exchange rates returned: ${allExchangeRates.length}`);
+  return allExchangeRates;
 }

@@ -31,6 +31,21 @@ enum PurchaseStatus {
   DEVUELTA     
 }
 
+model PurchaseCreditPayment {
+  id             String        @id @default(uuid()) @db.VarChar(255)
+  purchaseId     String        @db.VarChar(255)
+  amount         Decimal       @db.Decimal(10, 2)
+  paymentDate    DateTime      @default(now())
+
+  tenantId       String        @db.VarChar(255) // Tenant dueño del pago
+  subsidiaryId   String        @db.VarChar(255) // Sucursal específica
+
+  purchase       Purchase      @relation(fields: [purchaseId], references: [id])
+
+  @@index([tenantId])
+  @@index([subsidiaryId])
+}
+
 model PurchaseDetail {
   id                     String       @id @default(uuid()) @db.VarChar(255)
   
@@ -48,8 +63,9 @@ model PurchaseDetail {
   created_at             DateTime     @default(now())
   updated_at             DateTime     @updatedAt
 
-  purchase               Purchase     @relation(fields: [purchaseId], references: [id])
-  product                Product      @relation(fields: [productId], references: [id])
+  purchase               Purchase                     @relation(fields: [purchaseId], references: [id])
+  product                Product                      @relation(fields: [productId], references: [id])
+  pricesInCurrency       PurchasePriceInCurrency[]    @relation("PurchaseDetailToPrices")
 
   @@index([tenantId])
   @@index([subsidiaryId])
@@ -58,17 +74,24 @@ model PurchaseDetail {
   @@index([productId])
 }
 
-model PurchaseCreditPayment {
-  id             String        @id @default(uuid()) @db.VarChar(255)
-  purchaseId     String        @db.VarChar(255)
-  amount         Decimal       @db.Decimal(10, 2)
-  paymentDate    DateTime      @default(now())
+model PurchasePriceInCurrency {
+  id                     String         @id @default(uuid()) @db.VarChar(255)
+  unitPrice              Decimal        @map("unit_price") @db.Decimal(10, 2)
+  subTotal               Decimal        @map("sub_total") @db.Decimal(10, 2)
+  exchangeRate           Decimal        @map("exchange_rate") @db.Decimal(10, 4)
+  purchaseDetailId       String         @db.VarChar(255)
+  currencyId             String         @db.VarChar(255)
+  tenantId               String         @db.VarChar(255) 
+  subsidiaryId           String         @db.VarChar(255)
+  
+  created_at             DateTime       @default(now())
+  updated_at             DateTime       @updatedAt
 
-  tenantId       String        @db.VarChar(255) // Tenant dueño del pago
-  subsidiaryId   String        @db.VarChar(255) // Sucursal específica
+  purchaseDetail         PurchaseDetail @relation("PurchaseDetailToPrices", fields: [purchaseDetailId], references: [id])
+  currency               Currency       @relation("CurrencyToPurchasePrices", fields: [currencyId], references: [id])
 
-  purchase       Purchase      @relation(fields: [purchaseId], references: [id])
-
+  @@unique([purchaseDetailId, currencyId])
+  @@index([currencyId])
   @@index([tenantId])
   @@index([subsidiaryId])
 }

@@ -85,27 +85,6 @@ model PriceType {
   @@index([subsidiaryId]) // Índice por sucursal
 }
 
-model Currency {
-  id                    String           @id @default(uuid()) @db.VarChar(255) // ID único de la moneda
-  code                  String           @db.VarChar(10) // Código de moneda (USD, BOB)
-  name                  String           @db.VarChar(50) // Nombre completo de la moneda
-  status                Boolean          @default(true) // Activa o inactiva
-  created_at            DateTime         @default(now()) // Creación
-  updated_at            DateTime         @updatedAt // Actualización
-
-  productPrices         ProductPrice[] // Precios asociados a esta moneda
-
-  fromExchangeRates     ExchangeRate[] @relation("FromCurrency") // Tasas de cambio desde esta moneda
-  toExchangeRates       ExchangeRate[] @relation("ToCurrency") // Tasas de cambio hacia esta moneda
-
-  tenantId              String           @db.VarChar(255) // Tenant dueño del precio
-  subsidiaryId          String           @db.VarChar(255) // Sucursal específica
-
-  @@unique([name, code, subsidiaryId])
-  @@index([tenantId]) // Índice por tenant
-  @@index([subsidiaryId]) // Índice por sucursal
-}
-
 model ProductPrice {
   id                    String           @id @default(uuid()) @db.VarChar(255) // ID único del precio
   amount                Decimal          @db.Decimal(10, 2) // Monto del precio
@@ -125,6 +104,28 @@ model ProductPrice {
   currency              Currency         @relation(fields: [currencyId], references: [id]) // Relación con moneda
 
   @@unique([productId, priceTypeId, currencyId, subsidiaryId])
+  @@index([tenantId]) // Índice por tenant
+  @@index([subsidiaryId]) // Índice por sucursal
+}
+
+model Currency {
+  id                    String           @id @default(uuid()) @db.VarChar(255) // ID único de la moneda
+  code                  String           @db.VarChar(10) // Código de moneda (USD, BOB)
+  name                  String           @db.VarChar(50) // Nombre completo de la moneda
+  status                Boolean          @default(true) // Activa o inactiva
+  created_at            DateTime         @default(now()) // Creación
+  updated_at            DateTime         @updatedAt // Actualización
+
+  productPrices         ProductPrice[] // Precios asociados a esta moneda
+
+  fromExchangeRates     ExchangeRate[]               @relation("FromCurrency") // Tasas de cambio desde esta moneda
+  toExchangeRates       ExchangeRate[]               @relation("ToCurrency") // Tasas de cambio hacia esta moneda
+  purchasePrices        PurchasePriceInCurrency[]    @relation("CurrencyToPurchasePrices")
+
+  tenantId              String           @db.VarChar(255) // Tenant dueño del precio
+  subsidiaryId          String           @db.VarChar(255) // Sucursal específica
+
+  @@unique([name, code, subsidiaryId])
   @@index([tenantId]) // Índice por tenant
   @@index([subsidiaryId]) // Índice por sucursal
 }
