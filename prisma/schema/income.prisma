@@ -6,10 +6,11 @@ model Income {
   quantity              Int              @default(1)
   unit_price            Decimal          @db.Decimal(10, 2) 
   total_amount          Decimal          @db.Decimal(10, 2)
-
+  
   created_at            DateTime         @default(now())
   updated_at            DateTime         @updatedAt
 
+  cashSessionId         String?          // ← campo referencial sin relación cruzada
   incomeCategoryId      String
   userId                String
   tenantId              String           @db.VarChar(255)
@@ -21,6 +22,7 @@ model Income {
   @@index([tenantId])
   @@index([subsidiaryId])
   @@index([userId])
+  @@index([cashSessionId])
 }
 
 model IncomeCategory {

@@ -9,7 +9,8 @@ model Expense {
 
   created_at            DateTime         @default(now())
   updated_at            DateTime         @updatedAt
-
+  
+  cashSessionId         String?          // ← campo referencial sin relación cruzada
   expenseCategoryId     String
   userId                String
   tenantId              String           @db.VarChar(255)
@@ -21,6 +22,7 @@ model Expense {
   @@index([tenantId])
   @@index([subsidiaryId])
   @@index([userId])
+  @@index([cashSessionId])
 }
 
 model ExpenseCategory {
