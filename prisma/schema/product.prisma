@@ -1,30 +1,30 @@
 model Product {
-  id                    String           @id @default(uuid()) @db.VarChar(255) // ID único del producto
-  code                  String           @db.VarChar(50) // Código interno o SKU del producto
-  barcode               String?          @db.VarChar(255) // Código de barras físico (opcional)
-  name                  String           @db.VarChar(100) // Nombre comercial del producto
-  status                Boolean          @default(true) // Activo o inactivo
-  description           String?          @db.VarChar(255) // Descripción opcional del producto
-  lastPurchasePriceUSD  Decimal?         @db.Decimal(10, 2) //Pero si deseas guardar el último precio de compra sin tener que hacer un findMany cada vez, info sacada de purchase Details
-  lastPurchaseDate      DateTime?                           //fecha de tu ultima compra sacada de purchase Details
+  id                        String           @id @default(uuid()) @db.VarChar(255) // ID único del producto
+  code                      String           @db.VarChar(50) // Código interno o SKU del producto
+  barcode                   String?          @db.VarChar(255) // Código de barras físico (opcional)
+  name                      String           @db.VarChar(150) // Nombre comercial del producto
+  status                    Boolean          @default(true) // Activo o inactivo
+  description               String?          @db.VarChar(255) // Descripción opcional del producto
+ 
 
-  productCategoryId     String           @db.VarChar(255) // FK a categoría del producto
-  unitMeasurementId     String           @db.VarChar(255) // FK a unidad de medida
-  tenantId              String           @db.VarChar(255) // ID del tenant al que pertenece
-  subsidiaryId          String           @db.VarChar(255) // ID de la sucursal donde aplica
+  productCategoryId         String           @db.VarChar(255) // FK a categoría del producto
+  unitMeasurementId         String           @db.VarChar(255) // FK a unidad de medida
+  tenantId                  String           @db.VarChar(255) // ID del tenant al que pertenece
+  subsidiaryId              String           @db.VarChar(255) // ID de la sucursal donde aplica
 
-  created_at            DateTime         @default(now()) // Fecha de creación del registro
-  updated_at            DateTime         @updatedAt // Fecha de última actualización
+  created_at                DateTime         @default(now()) // Fecha de creación del registro
+  updated_at                DateTime         @updatedAt // Fecha de última actualización
 
-  productCategory       ProductCategory  @relation(fields: [productCategoryId], references: [id]) // Relación con categoría
-  unitMeasurement       UnitMeasurement  @relation(fields: [unitMeasurementId], references: [id]) // Relación con unidad de medida
+  productCategory           ProductCategory  @relation(fields: [productCategoryId], references: [id]) // Relación con categoría
+  unitMeasurement           UnitMeasurement  @relation(fields: [unitMeasurementId], references: [id]) // Relación con unidad de medida
 
-  productPrices         ProductPrice[] // Lista de precios configurados para este producto
-  saleDetails           SaleDetail[] // Detalles de ventas relacionados
-  purchaseDetails       PurchaseDetail[] // Detalles de compras relacionados
-  inventory             Inventory[] // Relación 1:1 con inventario
-
+  purchaseDetails           PurchaseDetail[]
+  saleDetails               SaleDetail[]
+  inventory                 Inventory[]
+  productPrices             ProductPrice[]
+  
   @@unique([name, code, tenantId, subsidiaryId]) // Nombre y código únicos por tenant y sucursal
+  @@index([productCategoryId])
   @@index([tenantId]) // Índice para filtrar por tenant
   @@index([subsidiaryId]) // Índice para filtrar por sucursal
 }  
@@ -51,7 +51,7 @@ model ProductCategory {
 model UnitMeasurement {
   id                    String           @id @default(uuid()) @db.VarChar(255) // ID único de la unidad
   name                  String           @db.VarChar(50) // Nombre de la unidad (KG, LITRO, PACK)
-  quantity              Int              // 10 (Piezas)
+  quantity              Int               // Ej: 1, 10, 100 (si es por pack)
   status                Boolean          @default(true) // Activa o inactiva
 
   created_at            DateTime         @default(now()) // Fecha de creación
@@ -72,11 +72,14 @@ model PriceType {
   name                  String           @db.VarChar(50) // Nombre (Minorista, Mayorista, etc.)
   status                Boolean          @default(true) // Activo o inactivo
   marginPercent         Decimal          @db.Decimal(5, 2)
+
+  productPrices         ProductPrice[]
+  currency              Currency         @relation(fields: [currencyId], references: [id])
+
   created_at            DateTime         @default(now()) // Fecha de creación
   updated_at            DateTime         @updatedAt // Fecha de actualización
 
-  productPrices         ProductPrice[] // Lista de precios de productos asociados
-
+  currencyId            String
   tenantId              String           @db.VarChar(255) // Tenant dueño del precio
   subsidiaryId          String           @db.VarChar(255) // Sucursal específica
 
@@ -86,65 +89,41 @@ model PriceType {
 }
 
 model ProductPrice {
-  id                    String           @id @default(uuid()) @db.VarChar(255) // ID único del precio
-  amount                Decimal          @db.Decimal(10, 2) // Monto del precio
-  autoGenerated         Boolean          @default(true) // Indica si es calculado automáticamente
-  created_at            DateTime         @default(now()) // Fecha de creación
-  updated_at            DateTime         @updatedAt // Fecha de actualización
+  id                    String           @id @default(uuid())
+  price                 Decimal          @db.Decimal(5, 2)
+  autoGenerated         Boolean          @default(true)
+  editable              Boolean          @default(false)
 
-  tenantId              String           @db.VarChar(255) // Tenant dueño del precio
-  subsidiaryId          String           @db.VarChar(255) // Sucursal específica
+  productId             String           @db.VarChar(255)
+  priceTypeId           String           @db.VarChar(255)
+  tenantId              String           @db.VarChar(255)
+  subsidiaryId          String           @db.VarChar(255)
 
-  productId             String           @db.VarChar(255) // FK al producto
-  priceTypeId           String           @db.VarChar(255) // FK al tipo de precio
-  currencyId            String           @db.VarChar(255) // FK a la moneda
+  product               Product          @relation(fields: [productId], references: [id])
+  priceType             PriceType        @relation(fields: [priceTypeId], references: [id])
 
-  product               Product          @relation(fields: [productId], references: [id]) // Relación con producto
-  priceType             PriceType        @relation(fields: [priceTypeId], references: [id]) // Relación con tipo de precio
-  currency              Currency         @relation(fields: [currencyId], references: [id]) // Relación con moneda
-
-  @@unique([productId, priceTypeId, currencyId, subsidiaryId])
-  @@index([tenantId]) // Índice por tenant
+  @@unique([productId, priceTypeId, subsidiaryId])
+  @@index([productId])
+  @@index([priceTypeId])
   @@index([subsidiaryId]) // Índice por sucursal
+  @@index([tenantId]) // Índice por tenant
 }
 
 model Currency {
-  id                    String           @id @default(uuid()) @db.VarChar(255) // ID único de la moneda
-  code                  String           @db.VarChar(10) // Código de moneda (USD, BOB)
-  name                  String           @db.VarChar(50) // Nombre completo de la moneda
-  status                Boolean          @default(true) // Activa o inactiva
-  created_at            DateTime         @default(now()) // Creación
-  updated_at            DateTime         @updatedAt // Actualización
+  id                      String           @id @default(uuid()) @db.VarChar(255) // ID único de la moneda
+  code                    String           @db.VarChar(10) // Código de moneda (USD, BOB)
+  name                    String           @db.VarChar(50) // Nombre completo de la moneda
+  status                  Boolean          @default(true) // Activa o inactiva
 
-  productPrices         ProductPrice[] // Precios asociados a esta moneda
+  created_at              DateTime         @default(now()) // Creación
+  updated_at              DateTime         @updatedAt // Actualización
 
-  fromExchangeRates     ExchangeRate[]               @relation("FromCurrency") // Tasas de cambio desde esta moneda
-  toExchangeRates       ExchangeRate[]               @relation("ToCurrency") // Tasas de cambio hacia esta moneda
-  purchasePrices        PurchasePriceInCurrency[]    @relation("CurrencyToPurchasePrices")
+  tenantId                String           @db.VarChar(255) // Tenant dueño del precio
+  subsidiaryId            String           @db.VarChar(255) // Sucursal específica
 
-  tenantId              String           @db.VarChar(255) // Tenant dueño del precio
-  subsidiaryId          String           @db.VarChar(255) // Sucursal específica
+  priceTypes PriceType[]
 
   @@unique([name, code, subsidiaryId])
-  @@index([tenantId]) // Índice por tenant
-  @@index([subsidiaryId]) // Índice por sucursal
-}
-
-model ExchangeRate {
-  id                    String           @id @default(uuid()) @db.VarChar(255) // ID único de la tasa
-  fromCurrencyId        String           @db.VarChar(255) // FK moneda de origen
-  toCurrencyId          String           @db.VarChar(255) // FK moneda destino
-  rate                  Decimal          @db.Decimal(10, 4) // Valor de la tasa de cambio
-  created_at            DateTime         @default(now()) // Fecha de creación
-  updated_at            DateTime         @updatedAt // Fecha de actualización
-
-  fromCurrency          Currency         @relation("FromCurrency", fields: [fromCurrencyId], references: [id]) // Relación origen
-  toCurrency            Currency         @relation("ToCurrency", fields: [toCurrencyId], references: [id]) // Relación destino
-
-  tenantId              String           @db.VarChar(255) // Tenant dueño del precio
-  subsidiaryId          String           @db.VarChar(255) // Sucursal específica
-
-  @@unique([fromCurrencyId, toCurrencyId, rate, subsidiaryId])
   @@index([tenantId]) // Índice por tenant
   @@index([subsidiaryId]) // Índice por sucursal
 }
