@@ -15,10 +15,7 @@ export async function seedCurrencies(subsidiaries) {
 
     await prisma.currency.createMany({
       data: [
-        { code: "USD", name: "Dólar estadounidense", tenantId: s.tenantId, subsidiaryId: s.id },
         { code: "BOB", name: "Boliviano", tenantId: s.tenantId, subsidiaryId: s.id },
-        { code: "PEN", name: "Sol peruano", tenantId: s.tenantId, subsidiaryId: s.id },
-        { code: "CLP", name: "Peso chileno", tenantId: s.tenantId, subsidiaryId: s.id },
       ],
       skipDuplicates: true,
     });

@@ -89,7 +89,6 @@ export async function seedSections() {
           { name: 'Tipo de Moneda', route: '/currency', iconName: 'AttachMoneyIcon' },
           { name: 'Tipos de precio', route: '/price-types', iconName: 'PriceChangeIcon' },
           { name: 'Unidad de medida', route: '/unit-measurement', iconName: 'StraightenIcon' },
-          { name: 'Tipo de cambio', route: '/exchange-rate', iconName: 'CurrencyExchangeIcon' },
           { name: 'Inventario', route: '/inventory', iconName: 'Inventory2Icon' },
         ],
       },

@@ -1,6 +1,5 @@
 import prisma from "../../src/utils/prisma";
-import { Subsidiary, ClientCategory, Client } from "../../generated/prisma"; // Ajusta si usas tus propios tipos
-import { SeededUser } from "./08-user.seed"; // Opcional, si necesitas algún usuario para simular whoCreated
+import { Subsidiary, ClientCategory, Client, User } from "../../generated/prisma"; // Ajusta si usas tus propios tipos
 
 export async function seedClients(
   subsidiaries: Subsidiary[],

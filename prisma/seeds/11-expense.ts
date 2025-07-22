@@ -1,11 +1,10 @@
 import prisma from "../../src/utils/prisma";
-import { User, Subsidiary, ExpenseCategory, Expense } from "../../generated/prisma"; // Usa los tipos reales
-import { SeededUser } from "./08-user.seed";
+import { User, Subsidiary, ExpenseCategory, Expense} from "../../generated/prisma"; // Usa los tipos reales
 
 export async function seedExpenses(
   subsidiaries: Subsidiary[],
   expenseCategories: ExpenseCategory[],
- users: SeededUser[]
+  users: User[]
 ): Promise<Expense[]> {
   console.log("⏳ Seeding expenses...");
 

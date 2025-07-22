@@ -18,14 +18,11 @@ import { seedClients } from "./seeds/15-client";
 import { seedSupplierCategories } from "./seeds/16-supplier-category";
 import { seedSuppliers } from "./seeds/17-supplier";
 import { seedCurrencies } from "./seeds/18-currency.seed";
-import { seedExchangeRates } from "./seeds/19-exchange-rate.seed";
 import { seedPriceTypes } from "./seeds/20-price-type.seed";
 import { seedProductCategories } from "./seeds/21-product-category.seed";
 import { seedUnitMeasurements } from "./seeds/22-unit-measurement.seed";
 import { seedProducts } from "./seeds/23-product.seed";
-import { seedInventories } from "./seeds/24-inventory.seed";
-import { seedProductPrices } from "./seeds/26-product-price.seed";
-import { seedPurchases } from "./seeds/25-purchase.seed";
+import { seedPurchases } from "./seeds/24-purchase.seed";
 import { seedSales } from "./seeds/26-sale.seed";
 import { seedCashSessions } from "./seeds/30-cash-session";
 
@@ -65,7 +62,6 @@ async function main() {
 
   // 4️⃣ Datos económicos
   const currencies = await seedCurrencies(subsidiariesFull);
-  const exchangeRates = await seedExchangeRates(subsidiariesFull, currencies);
   const priceTypes = await seedPriceTypes(subsidiariesFull);
 
   // 5️⃣ Productos y compras
@@ -77,7 +73,7 @@ async function main() {
     units
   );
 
-  // 6️⃣ Compras que actualizan `lastPurchasePriceUSD`
+  // 6️⃣ Compras 
   await seedPurchases({
     tenants,
     subsidiaries: subsidiariesFull,
@@ -87,20 +83,7 @@ async function main() {
     currencies,
   });
 
-  // 7️⃣ 🔄 Recargar productos actualizados desde la BD
-  const updatedProducts = await prisma.product.findMany();
 
-  // 8️⃣ Ahora que ya tienen precio → seeder de precios de venta
-  await seedProductPrices({
-    products: updatedProducts,
-    subsidiaries: subsidiariesFull,
-    currencies,
-    priceTypes,
-    exchangeRates,
-  });
-
-  // 9️⃣ Finalmente, ya puedes crear inventario con productos que sí tienen precios
-  await seedInventories(updatedProducts, users);
 
 
   console.log("✅ Seeding completed.");
