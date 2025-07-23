@@ -11,7 +11,7 @@ import { createCurrencySchema, getCurrenciesBySubsidiarySchema, getCurrencyByIdS
 import { createCurrency, getActiveCurrenciesBySubsidiary, getCurrenciesBySubsidiary, getCurrencyById, toggleCurrencyStatus, updateCurrency } from '../controllers/product/currency.controller';
 import { createProductSchema, getProductByIdSchema, getProductsBySubsidiarySchema, toggleProductStatusParamsSchema, updateProductSchema } from '../validators/product/product.validatior';
 import { createProduct, getActiveProductsBySubsidiary, getProductById, getProductsBySubsidiary, toggleProductStatus, updateProduct } from '../controllers/product/product.controller';
-import { getProductPriceById, getProductPricesByProductId, getProductPricesBySubsidiary } from '../controllers/product/productPrice.controller';
+import { getProductPricesByProductId } from '../controllers/product/productPrice.controller';
 
 const productRouter = express.Router();
 
@@ -52,8 +52,6 @@ productRouter.get("/products/:id", validateParams(getProductByIdSchema), getProd
 productRouter.patch("/products/:id/status", validateParams(toggleProductStatusParamsSchema), toggleProductStatus);
 productRouter.get("/productsActive/bySubsidiary/:subsidiaryId", validateParams(getProductsBySubsidiarySchema), getActiveProductsBySubsidiary);
 
-productRouter.get("/productPrices/bySubsidiary/:subsidiaryId", getProductPricesBySubsidiary);
-productRouter.get("/productPrices/:id", getProductPriceById);
 productRouter.get("/productPrices/byProduct/:productId", getProductPricesByProductId);
 
 

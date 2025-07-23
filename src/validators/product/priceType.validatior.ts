@@ -13,11 +13,13 @@ export const createPriceTypeSchema = z.object({
   marginPercent: z.number().min(0).max(100, "Margin must be <= 100"),
   tenantId: z.string().min(1),
   subsidiaryId: uuidField("Subsidiary ID"),
+  currencyId: uuidField("Currency ID"), 
 });
 
 export const updatePriceTypeSchema = z.object({
   name: nameSchema.optional(),
   marginPercent: z.number().min(0).max(100).optional(),
+  currencyId: uuidField("Currency ID").optional(),
 });
 
 export const getPriceTypesBySubsidiarySchema = z.object({

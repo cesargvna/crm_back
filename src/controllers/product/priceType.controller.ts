@@ -14,14 +14,14 @@ function normalizePriceTypeName(value: string): string {
 
 // ✅ Crear
 export const createPriceType = asyncHandler(async (req: Request, res: Response) => {
-  const { name, marginPercent, tenantId, subsidiaryId } = req.body;
+  const { name, marginPercent, tenantId, subsidiaryId, currencyId } = req.body;
 
   const normalizedName = normalizePriceTypeName(name);
 
-  // Validar duplicado por nombre y sucursal
   const exists = await prisma.priceType.findFirst({
     where: { name: normalizedName, subsidiaryId },
   });
+
   if (exists) {
     return res.status(409).json({ message: "PriceType with this name already exists for this subsidiary." });
   }
@@ -32,20 +32,29 @@ export const createPriceType = asyncHandler(async (req: Request, res: Response) 
       marginPercent,
       tenantId,
       subsidiaryId,
+      currencyId, // ✅ ahora sí incluye la relación obligatoria
     },
   });
 
   res.status(201).json({ message: "PriceType created successfully.", priceType: created });
 });
 
-// ✅ Update
+// ✅ Update con validación de currencyId
 export const updatePriceType = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { name, marginPercent } = req.body;
+  const { name, marginPercent, currencyId } = req.body;
 
   const existing = await prisma.priceType.findUnique({ where: { id } });
   if (!existing) {
     return res.status(404).json({ message: "PriceType not found." });
+  }
+
+  // Validar si el currencyId existe (si se está enviando)
+  if (currencyId) {
+    const currencyExists = await prisma.currency.findUnique({ where: { id: currencyId } });
+    if (!currencyExists) {
+      return res.status(400).json({ message: "Provided currencyId does not exist." });
+    }
   }
 
   let normalizedName: string | undefined = undefined;
@@ -70,6 +79,7 @@ export const updatePriceType = asyncHandler(async (req: Request, res: Response) 
     data: {
       name: normalizedName ?? undefined,
       marginPercent: marginPercent ?? undefined,
+      currencyId: currencyId ?? undefined,
     },
   });
 
@@ -101,6 +111,9 @@ export const getPriceTypesBySubsidiary = asyncHandler(async (req: Request, res: 
       orderBy: { name: "asc" },
       skip,
       take,
+      include: {
+        currency: true, // 🔄 incluir detalles completos de la moneda
+      },
     }),
   ]);
 
@@ -116,8 +129,15 @@ export const getPriceTypesBySubsidiary = asyncHandler(async (req: Request, res: 
 // ✅ Get by ID
 export const getPriceTypeById = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const type = await prisma.priceType.findUnique({ where: { id } });
+  const type = await prisma.priceType.findUnique({
+    where: { id },
+    include: {
+      currency: true, // 🔄 incluir detalles completos de la moneda
+    },
+  });
+
   if (!type) return res.status(404).json({ message: "PriceType not found." });
+
   res.json(type);
 });
 
@@ -145,6 +165,9 @@ export const getActivePriceTypesBySubsidiary = asyncHandler(async (req: Request,
   const activeTypes = await prisma.priceType.findMany({
     where: { subsidiaryId, status: true },
     orderBy: { name: "asc" },
+    include: {
+      currency: true, // 🔄 incluir detalles completos de la moneda
+    },
   });
 
   res.json({ total: activeTypes.length, priceTypes: activeTypes });

@@ -25,6 +25,7 @@ model Product {
   
   @@unique([name, code, tenantId, subsidiaryId]) // Nombre y código únicos por tenant y sucursal
   @@index([productCategoryId])
+  @@index([unitMeasurementId])
   @@index([tenantId]) // Índice para filtrar por tenant
   @@index([subsidiaryId]) // Índice para filtrar por sucursal
 }  
@@ -84,8 +85,9 @@ model PriceType {
   subsidiaryId          String           @db.VarChar(255) // Sucursal específica
 
   @@unique([name, subsidiaryId])
-  @@index([tenantId]) // Índice por tenant
+  @@index([currencyId])
   @@index([subsidiaryId]) // Índice por sucursal
+  @@index([tenantId]) // Índice por tenant
 }
 
 model ProductPrice {

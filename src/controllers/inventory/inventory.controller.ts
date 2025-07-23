@@ -137,3 +137,103 @@ export const getInventoryBySubsidiary = asyncHandler(
     });
   }
 );
+
+// ✅ Crear inventario para un producto (solo si no existe aún para esa sucursal)
+export const createInventory = asyncHandler(async (req: Request, res: Response) => {
+  const {
+    productId,
+    quantity_available,
+    min_quantity,
+    userId,
+    tenantId,
+    subsidiaryId,
+  } = req.body;
+
+  const existing = await prisma.inventory.findUnique({
+    where: { productId_subsidiaryId: { productId, subsidiaryId } },
+  });
+
+  if (existing) {
+    return res.status(409).json({
+      message: "An inventory for this product and subsidiary already exists.",
+    });
+  }
+
+  const created = await prisma.inventory.create({
+    data: {
+      productId,
+      quantity_available,
+      min_quantity,
+      userId,
+      tenantId,
+      subsidiaryId,
+      lastUpdateReason: "AJUSTE",
+      lastUpdateQuantity: 0,
+    },
+  });
+
+  res.status(201).json({
+    message: "Inventory created successfully.",
+    ...created,
+  });
+});
+
+// ✅ Actualizar inventario (cantidad + mínimo + usuario que realiza el ajuste)
+export const updateInventory = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { quantity_available, min_quantity, userId } = req.body;
+
+  const existing = await prisma.inventory.findUnique({ where: { id } });
+
+  if (!existing) {
+    return res.status(404).json({ message: "Inventory not found." });
+  }
+
+  const updated = await prisma.inventory.update({
+    where: { id },
+    data: {
+      quantity_available,
+      min_quantity,
+      userId,
+      lastUpdateReason: "AJUSTE",
+      lastUpdateQuantity: 0,
+    },
+  });
+
+  res.json({
+    message: "Inventory updated successfully.",
+    ...updated,
+  });
+});
+
+// ✅ GET: /inventory/productsWithoutInventory/:subsidiaryId
+export const getProductsWithoutInventory = asyncHandler(async (req: Request, res: Response) => {
+  const { subsidiaryId } = req.params;
+
+  if (!subsidiaryId) {
+    return res.status(400).json({ message: "Subsidiary ID is required." });
+  }
+
+  // Productos activos de esta sucursal que NO tengan inventario aún
+  const products = await prisma.product.findMany({
+    where: {
+      subsidiaryId,
+      status: true,
+      inventory: {
+        none: {
+          subsidiaryId, // asegúrate de no tener inventario registrado en esta sucursal
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+    include: {
+      productCategory: true,
+      unitMeasurement: true,
+    },
+  });
+
+  res.json({
+    total: products.length,
+    products,
+  });
+});
