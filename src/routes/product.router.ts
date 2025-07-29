@@ -13,8 +13,9 @@ import { createProductSchema, getProductByIdSchema, getProductsBySubsidiarySchem
 import { createProduct, getActiveProductsBySubsidiary, getProductById, getProductsBySubsidiary, toggleProductStatus, updateProduct } from '../controllers/product/product.controller';
 import { importProductsWithCategoriesAndUnits } from '../controllers/product/importProduct.controller';
 import { importExcelFormSchema } from '../validators/product/importProduct.validator';
-import { createProductPrice, getProductPriceById, getProductPricesBySubsidiary, updateProductPrice } from '../controllers/product/productPrice.controller';
+
 import { createProductPriceSchema, getProductPricesBySubsidiarySchema, productPriceIdSchema, updateProductPriceSchema } from '../validators/product/productPrice.validator';
+import { getPricesByProduct } from '../controllers/product/productPrice.controller';
 
 
 const productRouter = express.Router();
@@ -59,9 +60,6 @@ productRouter.get("/productsActive/bySubsidiary/:subsidiaryId", validateParams(g
 //import EXCEL 
 productRouter.post("/import/product-category-unit", ...importProductsWithCategoriesAndUnits);
 
-productRouter.post("/productPrices",  validate(createProductPriceSchema),  createProductPrice);
-productRouter.patch("/productPrices/:id", validateParams(productPriceIdSchema), validate(updateProductPriceSchema), updateProductPrice);
-productRouter.get("/productPrices/:id", validateParams(productPriceIdSchema), getProductPriceById);
-productRouter.get("/productPrices/bySubsidiary/:subsidiaryId", validateParams(getProductPricesBySubsidiarySchema), getProductPricesBySubsidiary);
+productRouter.get("/prices/:productId", getPricesByProduct);
 
 export default productRouter;
