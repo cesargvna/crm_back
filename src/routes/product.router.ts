@@ -11,7 +11,11 @@ import { createCurrencySchema, getCurrenciesBySubsidiarySchema, getCurrencyByIdS
 import { createCurrency, getActiveCurrenciesBySubsidiary, getCurrenciesBySubsidiary, getCurrencyById, toggleCurrencyStatus, updateCurrency } from '../controllers/product/currency.controller';
 import { createProductSchema, getProductByIdSchema, getProductsBySubsidiarySchema, toggleProductStatusParamsSchema, updateProductSchema } from '../validators/product/product.validatior';
 import { createProduct, getActiveProductsBySubsidiary, getProductById, getProductsBySubsidiary, toggleProductStatus, updateProduct } from '../controllers/product/product.controller';
-import { getProductPricesByProductId } from '../controllers/product/productPrice.controller';
+import { importProductsWithCategoriesAndUnits } from '../controllers/product/importProduct.controller';
+import { importExcelFormSchema } from '../validators/product/importProduct.validator';
+import { createProductPrice, getProductPriceById, getProductPricesBySubsidiary, updateProductPrice } from '../controllers/product/productPrice.controller';
+import { createProductPriceSchema, getProductPricesBySubsidiarySchema, productPriceIdSchema, updateProductPriceSchema } from '../validators/product/productPrice.validator';
+
 
 const productRouter = express.Router();
 
@@ -52,7 +56,12 @@ productRouter.get("/products/:id", validateParams(getProductByIdSchema), getProd
 productRouter.patch("/products/:id/status", validateParams(toggleProductStatusParamsSchema), toggleProductStatus);
 productRouter.get("/productsActive/bySubsidiary/:subsidiaryId", validateParams(getProductsBySubsidiarySchema), getActiveProductsBySubsidiary);
 
-productRouter.get("/productPrices/byProduct/:productId", getProductPricesByProductId);
+//import EXCEL 
+productRouter.post("/import/product-category-unit", ...importProductsWithCategoriesAndUnits);
 
+productRouter.post("/productPrices",  validate(createProductPriceSchema),  createProductPrice);
+productRouter.patch("/productPrices/:id", validateParams(productPriceIdSchema), validate(updateProductPriceSchema), updateProductPrice);
+productRouter.get("/productPrices/:id", validateParams(productPriceIdSchema), getProductPriceById);
+productRouter.get("/productPrices/bySubsidiary/:subsidiaryId", validateParams(getProductPricesBySubsidiarySchema), getProductPricesBySubsidiary);
 
 export default productRouter;

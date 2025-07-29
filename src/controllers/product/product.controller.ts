@@ -9,7 +9,6 @@ export function normalizeProductName(value: string): string {
   return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/ñ/gi, "n")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -140,6 +139,7 @@ export const getProductsBySubsidiary = asyncHandler(
 
     const where: any = { subsidiaryId: subsidiaryId as string };
 
+    // Filtro por búsqueda
     if (search && String(search).trim().length >= 3) {
       const normalizedSearch = String(search).trim().toLowerCase();
       where.OR = [
@@ -150,12 +150,14 @@ export const getProductsBySubsidiary = asyncHandler(
       ];
     }
 
+    // Filtro por estado
     if (status === "true") {
       where.status = true;
     } else if (status === "false") {
       where.status = false;
     }
 
+    // Filtro por categoría
     if (productCategoryId && productCategoryId !== "all") {
       where.productCategoryId = productCategoryId as string;
     }
@@ -170,7 +172,20 @@ export const getProductsBySubsidiary = asyncHandler(
         orderBy: { name: "asc" },
         skip,
         take,
-        include: { productCategory: true, unitMeasurement: true },
+        include: {
+          productCategory: true,
+          unitMeasurement: true,
+          inventory: {
+            where: { subsidiaryId: subsidiaryId as string },
+            select: {
+              id: true,
+              quantity_available: true,
+              min_quantity: true,
+              lastUpdateReason: true,
+              lastUpdateQuantity: true,
+            },
+          },
+        },
       }),
     ]);
 
@@ -203,23 +218,53 @@ export const getProductById = asyncHandler(async (req: Request, res: Response) =
   res.json(product);
 });
 
-// ✅ Toggle Product status
+// ✅ Toggle Product status (mejorado con control de inventario)
 export const toggleProductStatus = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const product = await prisma.product.findUnique({ where: { id } });
+  const product = await prisma.product.findUnique({
+    where: { id },
+    include: {
+      inventory: true, // para verificar disponibilidad
+    },
+  });
 
   if (!product) {
-    return res.status(404).json({ message: "Product not found." });
+    return res.status(404).json({ message: "Producto no encontrado." });
   }
 
+  const currentStatus = product.status;
+
+  // ⚠️ Si el producto está inactivo y se quiere activar, verificar inventario
+  if (!currentStatus) {
+    // No tiene inventario
+    if (!product.inventory || product.inventory.length === 0) {
+      return res.status(400).json({
+        message: "No se puede activar un producto sin inventario registrado.",
+      });
+    }
+
+    // Tiene inventario, pero todo en cero
+    const totalDisponible = product.inventory.reduce(
+      (acc, item) => acc + item.quantity_available,
+      0
+    );
+
+    if (totalDisponible <= 0) {
+      return res.status(400).json({
+        message: "No se puede activar un producto cuyo inventario está agotado.",
+      });
+    }
+  }
+
+  // ✅ Cambiar el estado
   const updated = await prisma.product.update({
     where: { id },
-    data: { status: !product.status },
+    data: { status: !currentStatus },
   });
 
   res.json({
-    message: `Product status changed to ${updated.status ? "active" : "inactive"}.`,
+    message: `Estado del producto cambiado a ${updated.status ? "activo" : "inactivo"}.`,
     product: updated,
   });
 });

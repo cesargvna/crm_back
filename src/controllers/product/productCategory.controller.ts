@@ -165,30 +165,40 @@ export const getProductCategoryById = asyncHandler(async (req: Request, res: Res
   res.json(category);
 });
 
-// ✅ Toggle status ProductCategory
-export const toggleProductCategoryStatus = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { id } = req.params;
+// ✅ Toggle status ProductCategory + productos asociados
+export const toggleProductCategoryStatus = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
 
-    const category = await prisma.productCategory.findUnique({ where: { id } });
+  const category = await prisma.productCategory.findUnique({ where: { id } });
 
-    if (!category) {
-      return res.status(404).json({ message: "Product category not found." });
-    }
+  if (!category) {
+    return res.status(404).json({ message: "Product category not found." });
+  }
 
-    const updated = await prisma.productCategory.update({
-      where: { id },
-      data: { status: !category.status },
-    });
+  const newStatus = !category.status;
 
-    res.json({
-      message: `Product category status changed to ${
-        updated.status ? "active" : "inactive"
-      }.`,
-      productCategory: updated,
+  // 1. Actualizar la categoría
+  const updatedCategory = await prisma.productCategory.update({
+    where: { id },
+    data: { status: newStatus },
+  });
+
+  // 2. Si la categoría se desactiva, desactivar sus productos
+  if (!newStatus) {
+    await prisma.product.updateMany({
+      where: { productCategoryId: id },
+      data: { status: false },
     });
   }
-);
+
+  res.json({
+    message: `Category status changed to ${newStatus ? "active" : "inactive"}.`,
+    productCategory: updatedCategory,
+    ...(newStatus === false && {
+      affectedProductsMessage: "All products under this category were deactivated.",
+    }),
+  });
+});
 
 // ✅ Obtener solo ProductCategories activos por Subsidiary
 export const getActiveProductCategoriesBySubsidiary = asyncHandler(

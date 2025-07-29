@@ -3,10 +3,9 @@ model Product {
   code                      String           @db.VarChar(50) // Código interno o SKU del producto
   barcode                   String?          @db.VarChar(255) // Código de barras físico (opcional)
   name                      String           @db.VarChar(150) // Nombre comercial del producto
-  status                    Boolean          @default(true) // Activo o inactivo
+  status                    Boolean          @default(false) // Activo o inactivo
   description               String?          @db.VarChar(255) // Descripción opcional del producto
  
-
   productCategoryId         String           @db.VarChar(255) // FK a categoría del producto
   unitMeasurementId         String           @db.VarChar(255) // FK a unidad de medida
   tenantId                  String           @db.VarChar(255) // ID del tenant al que pertenece
@@ -23,7 +22,11 @@ model Product {
   inventory                 Inventory[]
   productPrices             ProductPrice[]
   
-  @@unique([name, code, tenantId, subsidiaryId]) // Nombre y código únicos por tenant y sucursal
+  @@unique([name, code, subsidiaryId]) 
+  @@index([code])
+  @@index([barcode])
+  @@index([name])
+  @@index([status])
   @@index([productCategoryId])
   @@index([unitMeasurementId])
   @@index([tenantId]) // Índice para filtrar por tenant
@@ -63,7 +66,7 @@ model UnitMeasurement {
 
   products              Product[] // Productos que usan esta unidad
 
-  @@unique([name, subsidiaryId])  // Nombre único por sucursal
+  @@unique([name, quantity, subsidiaryId])  // Nombre único por sucursal
   @@index([tenantId]) // Índice por tenant
   @@index([subsidiaryId]) // Índice por sucursal
 }

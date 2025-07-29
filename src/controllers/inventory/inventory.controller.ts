@@ -2,55 +2,64 @@ import { Request, Response } from "express";
 import prisma from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { Prisma, StockUpdateReason } from "../../../generated/prisma";
+import { syncProductAndCategoryStatus } from "../../service/syncStatus.service"; // 👈 IMPORTANTE
 
-// Valida si el motivo es uno de los del enum
+const normalizeString = (value: string): string => {
+  return value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/ñ/gi, "n")
+    .trim()
+    .toLowerCase();
+};
+
 const isValidStockUpdateReason = (value: any): value is StockUpdateReason => {
   return Object.values(StockUpdateReason).includes(value);
 };
 
-// ✅ GET: /inventory/by-subsidiary/:subsidiaryId
 export const getInventoryBySubsidiary = asyncHandler(
   async (req: Request, res: Response) => {
     const { subsidiaryId } = req.params;
     const {
       page = "1",
-      limit = "10",
+      limit = "5",
       search = "",
       reason,
       categoryId,
+      status, // ✅ nuevo filtro por estado
     } = req.query;
 
+    const validPageSizes = [5, 10, 25, 50, 100, 500];
     const pageNumber = parseInt(page as string, 10) || 1;
-    const pageSize = parseInt(limit as string, 10) || 10;
+    let pageSize = parseInt(limit as string, 10) || 5;
+    if (!validPageSizes.includes(pageSize)) pageSize = 5;
     const skip = (pageNumber - 1) * pageSize;
 
-    // Construcción de filtros
+    const normalizedSearch = normalizeString(search as string);
+
     const whereClause: Prisma.InventoryWhereInput = {
       subsidiaryId,
       ...(isValidStockUpdateReason(reason) ? { lastUpdateReason: reason } : {}),
       product: {
         ...(categoryId && categoryId !== "all"
-          ? {
-              productCategoryId: categoryId as string,
-              AND: [
-                {
-                  OR: [
-                    { name: { contains: search as string, mode: "insensitive" } },
-                    { description: { contains: search as string, mode: "insensitive" } },
-                  ],
-                },
-              ],
-            }
-          : {
-              OR: [
-                { name: { contains: search as string, mode: "insensitive" } },
-                { description: { contains: search as string, mode: "insensitive" } },
-              ],
-            }),
+          ? { productCategoryId: categoryId as string }
+          : {}),
+        ...(status !== undefined && status !== "all"
+          ? { status: status === "true" }
+          : {}),
+        AND: [
+          {
+            OR: [
+              { name: { contains: normalizedSearch, mode: "insensitive" } },
+              { description: { contains: normalizedSearch, mode: "insensitive" } },
+              { code: { contains: normalizedSearch, mode: "insensitive" } },
+              { barcode: { contains: normalizedSearch, mode: "insensitive" } },
+            ],
+          },
+        ],
       },
     };
 
-    // Consulta principal
     const [inventory, total] = await Promise.all([
       prisma.inventory.findMany({
         where: whereClause,
@@ -64,11 +73,7 @@ export const getInventoryBySubsidiary = asyncHandler(
               unitMeasurement: true,
               productPrices: {
                 include: {
-                  priceType: {
-                    include: {
-                      currency: true,
-                    },
-                  },
+                  priceType: { include: { currency: true } },
                 },
               },
             },
@@ -78,7 +83,6 @@ export const getInventoryBySubsidiary = asyncHandler(
       prisma.inventory.count({ where: whereClause }),
     ]);
 
-    // Enriquecer los registros con usuario y últimos datos de compra
     const inventoryWithRelations = await Promise.all(
       inventory.map(async (item) => {
         const [user, lastPurchaseDetail] = await Promise.all([
@@ -105,11 +109,7 @@ export const getInventoryBySubsidiary = asyncHandler(
               purchase: {
                 select: {
                   supplier: {
-                    select: {
-                      id: true,
-                      name: true,
-                      email: true,
-                    },
+                    select: { id: true, name: true, email: true },
                   },
                 },
               },
@@ -120,6 +120,8 @@ export const getInventoryBySubsidiary = asyncHandler(
         return {
           ...item,
           user,
+          barcode: item.product.barcode, // ✅ incluir barcode
+          productStatus: item.product.status, // ✅ incluir estado
           lastSupplier: lastPurchaseDetail?.purchase?.supplier || null,
           lastPurchasePrice: lastPurchaseDetail?.price || null,
           lastPurchaseDate: lastPurchaseDetail?.created_at || null,
@@ -127,18 +129,18 @@ export const getInventoryBySubsidiary = asyncHandler(
       })
     );
 
-    // Respuesta final
     res.json({
       total,
       page: pageNumber,
       pageSize,
       totalPages: Math.ceil(total / pageSize),
+      pageSizeOptions: validPageSizes,
       data: inventoryWithRelations,
     });
   }
 );
 
-// ✅ Crear inventario para un producto (solo si no existe aún para esa sucursal)
+// ✅ Crear inventario
 export const createInventory = asyncHandler(async (req: Request, res: Response) => {
   const {
     productId,
@@ -172,22 +174,22 @@ export const createInventory = asyncHandler(async (req: Request, res: Response) 
     },
   });
 
+  // 🧠 Lógica de activación automática
+  await syncProductAndCategoryStatus(productId);
+
   res.status(201).json({
     message: "Inventory created successfully.",
     ...created,
   });
 });
 
-// ✅ Actualizar inventario (cantidad + mínimo + usuario que realiza el ajuste)
+// ✅ Actualizar inventario
 export const updateInventory = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { quantity_available, min_quantity, userId } = req.body;
 
   const existing = await prisma.inventory.findUnique({ where: { id } });
-
-  if (!existing) {
-    return res.status(404).json({ message: "Inventory not found." });
-  }
+  if (!existing) return res.status(404).json({ message: "Inventory not found." });
 
   const updated = await prisma.inventory.update({
     where: { id },
@@ -200,40 +202,106 @@ export const updateInventory = asyncHandler(async (req: Request, res: Response) 
     },
   });
 
+  // 🧠 Lógica de sincronización automática
+  await syncProductAndCategoryStatus(updated.productId);
+
   res.json({
     message: "Inventory updated successfully.",
     ...updated,
   });
 });
 
-// ✅ GET: /inventory/productsWithoutInventory/:subsidiaryId
-export const getProductsWithoutInventory = asyncHandler(async (req: Request, res: Response) => {
-  const { subsidiaryId } = req.params;
+// ✅ Productos sin inventario por sucursal (con filtros)
+export const getProductsWithoutInventory = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { subsidiaryId } = req.params;
+    const {
+      search = "",
+      categoryId,
+      status = "all",
+      page = "1",
+      limit = "5",
+    } = req.query;
 
-  if (!subsidiaryId) {
-    return res.status(400).json({ message: "Subsidiary ID is required." });
-  }
+    if (!subsidiaryId) {
+      return res.status(400).json({ message: "Subsidiary ID is required." });
+    }
 
-  // Productos activos de esta sucursal que NO tengan inventario aún
-  const products = await prisma.product.findMany({
-    where: {
-      subsidiaryId,
-      status: true,
-      inventory: {
-        none: {
-          subsidiaryId, // asegúrate de no tener inventario registrado en esta sucursal
+    const normalizedSearch = (search as string).trim();
+
+    const statusFilter =
+      status === "true" ? true : status === "false" ? false : undefined;
+
+    const whereClause: Prisma.ProductWhereInput = {
+      AND: [
+        { subsidiaryId },
+
+        ...(categoryId && categoryId !== "all"
+          ? [{ productCategoryId: categoryId as string }]
+          : []),
+
+        ...(statusFilter !== undefined ? [{ status: statusFilter }] : []),
+
+        {
+          inventory: {
+            none: {
+              subsidiaryId,
+            },
+          },
         },
-      },
-    },
-    orderBy: { name: "asc" },
-    include: {
-      productCategory: true,
-      unitMeasurement: true,
-    },
-  });
 
-  res.json({
-    total: products.length,
-    products,
-  });
-});
+        {
+          OR: [
+            {
+              name: {
+                contains: normalizedSearch,
+                mode: "insensitive",
+              },
+            },
+            {
+              code: {
+                contains: normalizedSearch,
+                mode: "insensitive",
+              },
+            },
+            {
+              barcode: {
+                contains: normalizedSearch,
+                mode: "insensitive",
+              },
+            },
+            {
+              description: {
+                contains: normalizedSearch,
+                mode: "insensitive",
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    const pageNumber = parseInt(page as string, 10) || 1;
+    const pageSize = parseInt(limit as string, 10) || 5;
+    const skip = (pageNumber - 1) * pageSize;
+
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where: whereClause,
+        orderBy: { name: "asc" },
+        skip,
+        take: pageSize,
+        include: {
+          productCategory: true,
+          unitMeasurement: true,
+        },
+      }),
+      prisma.product.count({ where: whereClause }),
+    ]);
+
+    res.json({
+      total,
+      products,
+    });
+  }
+);
