@@ -13,9 +13,9 @@ import { createProductSchema, getProductByIdSchema, getProductsBySubsidiarySchem
 import { createProduct, getActiveProductsBySubsidiary, getProductById, getProductsBySubsidiary, toggleProductStatus, updateProduct } from '../controllers/product/product.controller';
 import { importProductsWithCategoriesAndUnits } from '../controllers/product/importProduct.controller';
 import { importExcelFormSchema } from '../validators/product/importProduct.validator';
-
-import { createProductPriceSchema, getProductPricesBySubsidiarySchema, productPriceIdSchema, updateProductPriceSchema } from '../validators/product/productPrice.validator';
-import { getPricesByProduct } from '../controllers/product/productPrice.controller';
+import { createProductPrice, getPricesByProduct, getProductPriceById, updateProductPrice } from '../controllers/product/productPrice.controller';
+import { createProductPriceSchema, getPricesByProductParamsSchema, getPricesByProductQuerySchema, getProductPriceByIdSchema, updateProductPriceSchema } from '../validators/product/productPrice.validator';
+import { validateQuery } from '../middleware/validateQuery.middleware';
 
 
 const productRouter = express.Router();
@@ -60,6 +60,9 @@ productRouter.get("/productsActive/bySubsidiary/:subsidiaryId", validateParams(g
 //import EXCEL 
 productRouter.post("/import/product-category-unit", ...importProductsWithCategoriesAndUnits);
 
-productRouter.get("/prices/:productId", getPricesByProduct);
+productRouter.get("/prices/:productId", validateParams(getPricesByProductParamsSchema), validateQuery(getPricesByProductQuerySchema), getPricesByProduct);
+productRouter.post("/prices/:productId", validateParams(getPricesByProductParamsSchema), validate(createProductPriceSchema), createProductPrice);
+productRouter.get("/price/:id", validateParams(getProductPriceByIdSchema), getProductPriceById);
+productRouter.patch("/price/:id", validateParams(getProductPriceByIdSchema), validate(updateProductPriceSchema), updateProductPrice);
 
 export default productRouter;
