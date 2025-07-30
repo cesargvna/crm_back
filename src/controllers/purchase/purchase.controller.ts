@@ -1,379 +1,438 @@
 import { Request, Response } from "express";
 import prisma from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { StockUpdateReason, PurchaseStatus } from "../../../generated/prisma";
-import { PaymentType, PaymentStatus } from "../../../generated/prisma";
+import {
+  PaymentType,
+  PaymentStatus,
+  DispatchStatus,
+  Prisma,
+} from "../../../generated/prisma";
 
-export const createPurchase = asyncHandler(
-  async (req: Request, res: Response) => {
-    const {
-      purchaseDate, // ← new
-      total,
-      note,
+export const getPurchasesBySubsidiary = asyncHandler(async (req: Request, res: Response) => {
+  const { subsidiaryId } = req.params;
+  const {
+    search = "",
+    supplierCategoryId,
+    userId,
+    paymentType,
+    paymentStatus,
+    dispatchStatus,
+    purchaseDateFrom,
+    purchaseDateTo,
+    page = "1",
+    limit = "10",
+  } = req.query;
+
+  const pageNumber = parseInt(page as string, 10) || 1;
+  const parsedLimit = parseInt(limit as string, 10) || 10;
+  const pageSize = Math.max(parsedLimit, 5);
+  const skip = (pageNumber - 1) * pageSize;
+
+  const normalizedSearch = (search as string).trim().toLowerCase();
+
+  const whereClause: Prisma.PurchaseWhereInput = {
+    subsidiaryId,
+    ...(paymentType ? { paymentType: paymentType as PaymentType } : {}),
+    ...(paymentStatus ? { paymentStatus: paymentStatus as PaymentStatus } : {}),
+    ...(dispatchStatus ? { dispatchStatus: dispatchStatus as DispatchStatus } : {}),
+    ...(userId ? { userId: userId as string } : {}),
+    ...(purchaseDateFrom || purchaseDateTo
+      ? {
+          purchaseDate: {
+            ...(purchaseDateFrom ? { gte: new Date(purchaseDateFrom as string) } : {}),
+            ...(purchaseDateTo ? { lte: new Date(purchaseDateTo as string) } : {}),
+          },
+        }
+      : {}),
+    ...(supplierCategoryId && supplierCategoryId !== "all"
+      ? {
+          supplier: {
+            supplierCategoryId: supplierCategoryId as string,
+          },
+        }
+      : {}),
+    ...(normalizedSearch
+      ? {
+          OR: [
+            { code: { contains: normalizedSearch, mode: "insensitive" } },
+            {
+              supplier: {
+                OR: [
+                  { name: { contains: normalizedSearch, mode: "insensitive" } },
+                  { email: { contains: normalizedSearch, mode: "insensitive" } },
+                ],
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+
+  const [purchases, total] = await Promise.all([
+    prisma.purchase.findMany({
+      where: whereClause,
+      skip,
+      take: pageSize,
+      orderBy: { purchaseDate: "desc" },
+      include: {
+        supplier: {
+          include: {
+            supplierCategory: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            lastname: true,
+            role: { select: { name: true } },
+          },
+        },
+        purchaseDetails: {
+          select: {
+            id: true,
+            price: true,
+            quantity: true,
+            sub_total: true,
+            currencyId: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                barcode: true,
+                description: true,
+                status: true,
+                productCategory: true,
+                unitMeasurement: true,
+              },
+            },
+          },
+        },
+        creditPayments: true,
+      },
+    }),
+    prisma.purchase.count({ where: whereClause }),
+  ]);
+
+  res.json({
+    total,
+    page: pageNumber,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+    data: purchases,
+  });
+});
+
+export const getPurchaseById = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const purchase = await prisma.purchase.findUnique({
+    where: { id },
+    include: {
+      supplier: {
+        include: {
+          supplierCategory: true,
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          username: true,
+          name: true,
+          lastname: true,
+          role: { select: { name: true } },
+        },
+      },
+      purchaseDetails: {
+        select: {
+          id: true,
+          price: true,
+          quantity: true,
+          sub_total: true,
+          currencyId: true,
+          product: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              barcode: true,
+              description: true,
+              status: true,
+              productCategory: {
+                select: {
+                  id: true,
+                  name: true,
+                  status: true,
+                  description: true,
+                },
+              },
+              unitMeasurement: {
+                select: {
+                  id: true,
+                  name: true,
+                  quantity: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      creditPayments: true,
+    },
+  });
+
+  if (!purchase) {
+    return res.status(404).json({ message: "Compra no encontrada." });
+  }
+
+  res.json(purchase);
+});
+
+/* createPurchaseWithPriceSync 
+  * Este crea la compra + actualiza o crea precios automáticamente según los PriceType activos.
+*/
+export const createPurchaseWithPriceSync = asyncHandler(async (req: Request, res: Response) => {
+  const {
+    code,
+    purchaseDate,
+    paymentType,
+    dispatchStatus,
+    paymentStatus,
+    supplierId,
+    userId,
+    tenantId,
+    subsidiaryId,
+    note,
+    purchaseDetails,
+  } = req.body;
+
+  const total = purchaseDetails.reduce(
+    (sum: number, item: any) => sum + item.price * item.quantity,
+    0
+  );
+
+  const createdPurchase = await prisma.purchase.create({
+    data: {
+      code,
+      purchaseDate: new Date(purchaseDate),
       paymentType,
-      purchaseStatus,
+      dispatchStatus,
       paymentStatus,
+      note,
       supplierId,
       userId,
       tenantId,
       subsidiaryId,
-      purchaseDetails,
-    } = req.body;
+      total,
+    },
+  });
 
-    const BASE_CURRENCY = "USD";
+  const activePriceTypes = await prisma.priceType.findMany({
+    where: {
+      status: true,
+      tenantId,
+      subsidiaryId,
+    },
+  });
 
-    if (!purchaseDate) {
-      return res.status(400).json({ message: "Purchase date is required." });
-    }
+  for (const detail of purchaseDetails) {
+    const { productId, price, quantity, currencyId } = detail;
 
-    const parsedPurchaseDate = new Date(`${purchaseDate}T00:00:00`);
-    if (isNaN(parsedPurchaseDate.getTime())) {
-      return res
-        .status(400)
-        .json({ message: "Invalid date format. Use YYYY-MM-DD." });
-    }
-
-    if (!Array.isArray(purchaseDetails) || purchaseDetails.length === 0) {
-      return res
-        .status(400)
-        .json({ message: "Purchase details are required." });
-    }
-
-    // ✅ Validate enums
-    const validPaymentType = paymentType.toUpperCase();
-    const validPurchaseStatus = purchaseStatus.toUpperCase();
-    const validPaymentStatus = paymentStatus.toUpperCase();
-
-    if (!Object.values(PaymentType).includes(validPaymentType as PaymentType)) {
-      return res
-        .status(400)
-        .json({ message: `Invalid paymentType: ${paymentType}` });
-    }
-    if (
-      !Object.values(PurchaseStatus).includes(
-        validPurchaseStatus as PurchaseStatus
-      )
-    ) {
-      return res
-        .status(400)
-        .json({ message: `Invalid purchaseStatus: ${purchaseStatus}` });
-    }
-    if (
-      !Object.values(PaymentStatus).includes(
-        validPaymentStatus as PaymentStatus
-      )
-    ) {
-      return res
-        .status(400)
-        .json({ message: `Invalid paymentStatus: ${paymentStatus}` });
-    }
-
-    // 🔢 Generate code like YYYY-MM-DD-00001
-    const countToday = await prisma.purchase.count({
-      where: {
-        purchaseDate: parsedPurchaseDate,
-        subsidiaryId,
-      },
-    });
-
-    const datePrefix = purchaseDate;
-    const correlativo = String(countToday + 1).padStart(5, "0");
-    const code = `${datePrefix}-${correlativo}`;
-
-    // 1️⃣ Create the main purchase
-    const purchase = await prisma.purchase.create({
+    await prisma.purchaseDetail.create({
       data: {
-        code,
-        purchaseDate: parsedPurchaseDate,
-        total,
-        note,
-        paymentType: validPaymentType as PaymentType,
-        purchaseStatus: validPurchaseStatus as PurchaseStatus,
-        paymentStatus: validPaymentStatus as PaymentStatus,
-        supplierId,
+        price,
+        quantity,
+        sub_total: price * quantity,
+        productId,
+        purchaseId: createdPurchase.id,
         userId,
+        supplierId,
+        currencyId,
         tenantId,
         subsidiaryId,
       },
     });
 
-    // 2️⃣ Get active currencies other than USD
-    const currencies = await prisma.currency.findMany({
+    const existingInventory = await prisma.inventory.findUnique({
       where: {
-        code: { not: BASE_CURRENCY },
-        status: true,
-        subsidiaryId,
-      },
-    });
-
-    // 3️⃣ Get active price types
-    const priceTypes = await prisma.priceType.findMany({
-      where: {
-        status: true,
-        subsidiaryId,
-      },
-    });
-
-    // 4️⃣ Process each detail
-    for (const detail of purchaseDetails) {
-      const { productId, quantity, unit_price, sub_total } = detail;
-
-      const createdDetail = await prisma.purchaseDetail.create({
-        data: {
-          purchaseId: purchase.id,
+        productId_subsidiaryId: {
           productId,
-          quantity,
-          unit_price,
-          sub_total,
-          supplierId,
-          userId,
-          tenantId,
           subsidiaryId,
         },
-      });
+      },
+    });
 
-      for (const currency of currencies) {
-        const exchangeRate = await prisma.exchangeRate.findFirst({
-          where: {
-            fromCurrency: { code: BASE_CURRENCY },
-            toCurrencyId: currency.id,
-            subsidiaryId,
-          },
-          orderBy: { created_at: "desc" },
-        });
-
-        if (!exchangeRate) {
-          console.warn(`⚠️ No exchange rate for USD → ${currency.code}`);
-          continue;
-        }
-
-        const rate = Number(exchangeRate.rate);
-        const convertedUnitPrice = Number(unit_price) * rate;
-        const convertedSubtotal = Number(sub_total) * rate;
-
-        await prisma.purchasePriceInCurrency.create({
-          data: {
-            purchaseDetailId: createdDetail.id,
-            currencyId: currency.id,
-            exchangeRate: rate,
-            unitPrice: convertedUnitPrice,
-            subTotal: convertedSubtotal,
-            tenantId,
-            subsidiaryId,
-          },
-        });
-
-        for (const priceType of priceTypes) {
-          const margin = Number(priceType.marginPercent);
-          const salePrice = convertedUnitPrice * (1 + margin / 100);
-
-          await prisma.productPrice.upsert({
-            where: {
-              productId_priceTypeId_currencyId_subsidiaryId: {
-                productId,
-                priceTypeId: priceType.id,
-                currencyId: currency.id,
-                subsidiaryId,
-              },
-            },
-            update: {
-              amount: salePrice,
-              autoGenerated: true,
-            },
-            create: {
-              productId,
-              priceTypeId: priceType.id,
-              currencyId: currency.id,
-              amount: salePrice,
-              autoGenerated: true,
-              tenantId,
-              subsidiaryId,
-            },
-          });
-        }
-      }
-
-      await prisma.inventory.upsert({
-        where: {
-          productId_subsidiaryId: { productId, subsidiaryId },
-        },
-        update: {
-          quantity_available: { increment: quantity },
+    if (existingInventory) {
+      await prisma.inventory.update({
+        where: { id: existingInventory.id },
+        data: {
+          quantity_available: existingInventory.quantity_available + quantity,
+          lastUpdateReason: "COMPRA",
           lastUpdateQuantity: quantity,
-          lastUpdateReason: StockUpdateReason.COMPRA,
           userId,
         },
-        create: {
+      });
+    } else {
+      await prisma.inventory.create({
+        data: {
           productId,
           quantity_available: quantity,
           min_quantity: 0,
+          lastUpdateReason: "COMPRA",
           lastUpdateQuantity: quantity,
-          lastUpdateReason: StockUpdateReason.COMPRA,
           userId,
           tenantId,
           subsidiaryId,
         },
       });
+    }
 
-      if (validPurchaseStatus === "CONFIRMADA") {
-        await prisma.product.update({
-          where: { id: productId },
+    for (const priceType of activePriceTypes) {
+      const generatedPrice = price * (1 + Number(priceType.marginPercent) / 100);
+
+      const existingPrice = await prisma.productPrice.findUnique({
+        where: {
+          productId_priceTypeId_subsidiaryId: {
+            productId,
+            priceTypeId: priceType.id,
+            subsidiaryId,
+          },
+        },
+      });
+
+      if (existingPrice) {
+        if (existingPrice.autoGenerated) {
+          await prisma.productPrice.update({
+            where: {
+              productId_priceTypeId_subsidiaryId: {
+                productId,
+                priceTypeId: priceType.id,
+                subsidiaryId,
+              },
+            },
+            data: {
+              price: generatedPrice,
+            },
+          });
+        }
+      } else {
+        await prisma.productPrice.create({
           data: {
-            lastPurchasePriceUSD: unit_price,
-            lastPurchaseDate: new Date(),
+            productId,
+            priceTypeId: priceType.id,
+            tenantId,
+            subsidiaryId,
+            price: generatedPrice,
+            autoGenerated: true,
+            editable: false,
           },
         });
       }
     }
-
-    // 5️⃣ Return full purchase info
-    const completePurchase = await prisma.purchase.findUnique({
-      where: { id: purchase.id },
-      include: {
-        supplier: true,
-        user: true,
-        purchaseDetails: {
-          include: {
-            product: true,
-            pricesInCurrency: {
-              include: {
-                currency: true,
-              },
-            },
-          },
-        },
-        creditPayments: true,
-      },
-    });
-
-    return res.status(201).json({
-      message: "Purchase created successfully",
-      data: completePurchase,
-    });
   }
-);
 
-export const getPurchaseById = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { id } = req.params;
+  res.status(201).json({
+    message: "Compra registrada con precios generados/actualizados.",
+    purchaseId: createdPurchase.id,
+  });
+});
 
-    const purchase = await prisma.purchase.findUnique({
-      where: { id },
-      include: {
-        supplier: true,
-        user: true,
-        purchaseDetails: {
-          include: {
-            product: true,
-            pricesInCurrency: {
-              include: {
-                currency: true,
-              },
-            },
-          },
-        },
-        creditPayments: true,
-      },
-    });
+/* createPurchaseManualPrices
+  * Este solo registra la compra y el inventario, y no toca los precios. 
+*/
+export const createPurchaseManualPrices = asyncHandler(async (req: Request, res: Response) => {
+  const {
+    code,
+    purchaseDate,
+    paymentType,
+    dispatchStatus,
+    paymentStatus,
+    supplierId,
+    userId,
+    tenantId,
+    subsidiaryId,
+    note,
+    purchaseDetails,
+  } = req.body;
 
-    if (!purchase) {
-      return res.status(404).json({ message: "Purchase not found" });
-    }
+  const total = purchaseDetails.reduce(
+    (sum: number, item: any) => sum + item.price * item.quantity,
+    0
+  );
 
-    return res.status(200).json({
-      message: "Purchase retrieved successfully",
-      data: purchase,
-    });
-  }
-);
-
-export const getPurchasesBySubsidiary = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { subsidiaryId } = req.params;
-    const {
-      page = "1",
-      limit = "5",
-      status,
-      paymentStatus,
+  const createdPurchase = await prisma.purchase.create({
+    data: {
+      code,
+      purchaseDate: new Date(purchaseDate),
       paymentType,
+      dispatchStatus,
+      paymentStatus,
+      note,
       supplierId,
       userId,
-      startDate,
-      endDate,
-      search,
-    } = req.query;
-
-    const pageNumber = parseInt(page as string, 10);
-    const limitNumber = parseInt(limit as string, 10);
-    const skip = (pageNumber - 1) * limitNumber;
-
-    const filters: any = {
+      tenantId,
       subsidiaryId,
-    };
-
-    if (status) filters.purchaseStatus = status;
-    if (paymentStatus) filters.paymentStatus = paymentStatus;
-    if (paymentType) filters.paymentType = paymentType;
-    if (supplierId) filters.supplierId = supplierId;
-    if (userId) filters.userId = userId;
-    if (startDate && endDate) {
-      filters.purchaseDate = {
-        gte: new Date(startDate as string),
-        lte: new Date(endDate as string),
-      };
-    }
-
-    if (search) {
-      filters.OR = [
-        {
-          note: {
-            contains: search as string,
-            mode: "insensitive",
-          },
-        },
-        {
-          supplier: {
-            name: {
-              contains: search as string,
-              mode: "insensitive",
-            },
-          },
-        },
-      ];
-    }
-
-    const [total, purchases] = await Promise.all([
-      prisma.purchase.count({ where: filters }),
-      prisma.purchase.findMany({
-        where: filters,
-        orderBy: { purchaseDate: "desc" },
-        skip,
-        take: limitNumber,
-        include: {
-          supplier: true,
-          user: true,
-          purchaseDetails: {
-            include: {
-              product: true,
-              pricesInCurrency: {
-                include: {
-                  currency: true,
-                },
-              },
-            },
-          },
-          creditPayments: true,
-        },
-      }),
-    ]);
-
-    return res.status(200).json({
-      message: "Purchases retrieved successfully",
       total,
-      page: pageNumber,
-      limit: limitNumber,
-      totalPages: Math.ceil(total / limitNumber),
-      purchases,
+    },
+  });
+
+  for (const detail of purchaseDetails) {
+    const { productId, price, quantity, currencyId } = detail;
+
+    await prisma.purchaseDetail.create({
+      data: {
+        price,
+        quantity,
+        sub_total: price * quantity,
+        productId,
+        purchaseId: createdPurchase.id,
+        userId,
+        supplierId,
+        currencyId,
+        tenantId,
+        subsidiaryId,
+      },
     });
+
+    const existingInventory = await prisma.inventory.findUnique({
+      where: {
+        productId_subsidiaryId: {
+          productId,
+          subsidiaryId,
+        },
+      },
+    });
+
+    if (existingInventory) {
+      await prisma.inventory.update({
+        where: { id: existingInventory.id },
+        data: {
+          quantity_available: existingInventory.quantity_available + quantity,
+          lastUpdateReason: "COMPRA",
+          lastUpdateQuantity: quantity,
+          userId,
+        },
+      });
+    } else {
+      await prisma.inventory.create({
+        data: {
+          productId,
+          quantity_available: quantity,
+          min_quantity: 0,
+          lastUpdateReason: "COMPRA",
+          lastUpdateQuantity: quantity,
+          userId,
+          tenantId,
+          subsidiaryId,
+        },
+      });
+    }
   }
-);
+
+  res.status(201).json({
+    message: "Compra registrada sin modificación de precios.",
+    purchaseId: createdPurchase.id,
+  });
+});
