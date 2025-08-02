@@ -11,6 +11,7 @@ export async function seedActions(): Promise<PermissionAction[]> {
     'eliminar',
     'estado',
     'exportar',
+    'importar',
   ];
 
   const results: PermissionAction[] = [];

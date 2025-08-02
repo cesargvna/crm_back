@@ -72,7 +72,7 @@ async function main() {
     productCategories,
     units
   );
-
+/*
   // 6️⃣ Compras 
   await seedPurchases({
     tenants,
@@ -82,7 +82,7 @@ async function main() {
     products,
     currencies,
   });
-
+*/
 
 
 

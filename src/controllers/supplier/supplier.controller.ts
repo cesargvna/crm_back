@@ -341,3 +341,64 @@ export const getAllSupplierCategoriesBySubsidiary = asyncHandler(
     });
   }
 );
+
+// ✅ Obtener Suppliers activos por Subsidiary con filtros y paginación
+export const getActiveSuppliersBySubsidiaryWithFilters = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { subsidiaryId } = req.params;
+    const { search, categoryId, status = "true", page = "1", limit = "5" } = req.query;
+
+    if (!subsidiaryId) {
+      return res.status(400).json({ message: "subsidiaryId is required." });
+    }
+
+    const where: any = {
+      subsidiaryId: subsidiaryId as string,
+    };
+
+    // ✅ Filtro por estado (para limitar solo activos, puedes dejarlo fijo o parametrizable)
+    if (status === "true") {
+      where.status = true;
+    } else if (status === "false") {
+      where.status = false;
+    }
+
+    // 🔍 Búsqueda opcional
+    if (search && String(search).trim().length >= 3) {
+      const normalizedSearch = String(search).trim().toLowerCase();
+      where.OR = [
+        { name: { contains: normalizedSearch, mode: "insensitive" } },
+        { company: { contains: normalizedSearch, mode: "insensitive" } },
+        { phone: { contains: normalizedSearch, mode: "insensitive" } },
+      ];
+    }
+
+    // ✅ Filtro por categoría
+    if (categoryId && categoryId !== "all") {
+      where.supplierCategoryId = categoryId as string;
+    }
+
+    // 📄 Paginación
+    const take = Math.max(parseInt(limit as string) || 5, 5);
+    const skip = (parseInt(page as string) - 1) * take;
+
+    const [total, suppliers] = await Promise.all([
+      prisma.supplier.count({ where }),
+      prisma.supplier.findMany({
+        where,
+        orderBy: { name: "asc" },
+        skip,
+        take,
+        include: { supplierCategory: true },
+      }),
+    ]);
+
+    res.json({
+      total,
+      page: parseInt(page as string),
+      limit: take,
+      totalPages: Math.ceil(total / take),
+      suppliers,
+    });
+  }
+);

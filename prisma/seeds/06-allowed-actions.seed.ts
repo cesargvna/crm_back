@@ -4,7 +4,7 @@ import { PermissionAction, Section } from "../../generated/prisma";
 // Mapa detallado basado en tu tabla
 const allowedActionsMap: Record<string, string[]> = {
   // Dashboard
-  "Dashboard:Dashboard": ["ver"],
+  "Dashboard:Dashboard": ["ver", "exportar"],
 
   // Ventas
   "Ventas:Caja": ["ver", "crear", "editar", "estado"],
@@ -22,13 +22,13 @@ const allowedActionsMap: Record<string, string[]> = {
   "Compras:Categoria de Proveedores": ["ver", "crear", "editar", "estado"],
 
   // Almacen
-  "Almacen:Productos": ["ver", "crear", "editar", "estado"],
+  "Almacen:Productos": ["ver", "crear", "editar", "estado", "importar"],
   "Almacen:Categoria de Productos": ["ver", "crear", "editar", "estado"],
   "Almacen:Tipo de Moneda": ["ver", "crear", "editar", "estado"],
   "Almacen:Tipos de precio": ["ver", "crear", "editar", "estado"],
   "Almacen:Unidad de medida": ["ver", "crear", "editar", "estado"],
   "Almacen:Tipo de cambio": ["ver", "crear", "editar", "estado"],
-  "Almacen:Inventario": ["ver", "crear", "editar", "estado"],
+  "Almacen:Inventario": ["ver", "crear", "editar", "estado", "exportar"],
 
   // Empresa
   "Empresa:Datos de la empresa": ["ver"],
