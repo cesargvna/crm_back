@@ -1,12 +1,14 @@
 model Sale {
   id                   String               @id @default(uuid()) @db.VarChar(255)
   code                 String               @db.VarChar(20) // Código de compra único por fecha y sucursal  YYYY-MM-DD-00001
+  discountType         DiscountType?        // 🔸 Nuevo campo con enum
+  discountValue        Decimal?             @db.Decimal(10, 2) // 🔸 Nuevo campo
   total                Decimal              @db.Decimal(10, 2) // Total venta
   note                 String?              @db.VarChar(255) // Nota opcional
 
-  saleDate             DateTime             @default(now()) // Fecha de venta
+  saleDate             DateTime             @db.Date   
   paymentType          PaymentType          // Enum CONTADO / CREDITO
-  dispatchStatus       DispatchStatus       // Enum COMPLETADA / ANULADA
+  salesStatus          SalesStatus          @default(COMPLETADA)  // Enum COMPLETADA / ANULADA
   paymentStatus        PaymentStatus        // Enum PENDIENTE / PARCIAL / COMPLETO
   
   created_at           DateTime             @default(now())
@@ -89,7 +91,7 @@ enum PaymentType {
   CREDITO
 }
 
-enum DispatchStatus {
+enum SalesStatus {
   COMPLETADA // venta realizada (activa)
   ANULADA    // venta cancelada (reversada)
 }
