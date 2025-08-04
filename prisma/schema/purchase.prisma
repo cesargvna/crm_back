@@ -1,6 +1,8 @@
 model Purchase {
   id                    String                  @id @default(uuid()) @db.VarChar(255)
   code                  String                  @db.VarChar(20) // Código de compra único por fecha y sucursal  YYYY-MM-DD-00001
+  discountType          DiscountType?           // 🔸 Nuevo campo con enum
+  discountValue         Decimal?                @db.Decimal(10, 2) // 🔸 Nuevo campo
   total                 Decimal                 @db.Decimal(10, 2)
   note                  String?                 @db.VarChar(255)
 
@@ -87,4 +89,9 @@ model PurchaseCreditPayment {
 enum PurchaseStatus {
   CONFIRMADA  
   DEVUELTA     
+}
+
+enum DiscountType {
+  PORCENTAJE
+  CANTIDAD
 }

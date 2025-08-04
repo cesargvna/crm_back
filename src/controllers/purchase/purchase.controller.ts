@@ -5,6 +5,7 @@ import {
   PaymentType,
   PaymentStatus,
   PurchaseStatus,
+  DiscountType,
   Prisma,
 } from "../../../generated/prisma";
 import { generateNextPurchaseCode } from "../../utils/generateNextPurchaseCode";
@@ -18,6 +19,7 @@ export const getPurchasesBySubsidiary = asyncHandler(async (req: Request, res: R
     paymentType,
     paymentStatus,
     purchaseStatus,
+    discountType,
     purchaseDateFrom,
     purchaseDateTo,
     page = "1",
@@ -36,6 +38,7 @@ export const getPurchasesBySubsidiary = asyncHandler(async (req: Request, res: R
     ...(paymentType ? { paymentType: paymentType as PaymentType } : {}),
     ...(paymentStatus ? { paymentStatus: paymentStatus as PaymentStatus } : {}),
     ...(purchaseStatus ? { purchaseStatus: purchaseStatus as PurchaseStatus } : {}),
+    ...(discountType ? { discountType: discountType as DiscountType } : {}),
     ...(userId ? { userId: userId as string } : {}),
     ...(purchaseDateFrom || purchaseDateTo
       ? {
@@ -188,12 +191,22 @@ export const getPurchaseById = asyncHandler(async (req: Request, res: Response) 
     return res.status(404).json({ message: "Compra no encontrada." });
   }
 
-  res.json(purchase);
+  // ✅ Calcular total original sin aplicar descuento
+  const originalTotal = purchase.purchaseDetails.reduce(
+    (sum, detail) => sum + Number(detail.sub_total),
+    0
+  );
+
+  res.json({
+    ...purchase,
+    originalTotal, // 🆕 total before discount
+    total: Number(purchase.total), // 🧾 total after discount (ya guardado)
+  });
 });
 
-/* createPurchaseWithPriceSync 
-  * Este crea la compra + actualiza o crea precios automáticamente según los PriceType activos.
-*/
+/* createPurchaseWithPriceSync
+ * Este crea la compra + actualiza o crea precios automáticamente según los PriceType activos.
+ */
 export const createPurchaseWithPriceSync = asyncHandler(async (req: Request, res: Response) => {
   const {
     purchaseDate,
@@ -205,23 +218,34 @@ export const createPurchaseWithPriceSync = asyncHandler(async (req: Request, res
     subsidiaryId,
     note,
     purchaseDetails,
+    discountType = "PORCENTAJE", // ✅ por defecto
+    discountValue = 0,           // ✅ por defecto
   } = req.body;
 
   const generatedCode = await generateNextPurchaseCode(purchaseDate, tenantId, subsidiaryId);
 
-  const total = purchaseDetails.reduce(
+  const subtotal = purchaseDetails.reduce(
     (sum: number, item: any) => sum + item.price * item.quantity,
     0
   );
+
+  const discount =
+    discountType === "PORCENTAJE"
+      ? subtotal * (Number(discountValue) / 100)
+      : Number(discountValue || 0);
+
+  const total = subtotal - discount;
 
   const createdPurchase = await prisma.purchase.create({
     data: {
       code: generatedCode,
       purchaseDate: new Date(purchaseDate),
       paymentType,
-      purchaseStatus: "CONFIRMADA", // ✅ cambio aquí
+      purchaseStatus: "CONFIRMADA",
       paymentStatus,
       note,
+      discountType,
+      discountValue,
       supplierId,
       userId,
       tenantId,
@@ -399,8 +423,8 @@ export const createPurchaseWithPriceSync = asyncHandler(async (req: Request, res
 });
 
 /* createPurchaseManualPrices
-  * Este solo registra la compra y el inventario, y no toca los precios. 
-*/
+ * Este solo registra la compra y el inventario, y no toca los precios.
+ */
 export const createPurchaseManualPrices = asyncHandler(async (req: Request, res: Response) => {
   const {
     purchaseDate,
@@ -412,23 +436,34 @@ export const createPurchaseManualPrices = asyncHandler(async (req: Request, res:
     subsidiaryId,
     note,
     purchaseDetails,
+    discountType = "PORCENTAJE", // ✅ por defecto
+    discountValue = 0,           // ✅ por defecto
   } = req.body;
 
   const generatedCode = await generateNextPurchaseCode(purchaseDate, tenantId, subsidiaryId);
 
-  const total = purchaseDetails.reduce(
+  const subtotal = purchaseDetails.reduce(
     (sum: number, item: any) => sum + item.price * item.quantity,
     0
   );
+
+  const discount =
+    discountType === "PORCENTAJE"
+      ? subtotal * (Number(discountValue) / 100)
+      : Number(discountValue || 0);
+
+  const total = subtotal - discount;
 
   const createdPurchase = await prisma.purchase.create({
     data: {
       code: generatedCode,
       purchaseDate: new Date(purchaseDate),
       paymentType,
-      purchaseStatus: "CONFIRMADA", // ✅ cambio aquí
+      purchaseStatus: "CONFIRMADA",
       paymentStatus,
       note,
+      discountType,
+      discountValue,
       supplierId,
       userId,
       tenantId,

@@ -11,8 +11,8 @@ const noteSchema = z.string().trim().max(255, "Note must have max 255 characters
 
 // ✅ Enums exactos del modelo Prisma
 const paymentTypeEnum = z.enum(["CONTADO", "CREDITO"]);
-const dispatchStatusEnum = z.enum(["COMPLETADA", "ANULADA"]);
 const paymentStatusEnum = z.enum(["PENDIENTE", "PARCIAL", "COMPLETO"]);
+const discountTypeEnum = z.enum(["PORCENTAJE", "CANTIDAD"]).optional();
 
 // ✅ Detalles de compra
 const purchaseDetailSchema = z.object({
@@ -24,10 +24,11 @@ const purchaseDetailSchema = z.object({
 
 // ✅ Crear compra (con o sin precios automáticos)
 export const createPurchaseSchema = z.object({
-  purchaseDate: z.string({ required_error: "Purchase date is required." }).refine(
-    (val) => !isNaN(Date.parse(val)),
-    { message: "Purchase date must be a valid ISO date string." }
-  ),
+  purchaseDate: z
+    .string({ required_error: "Purchase date is required." })
+    .refine((val) => !isNaN(Date.parse(val)), {
+      message: "Purchase date must be a valid ISO date string.",
+    }),
   paymentType: paymentTypeEnum,
   paymentStatus: paymentStatusEnum,
   note: noteSchema,
@@ -35,6 +36,11 @@ export const createPurchaseSchema = z.object({
   userId: uuidField("User ID"),
   tenantId: z.string({ required_error: "Tenant ID is required." }).min(1),
   subsidiaryId: uuidField("Subsidiary ID"),
+  discountType: discountTypeEnum, // 🔸 opcional, puede no enviarse
+  discountValue: z
+    .number({ required_error: "Discount value is required." })
+    .min(0, "Discount must be zero or greater.")
+    .optional(), // 🔸 también opcional
   purchaseDetails: z
     .array(purchaseDetailSchema, {
       required_error: "Purchase details are required.",
