@@ -4,7 +4,7 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import {
   PaymentType,
   PaymentStatus,
-  DispatchStatus,
+  PurchaseStatus,
   Prisma,
 } from "../../../generated/prisma";
 import { generateNextPurchaseCode } from "../../utils/generateNextPurchaseCode";
@@ -17,7 +17,7 @@ export const getPurchasesBySubsidiary = asyncHandler(async (req: Request, res: R
     userId,
     paymentType,
     paymentStatus,
-    dispatchStatus,
+    purchaseStatus,
     purchaseDateFrom,
     purchaseDateTo,
     page = "1",
@@ -35,7 +35,7 @@ export const getPurchasesBySubsidiary = asyncHandler(async (req: Request, res: R
     subsidiaryId,
     ...(paymentType ? { paymentType: paymentType as PaymentType } : {}),
     ...(paymentStatus ? { paymentStatus: paymentStatus as PaymentStatus } : {}),
-    ...(dispatchStatus ? { dispatchStatus: dispatchStatus as DispatchStatus } : {}),
+    ...(purchaseStatus ? { purchaseStatus: purchaseStatus as PurchaseStatus } : {}),
     ...(userId ? { userId: userId as string } : {}),
     ...(purchaseDateFrom || purchaseDateTo
       ? {
@@ -198,7 +198,6 @@ export const createPurchaseWithPriceSync = asyncHandler(async (req: Request, res
   const {
     purchaseDate,
     paymentType,
-    dispatchStatus,
     paymentStatus,
     supplierId,
     userId,
@@ -220,7 +219,7 @@ export const createPurchaseWithPriceSync = asyncHandler(async (req: Request, res
       code: generatedCode,
       purchaseDate: new Date(purchaseDate),
       paymentType,
-      dispatchStatus,
+      purchaseStatus: "CONFIRMADA", // ✅ cambio aquí
       paymentStatus,
       note,
       supplierId,
@@ -291,9 +290,7 @@ export const createPurchaseWithPriceSync = asyncHandler(async (req: Request, res
       });
     }
 
-    // Activar el producto si estaba inactivo
     const product = await prisma.product.findUnique({ where: { id: productId } });
-
     if (product && !product.status) {
       await prisma.product.update({
         where: { id: productId },
@@ -301,7 +298,6 @@ export const createPurchaseWithPriceSync = asyncHandler(async (req: Request, res
       });
     }
 
-    // Activar categoría del producto si estuviera inactiva
     if (product?.productCategoryId) {
       const category = await prisma.productCategory.findUnique({
         where: { id: product.productCategoryId },
@@ -315,7 +311,6 @@ export const createPurchaseWithPriceSync = asyncHandler(async (req: Request, res
       }
     }
 
-    // Actualizar o crear precios
     for (const priceType of activePriceTypes) {
       const generatedPrice = price * (1 + Number(priceType.marginPercent) / 100);
 
@@ -410,7 +405,6 @@ export const createPurchaseManualPrices = asyncHandler(async (req: Request, res:
   const {
     purchaseDate,
     paymentType,
-    dispatchStatus,
     paymentStatus,
     supplierId,
     userId,
@@ -432,7 +426,7 @@ export const createPurchaseManualPrices = asyncHandler(async (req: Request, res:
       code: generatedCode,
       purchaseDate: new Date(purchaseDate),
       paymentType,
-      dispatchStatus,
+      purchaseStatus: "CONFIRMADA", // ✅ cambio aquí
       paymentStatus,
       note,
       supplierId,
@@ -495,9 +489,7 @@ export const createPurchaseManualPrices = asyncHandler(async (req: Request, res:
       });
     }
 
-    // 🔹 Activar producto si estaba inactivo
     const product = await prisma.product.findUnique({ where: { id: productId } });
-
     if (product && !product.status) {
       await prisma.product.update({
         where: { id: productId },
@@ -505,7 +497,6 @@ export const createPurchaseManualPrices = asyncHandler(async (req: Request, res:
       });
     }
 
-    // 🔹 Activar categoría si estaba inactiva
     if (product?.productCategoryId) {
       const category = await prisma.productCategory.findUnique({
         where: { id: product.productCategoryId },

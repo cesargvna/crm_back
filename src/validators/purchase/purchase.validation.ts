@@ -29,7 +29,6 @@ export const createPurchaseSchema = z.object({
     { message: "Purchase date must be a valid ISO date string." }
   ),
   paymentType: paymentTypeEnum,
-  dispatchStatus: dispatchStatusEnum,
   paymentStatus: paymentStatusEnum,
   note: noteSchema,
   supplierId: uuidField("Supplier ID"),

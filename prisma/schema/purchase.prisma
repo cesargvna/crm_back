@@ -6,7 +6,7 @@ model Purchase {
 
   purchaseDate          DateTime                @db.Date               
   paymentType           PaymentType             // Enum CONTADO / CREDITO
-  dispatchStatus        DispatchStatus          // Enum COMPLETADA / ANULADA
+  purchaseStatus        PurchaseStatus          @default(CONFIRMADA)    // Enum CONFIRMADA / DEVUELTA 
   paymentStatus         PaymentStatus           // Enum PENDIENTE / PARCIAL / COMPLETO
 
   created_at            DateTime                @default(now())
