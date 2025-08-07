@@ -23,35 +23,40 @@ model User {
   subsidiary      Subsidiary   @relation(fields: [subsidiaryId], references: [id])
   subsidiaryId    String       @db.VarChar(255)
 
-  tenantId        String?       @db.VarChar(255) // 👉 agregado sin relación
+  tenantId        String       @db.VarChar(255)
   
   schedulesUsers    ScheduleUser[]    @relation(name: "ScheduleUserForUser")
-  //cashSessions    CashSession[] 
-  //sales           Sale[]
-  //expenses        Expense[]
-  //incomes         Income[]
-  //purchases       Purchase[]
+  cashSessions    CashSession[] 
+  sales           Sale[]
+  expenses        Expense[]
+  incomes         Income[]
+  purchases       Purchase[]
 
-  @@index([tenantId]) // ✅ índice por tenantId
+  @@index([tenantId]) 
+  @@index([subsidiaryId])
 }
 
 model ScheduleUser {
   id                String        @id @db.VarChar(255) @default(uuid())
   status            Boolean       @default(true)
-  start_day         DayOfWeek?
-  end_day           DayOfWeek?
-  opening_hour      DateTime?
-  closing_hour      DateTime?
+  start_day         DayOfWeek
+  end_day           DayOfWeek
+  opening_hour      String        @db.VarChar(5) // ejemplo: "08:00"
+  closing_hour      String        @db.VarChar(5) // ejemplo: "16:30"
   
   created_at        DateTime      @default(now())
   updated_at        DateTime      @updatedAt
 
   tenantId          String       @db.VarChar(255) // 👉 agregado sin relación
+  subsidiaryId      String       @db.VarChar(255) 
 
   user              User          @relation(fields: [userId], references: [id], name: "ScheduleUserForUser")
   userId            String        @db.VarChar(255)
 
-  @@index([tenantId]) // ✅ índice por tenantId
+  @@index([tenantId]) 
+  @@index([subsidiaryId])
+
+  @@unique([userId, start_day, end_day, opening_hour, closing_hour])
 }
 
 enum DayOfWeek {

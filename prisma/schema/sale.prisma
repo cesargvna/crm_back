@@ -1,0 +1,106 @@
+model Sale {
+  id                   String               @id @default(uuid()) @db.VarChar(255)
+  code                 String               @db.VarChar(20) // Código de compra único por fecha y sucursal  YYYY-MM-DD-00001
+  discountType         DiscountType         // 🔸 Nuevo campo con enum
+  discountValue        Decimal              @db.Decimal(10, 2) // 🔸 Nuevo campo
+  total                Decimal              @db.Decimal(10, 2) // Total venta
+  note                 String?              @db.VarChar(255) // Nota opcional
+
+  saleDate             DateTime             @db.Date   
+  paymentType          PaymentType          // Enum CONTADO / CREDITO
+  salesStatus          SalesStatus          @default(COMPLETADA)  // Enum COMPLETADA / ANULADA
+  paymentStatus        PaymentStatus        // Enum PENDIENTE / PARCIAL / COMPLETO
+  
+  created_at           DateTime             @default(now())
+  updated_at           DateTime             @updatedAt
+
+  cashSessionId        String?              @db.VarChar(255) // ← campo referencial sin relación cruzada
+  clientId             String               @db.VarChar(255) // FK a cliente
+  userId               String               @db.VarChar(255) // FK a usuario
+  subsidiaryId         String               @db.VarChar(255) // Sucursal específica
+  tenantId             String               @db.VarChar(255) // Tenant dueño de la venta
+
+  client               Client               @relation(fields: [clientId], references: [id])
+  user                 User                 @relation(fields: [userId], references: [id])
+  saleDetails          SaleDetail[]
+  saleCreditPayments   SaleCreditPayment[]
+
+  @@unique([tenantId, subsidiaryId, code])
+  @@index([cashSessionId]) 
+  @@index([clientId])
+  @@index([userId])
+  @@index([subsidiaryId])
+  @@index([tenantId])
+}
+
+model SaleDetail {
+  id                    String               @id @default(uuid()) @db.VarChar(255)
+  price                 Decimal              @db.Decimal(10,2) // Precio aplicado en la venta
+  quantity              Int
+  subtotal              Decimal              @db.Decimal(10, 2)
+  priceTypeId           String?              @db.VarChar(255)
+  manualPrice           Boolean              @default(false)
+
+  cashSessionId         String?              @db.VarChar(255) // ← campo referencial sin relación cruzada
+  productId             String               @db.VarChar(255)
+  saleId                String               @db.VarChar(255)
+  userId                String               @db.VarChar(255)
+  clientId              String               @db.VarChar(255) // FK a cliente
+  currencyId            String               @db.VarChar(255)
+  subsidiaryId          String               @db.VarChar(255) // Sucursal específica
+  tenantId              String               @db.VarChar(255) // Tenant dueño de la venta
+   
+  created_at            DateTime             @default(now())
+  updated_at            DateTime             @updatedAt
+
+  sale                  Sale                 @relation(fields: [saleId], references: [id])
+  product               Product              @relation(fields: [productId], references: [id])
+
+  @@index([cashSessionId])
+  @@index([productId])
+  @@index([saleId])
+  @@index([currencyId])
+  @@index([priceTypeId])
+  @@index([userId])
+  @@index([clientId])
+  @@index([subsidiaryId])
+  @@index([tenantId])
+}
+
+model SaleCreditPayment {
+  id                   String       @id @default(uuid()) @db.VarChar(255)
+  amount               Decimal      @db.Decimal(10, 2)
+  paymentDate          DateTime     @default(now())
+  
+  cashSessionId        String?      @db.VarChar(255) // ← campo referencial sin relación cruzada
+  clientId             String       @db.VarChar(255) // FK a cliente
+  userId               String       @db.VarChar(255)
+  saleId               String       @db.VarChar(255)
+  subsidiaryId         String       @db.VarChar(255) // Sucursal específica
+  tenantId             String       @db.VarChar(255) // Tenant dueño del pago
+  
+  sale                 Sale         @relation(fields: [saleId], references: [id])
+
+  @@index([cashSessionId])
+  @@index([clientId])
+  @@index([userId])
+  @@index([saleId])
+  @@index([subsidiaryId])
+  @@index([tenantId])
+}
+
+enum PaymentType {
+  CONTADO
+  CREDITO
+}
+
+enum SalesStatus {
+  COMPLETADA // venta realizada (activa)
+  ANULADA    // venta cancelada (reversada)
+}
+
+enum PaymentStatus {
+  PENDIENTE   // aún no se paga nada
+  PARCIAL     // se ha pagado una parte
+  COMPLETO    // se pagó todo el crédito
+}

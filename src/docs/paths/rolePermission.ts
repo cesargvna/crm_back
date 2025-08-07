@@ -1,34 +1,27 @@
 export const rolePermissionPaths = {
-  // ✅ Crear una nueva asignación de permiso
-  "POST: role/rolePermission": {
+  "POST: role/roles/{roleId}/permissions": {
     post: {
       tags: ["Role Permission"],
       summary: "Assign a permission to a role",
       description:
-        "Creates a new permission assignment for a role. Prevents duplicate assignments. The tenant is inferred from the role.",
+        "Creates a new permission assignment for a role using its ID from the URL. Prevents duplicate assignments with a composite key.",
+      parameters: [
+        {
+          name: "roleId",
+          in: "path",
+          required: true,
+          schema: { type: "string", format: "uuid", example: "rol-123" },
+        },
+      ],
       requestBody: {
         required: true,
         content: {
           "application/json": {
             schema: {
               type: "object",
-              required: ["roleId", "actionId", "sectionId"],
+              required: ["actionId", "tenantId", "subsidiaryId"],
               properties: {
-                roleId: {
-                  type: "string",
-                  format: "uuid",
-                  example: "rol-123",
-                },
-                actionId: {
-                  type: "string",
-                  format: "uuid",
-                  example: "act-1",
-                },
-                sectionId: {
-                  type: "string",
-                  format: "uuid",
-                  example: "sec-1",
-                },
+                actionId: { type: "string", format: "uuid", example: "act-1" },
                 moduleId: {
                   type: "string",
                   format: "uuid",
@@ -41,6 +34,16 @@ export const rolePermissionPaths = {
                   nullable: true,
                   example: "subm-2",
                 },
+                tenantId: {
+                  type: "string",
+                  format: "uuid",
+                  example: "tenant-789",
+                },
+                subsidiaryId: {
+                  type: "string",
+                  format: "uuid",
+                  example: "sub-456",
+                },
               },
             },
           },
@@ -51,115 +54,94 @@ export const rolePermissionPaths = {
           description: "Permission assigned successfully",
           content: {
             "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  id: { type: "string", example: "perm-001" },
-                  roleId: { type: "string", example: "rol-123" },
-                  actionId: { type: "string", example: "act-1" },
-                  sectionId: { type: "string", example: "sec-1" },
-                  moduleId: { type: "string", example: "mod-1" },
-                  submoduleId: { type: "string", example: "subm-2" },
-                  tenantId: { type: "string", example: "tenant-789" },
-                },
+              example: {
+                id: "perm-001",
+                roleId: "rol-123",
+                actionId: "act-1",
+                moduleId: "mod-1",
+                submoduleId: "subm-2",
+                tenantId: "tenant-789",
+                subsidiaryId: "sub-456",
+                compositeKey: "rol-123_act-1_mod-1_subm-2",
+                created_at: "2025-06-30T12:00:00Z",
               },
             },
           },
         },
-        404: {
-          description: "Role not found",
-        },
         409: {
-          description:
-            "Permission already assigned to this role (duplicate entry)",
+          description: "Permission already assigned",
+          content: {
+            "application/json": {
+              example: {
+                message: "This permission is already assigned to the role.",
+              },
+            },
+          },
         },
       },
     },
   },
 
-  // ✅ Obtener permisos por ID de rol
-  "GET: role/rolePermission/{roleId}": {
+  "GET: role/roles/{roleId}/permissions-list": {
     get: {
       tags: ["Role Permission"],
-      summary: "Get all permissions assigned to a role",
+      summary: "Get role permissions (hierarchical, sidebar style)",
       description:
-        "Returns all permissions assigned to a role, including tenant and subsidiary information.",
+        "Returns the role with its assigned permissions in a structured sidebar format: Section → Module → Submodule → Actions. Each action includes its RolePermission ID for traceability.",
       parameters: [
         {
           name: "roleId",
           in: "path",
           required: true,
           schema: { type: "string", format: "uuid" },
+          example: "40cad9a9-4bec-4efc-b027-2504ad3f8ea5",
         },
       ],
       responses: {
         200: {
-          description: "Permissions retrieved successfully",
+          description: "Role with hierarchical permissions",
           content: {
             "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  role: {
-                    type: "object",
-                    properties: {
-                      id: { type: "string", example: "rol-123" },
-                      name: { type: "string", example: "Administrador" },
-                      description: {
-                        type: "string",
-                        example: "Rol con acceso total al sistema",
-                      },
+              example: {
+                roleId: "40cad9a9-4bec-4efc-b027-2504ad3f8ea5",
+                roleName: "Super.Admin",
+                roleStatus: true,
+                permissions: {
+                  Ventas: {
+                    Caja: {
+                      actions: [
+                        { id: "perm-123", action: "ver" },
+                        { id: "perm-124", action: "crear" },
+                      ],
+                    },
+                    Ventas: {
+                      actions: [{ id: "perm-125", action: "ver" }],
+                      Cotizaciones: [{ id: "perm-126", action: "ver" }],
                     },
                   },
-                  subsidiary: {
-                    type: "object",
-                    properties: {
-                      id: { type: "string", example: "sub-456" },
-                      name: { type: "string", example: "Sucursal Central" },
+                  Almacen: {
+                    Productos: {
+                      actions: [
+                        { id: "perm-200", action: "ver" },
+                        { id: "perm-201", action: "crear" },
+                      ],
+                    },
+                    Inventario: {
+                      actions: [{ id: "perm-202", action: "ver" }],
                     },
                   },
-                  tenant: {
-                    type: "object",
-                    properties: {
-                      id: { type: "string", example: "tenant-789" },
-                      name: { type: "string", example: "PERU - LIBRERÍA" },
-                      description: {
-                        type: "string",
-                        example: "Empresa peruana especializada en libros",
-                      },
+                  Reportes: {
+                    Ventas: {
+                      "Cierres de Caja": [
+                        { id: "perm-300", action: "ver" },
+                        { id: "perm-301", action: "exportar" },
+                      ],
                     },
-                  },
-                  permissions: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        id: { type: "string", example: "perm-001" },
-                        action: {
-                          type: "object",
-                          properties: {
-                            id: { type: "string", example: "act-1" },
-                            name: { type: "string", example: "ver" },
-                          },
-                        },
-                        section: {
-                          type: "object",
-                          properties: {
-                            id: { type: "string", example: "sec-1" },
-                            name: { type: "string", example: "Usuarios" },
-                          },
-                        },
-                        moduleId: {
-                          type: "string",
-                          nullable: true,
-                          example: "mod-1",
-                        },
-                        submoduleId: {
-                          type: "string",
-                          nullable: true,
-                          example: "subm-2",
-                        },
-                      },
+                    Clientes: {
+                      "Actividad de Clientes": [
+                        { id: "perm-400", action: "ver" },
+                        { id: "perm-401", action: "exportar" },
+                      ],
                     },
                   },
                 },
@@ -169,18 +151,24 @@ export const rolePermissionPaths = {
         },
         404: {
           description: "Role not found",
+          content: {
+            "application/json": {
+              example: {
+                message: "Role not found",
+              },
+            },
+          },
         },
       },
     },
   },
 
-  // ✅ Eliminar permiso por ID
-  "DELETE: role/rolePermission/{id}": {
+  "DELETE: role/role-permission/{id}": {
     delete: {
       tags: ["Role Permission"],
-      summary: "Remove a permission from a role",
+      summary: "Delete a permission assignment",
       description:
-        "Deletes a permission assignment from a role using its unique ID.",
+        "Deletes an existing permission assignment by its unique ID.",
       parameters: [
         {
           name: "id",
@@ -191,35 +179,22 @@ export const rolePermissionPaths = {
       ],
       responses: {
         200: {
-          description: "Permission removed successfully",
+          description: "Permission deleted successfully",
           content: {
             "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                    example: "Permission removed from role successfully.",
-                  },
-                  deleted: {
-                    type: "object",
-                    properties: {
-                      id: { type: "string", example: "perm-001" },
-                      roleId: { type: "string", example: "rol-123" },
-                      actionId: { type: "string", example: "act-1" },
-                      sectionId: { type: "string", example: "sec-1" },
-                      moduleId: { type: "string", example: "mod-1" },
-                      submoduleId: { type: "string", example: "subm-2" },
-                      tenantId: { type: "string", example: "tenant-789" },
-                    },
-                  },
-                },
+              example: {
+                message: "Permission assignment deleted successfully.",
               },
             },
           },
         },
         404: {
-          description: "RolePermission not found",
+          description: "Permission not found",
+          content: {
+            "application/json": {
+              example: { message: "Role permission not found." },
+            },
+          },
         },
       },
     },

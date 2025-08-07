@@ -1,0 +1,97 @@
+model Purchase {
+  id                    String                  @id @default(uuid()) @db.VarChar(255)
+  code                  String                  @db.VarChar(20) // Código de compra único por fecha y sucursal  YYYY-MM-DD-00001
+  discountType          DiscountType?           // 🔸 Nuevo campo con enum
+  discountValue         Decimal?                @db.Decimal(10, 2) // 🔸 Nuevo campo
+  total                 Decimal                 @db.Decimal(10, 2)
+  note                  String?                 @db.VarChar(255)
+
+  purchaseDate          DateTime                @db.Date               
+  paymentType           PaymentType             // Enum CONTADO / CREDITO
+  purchaseStatus        PurchaseStatus          @default(CONFIRMADA)    // Enum CONFIRMADA / DEVUELTA 
+  paymentStatus         PaymentStatus           // Enum PENDIENTE / PARCIAL / COMPLETO
+
+  created_at            DateTime                @default(now())
+  updated_at            DateTime                @updatedAt
+
+  cashSessionId         String?                 @db.VarChar(255) // ← campo referencial sin relación cruzada
+  supplierId            String                  @db.VarChar(255)
+  userId                String                  @db.VarChar(255)
+  subsidiaryId          String                  @db.VarChar(255)
+  tenantId              String                  @db.VarChar(255) 
+  
+  supplier              Supplier                @relation(fields: [supplierId], references: [id])
+  user                  User                    @relation(fields: [userId], references: [id])
+  purchaseDetails       PurchaseDetail[]
+  creditPayments        PurchaseCreditPayment[]
+
+  @@unique([tenantId, subsidiaryId, code])
+  @@index([cashSessionId])
+  @@index([supplierId])
+  @@index([userId])
+  @@index([subsidiaryId])
+  @@index([tenantId])
+}
+
+model PurchaseDetail {
+  id                     String       @id @default(uuid()) @db.VarChar(255)
+  price                  Decimal      @db.Decimal(10, 2)
+  quantity               Int
+  sub_total              Decimal      @db.Decimal(10, 2)
+  
+  cashSessionId          String?      @db.VarChar(255)  // ← campo referencial sin relación cruzada
+  productId              String       @db.VarChar(255)
+  purchaseId             String       @db.VarChar(255)
+  userId                 String       @db.VarChar(255)
+  supplierId             String       @db.VarChar(255)
+  currencyId             String       @db.VarChar(255)  // ✅ La moneda viene directa aquí (libre)
+  subsidiaryId           String       @db.VarChar(255)
+  tenantId               String       @db.VarChar(255) 
+
+  created_at             DateTime     @default(now())
+  updated_at             DateTime     @updatedAt
+
+  purchase               Purchase     @relation(fields: [purchaseId], references: [id])
+  product                Product      @relation(fields: [productId], references: [id])
+  
+  @@index([cashSessionId])
+  @@index([productId])
+  @@index([purchaseId])
+  @@index([currencyId])
+  @@index([userId])
+  @@index([supplierId])
+  @@index([subsidiaryId])
+  @@index([tenantId])
+}
+
+model PurchaseCreditPayment {
+  id                String        @id @default(uuid()) @db.VarChar(255)
+  amount            Decimal       @db.Decimal(10, 2)
+  paymentDate       DateTime      @default(now())
+
+  cashSessionId     String?       @db.VarChar(255)// ← campo referencial sin relación cruzada
+  supplierId        String        @db.VarChar(255)
+  userId            String        @db.VarChar(255)
+  purchaseId        String        @db.VarChar(255)
+  subsidiaryId      String        @db.VarChar(255) // Sucursal específica
+  tenantId          String        @db.VarChar(255) // Tenant dueño del pago
+
+  purchase          Purchase      @relation(fields: [purchaseId], references: [id])
+
+  @@index([cashSessionId])
+  @@index([supplierId])
+  @@index([userId])
+  @@index([purchaseId])
+  @@index([subsidiaryId])
+  @@index([tenantId])
+}
+
+enum PurchaseStatus {
+  CONFIRMADA  
+  DEVUELTA     
+}
+
+enum DiscountType {
+  PORCENTAJE
+  CANTIDAD
+}

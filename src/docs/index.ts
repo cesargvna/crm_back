@@ -1,7 +1,8 @@
-import { permissionSectionPaths } from "./paths/permissionSection";
-import { moduleGroupPaths } from "./paths/moduleGroup";
-import { submoduleGroupPaths } from "./paths/submoduleGroup";
+import { sectionPaths } from "./paths/section";
+import { modulePaths } from "./paths/module";
+import { submodulePaths } from "./paths/submodule";
 import { permissionActionPaths } from "./paths/permissionAction";
+import { allowedActionPaths } from "./paths/allowedAction";
 import { tenantPaths } from "./paths/tenant";
 import { subsidiaryPaths } from "./paths/subsidiary";
 import { rolePaths } from "./paths/role";
@@ -9,6 +10,20 @@ import { rolePermissionPaths } from "./paths/rolePermission";
 import { scheduleSubsidiaryPaths } from "./paths/scheduleSubsidiary";
 import { userPaths } from "./paths/user";
 import { scheduleUserPaths } from "./paths/scheduleUser";
+import { expenseCategoryPaths } from "./paths/expenseCategory";
+import { expensePaths } from "./paths/expense";
+import { incomeCategoryPaths } from "./paths/incomeCategory";
+import { incomePaths } from "./paths/income";
+import { clientPaths } from "./paths/client";
+import { clientCategoryPaths } from "./paths/clientCategory";
+import { supplierCategoryPaths } from "./paths/supplierCategory";
+import { supplierPaths } from "./paths/supplier";
+import { productCategoryPaths } from "./paths/productCategory";
+import { unitMeasurementPaths } from "./paths/unitMeasurement";
+import { priceTypePaths } from "./paths/priceType";
+import { currencyPaths } from "./paths/currency";
+import { productPaths } from "./paths/product";
+import { exchangeRatePaths } from "./paths/ExchangeRate";
 
 export const swaggerConfig = {
   openapi: "3.0.0",
@@ -26,20 +41,24 @@ export const swaggerConfig = {
   ],
   tags: [
     {
-      name: "Permission Section",
+      name: "Section",
       description: "Permission structure grouping modules and submodules",
     },
     {
-      name: "Permission Module",
+      name: "Module",
       description: "Modules grouped under a permission section",
     },
     {
-      name: "Permission Submodule",
+      name: "Submodule",
       description: "Submodules grouped under a permission module",
     },
     {
       name: "Permission Action",
       description: "Atomic permission operations like view, edit, create, etc.",
+    },
+    {
+      name: "Allowed Action",
+      description: "",
     },
     {
       name: "Role",
@@ -62,10 +81,12 @@ export const swaggerConfig = {
     },
     {
       name: "ScheduleSubsidiary",
-      description: `Manages opening and closing hours per subsidiary.\n
-  - Enum field \`DayOfWeek\` must be one of:
-    \`LUNES\`, \`MARTES\`, \`MIERCOLES\`, \`JUEVES\`, \`VIERNES\`, \`SABADO\`, \`DOMINGO\`.
-  - Dates must be in ISO string format (e.g. \`2025-06-12T08:00:00.000Z\`).`,
+      description: `Manages working schedules for subsidiary based on day and hour range.
+        - Fields \`start_day\` and \`end_day\` must be valid days of the week in Spanish:
+        \`LUNES\`, \`MARTES\`, \`MIERCOLES\`, \`JUEVES\`, \`VIERNES\`, \`SABADO\`, \`DOMINGO\`.
+        - Fields \`opening_hour\` and \`closing_hour\` must follow the \`HH:mm\` 24-hour format (e.g., \`08:00\`, \`16:30\`).
+        - The start day must not come after the end day.
+        - The opening hour must be earlier than the closing hour.`,
     },
     {
       name: "User",
@@ -74,17 +95,141 @@ export const swaggerConfig = {
     },
     {
       name: "ScheduleUser",
-      description: `Manages opening and closing hours per user.\n
-  - Enum field \`DayOfWeek\` must be one of:
-    \`LUNES\`, \`MARTES\`, \`MIERCOLES\`, \`JUEVES\`, \`VIERNES\`, \`SABADO\`, \`DOMINGO\`.
-  - Dates must be in ISO 8601 format (e.g. \`2025-06-12T08:00:00.000Z\`).`,
+      description: `Manages working schedules for users based on day and hour range.
+        - Fields \`start_day\` and \`end_day\` must be valid days of the week in Spanish:
+        \`LUNES\`, \`MARTES\`, \`MIERCOLES\`, \`JUEVES\`, \`VIERNES\`, \`SABADO\`, \`DOMINGO\`.
+        - Fields \`opening_hour\` and \`closing_hour\` must follow the \`HH:mm\` 24-hour format (e.g., \`08:00\`, \`16:30\`).
+        - The start day must not come after the end day.
+        - The opening hour must be earlier than the closing hour.`,
+    },
+    {
+      name: "Expense Category",
+      description: `Manages expense categories for subsidiaries.
+        - Each expense category belongs to a specific Subsidiary and Tenant.
+        - Names are normalized (lowercase, no accents, "ñ" replaced with "n").
+        - Supports creation, update, status toggle, and list/filter by Subsidiary.`,
+    },
+    {
+      name: "Expense",
+      description: `Manages individual expenses for subsidiaries.
+        - Each expense must belong to a valid Expense Category, User, Subsidiary, and Tenant.
+        - Supports creation with automatic normalization of name and calculation of total amount.
+        - Supports update of fields like quantity, unit price, or category.
+        - Supports filtering and paginated retrieval by Subsidiary.
+        - Includes relations to Expense Category and User for context.`,
+    },
+    {
+      name: "Income Category",
+      description: `Manages income categories for subsidiaries.
+        - Each income category belongs to a specific Subsidiary and Tenant.
+        - Names are normalized (lowercase, no accents, "ñ" replaced with "n").
+        - Supports creation, update, status toggle, and list/filter by Subsidiary.`,
+    },
+    {
+      name: "Income",
+      description: `Manages individual incomes for subsidiaries.
+        - Each income must belong to a valid Income Category, User, Subsidiary, and Tenant.
+        - Supports creation with automatic normalization of name and calculation of total amount.
+        - Supports update of fields like quantity, unit price, or category.
+        - Supports filtering and paginated retrieval by Subsidiary.
+        - Includes relations to Income Category and User for context.`,
+    },
+    {
+      name: "ClientCategory",
+      description: `Manages client categories for subsidiaries.
+        - Each category belongs to a Subsidiary and Tenant.
+        - Names are normalized: lowercase, no accents, "ñ" replaced with "n".
+        - Supports create, update, toggle status (which cascades to clients), and list/filter by Subsidiary.`,
+    },
+    {
+      name: "Client",
+      description: `Manages individual clients.
+        - Each client belongs to a ClientCategory, Subsidiary, and Tenant.
+        - Names are normalized: no accents, "ñ" replaced with "n".
+        - Email is trimmed and lowercased.
+        - Supports create, update, status toggle, and list/filter by Subsidiary.
+        - Includes automatic validation for unique names within a tenant and subsidiary.`,
+    },
+    {
+      name: "SupplierCategory",
+      description: `Manages supplier categories for subsidiaries.
+        - Each category belongs to a Subsidiary and Tenant.
+        - Names are normalized: lowercase, no accents, "ñ" replaced with "n".
+        - Supports create, update, toggle status (which cascades to related suppliers), and list/filter by Subsidiary.
+        - Includes endpoints to list only active categories or all categories without pagination.`,
+    },
+    {
+      name: "Supplier",
+      description: `Manages individual suppliers.
+        - Each supplier belongs to a SupplierCategory, Subsidiary, and Tenant.
+        - Names are normalized: no accents, "ñ" replaced with "n".
+        - Email is trimmed and lowercased.
+        - Supports create, update, status toggle, and list/filter by Subsidiary.
+        - Supports search by name, company, or phone.
+        - Includes automatic validation for unique names within a tenant and subsidiary.`,
+    },
+    {
+      name: "Product Category",
+      description: `Manages product categories for subsidiaries.
+        - Each category belongs to a Subsidiary and Tenant.
+        - Names are normalized: lowercase, no accents, "ñ" replaced with "n".
+        - Supports create, update, toggle status, and list/filter by Subsidiary.`,
+    },
+    {
+      name: "UnitMeasurement",
+      description: `Manages unit measurements for subsidiaries.
+        - Each unit measurement belongs to a Subsidiary and Tenant.
+        - Names are normalized: lowercase, accents removed, and "ñ" replaced with "n".
+        - Supports create, update, toggle status, and list/filter by Subsidiary.
+        - Includes quantity as an integer field representing unit scale (e.g., pieces per pack).`,
+    },
+    {
+      name: "PriceType",
+      description: `Manages price types for subsidiaries.
+        - Each price type belongs to a Subsidiary and Tenant.
+        - Names are normalized: lowercase, accents removed, and "ñ" replaced with "n".
+        - Supports create, update, toggle status, and list/filter by Subsidiary.
+        - Typical examples include retail, wholesale, special prices, etc.`,
+    },
+    {
+      name: "Currency",
+      description: `Manages currencies for subsidiaries.
+        - Each currency belongs to a Subsidiary and Tenant.
+        - Names are normalized: lowercase, accents removed, "ñ" replaced with "n".
+        - Codes are automatically uppercased (e.g., USD, BOB).
+        - Supports create, update, toggle status, and list/filter by Subsidiary.
+        - Includes relations for exchange rates and product prices.
+        - Ensures unique name + code per Subsidiary.`,
+    },
+    {
+      name: "Product",
+      description: `Manages products for subsidiaries.
+        - Each product belongs to a Subsidiary and Tenant.
+        - Each product is linked to a Product Category and Unit Measurement.
+        - Names are normalized: accents removed, "ñ" replaced with "n", extra spaces trimmed.
+        - Codes are automatically uppercased (e.g., SKU or internal code).
+        - Ensures unique combination of name + code within the same Tenant and Subsidiary.
+        - Supports create, update, toggle status, and list/filter by Subsidiary.
+        - Includes optional barcode and description fields.
+        - Provides paginated listing with search by name, code, or barcode.
+        - Active-only endpoint available for dropdowns or quick selectors.`,
+    },
+    {
+      name: "ExchangeRate",
+      description: `Manages currency exchange rates for subsidiaries.
+        - Each exchange rate belongs to a Subsidiary and Tenant.
+        - Each exchange rate links two currencies: \`fromCurrency\` and \`toCurrency\`.
+        - Supports creation with uniqueness validation: no duplicate pairs in the same Subsidiary.
+        - Supports update of the \`rate\` value.
+        - Provides list and detail endpoints, including currency info for both sides.`,
     },
   ],
   paths: {
-    ...permissionSectionPaths,
-    ...moduleGroupPaths,
-    ...submoduleGroupPaths,
+    ...sectionPaths,
+    ...modulePaths,
+    ...submodulePaths,
     ...permissionActionPaths,
+    ...allowedActionPaths,
     ...rolePaths,
     ...rolePermissionPaths,
     ...tenantPaths,
@@ -92,5 +237,19 @@ export const swaggerConfig = {
     ...scheduleSubsidiaryPaths,
     ...userPaths,
     ...scheduleUserPaths,
+    ...expenseCategoryPaths,
+    ...expensePaths,
+    ...incomeCategoryPaths,
+    ...incomePaths,
+    ...clientCategoryPaths,
+    ...clientPaths,
+    ...supplierCategoryPaths,
+    ...supplierPaths,
+    ...productCategoryPaths,
+    ...unitMeasurementPaths,
+    ...priceTypePaths,
+    ...currencyPaths,
+    ...productPaths,
+    ...exchangeRatePaths,
   },
 };

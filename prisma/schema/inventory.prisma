@@ -1,0 +1,34 @@
+model Inventory {
+  id                   String              @id @default(uuid()) @db.VarChar(255)
+  quantity_available   Int
+  min_quantity         Int
+
+  lastUpdateReason     StockUpdateReason?  // motivo del último cambio
+  lastUpdateQuantity   Int?                // cuántas unidades se sumaron o restaron  
+
+  cashSessionId        String?             @db.VarChar(255) // ← campo referencial sin relación cruzada
+  productId            String              @db.VarChar(255)
+  userId               String              @db.VarChar(255)   // ID del usuario que hizo el cambio
+  tenantId             String              @db.VarChar(255) 
+  subsidiaryId         String              @db.VarChar(255)
+
+  created_at           DateTime            @default(now())
+  updated_at           DateTime            @updatedAt
+
+  product              Product             @relation(fields: [productId], references: [id])
+  
+  @@unique([productId, subsidiaryId])
+  @@index([cashSessionId])
+  @@index([productId])
+  @@index([userId])
+  @@index([subsidiaryId])
+  @@index([tenantId])
+}
+
+enum StockUpdateReason {
+  COMPRA
+  DEVOLUCION
+  VENTA
+  AJUSTE
+  OTRO
+}

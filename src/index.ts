@@ -5,7 +5,7 @@ import { PORT } from './utils/config';
 
 
 process.on('SIGINT', async () => {
-  console.log('cloing prisma connection');
+  console.log('closing prisma connection');
   await prisma.$disconnect();
   process.exit(0);
 });
