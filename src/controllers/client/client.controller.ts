@@ -317,3 +317,67 @@ export const getActiveClientsBySubsidiary = asyncHandler(
     });
   }
 );
+
+// ✅ Obtener Clients activos por Subsidiary con filtros y paginación
+export const getActiveClientsBySubsidiaryWithFilters = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { subsidiaryId } = req.params;
+    const { search, categoryId, status = "true", page = "1", limit = "5" } = req.query;
+
+    if (!subsidiaryId) {
+      return res.status(400).json({ message: "subsidiaryId is required." });
+    }
+
+    const where: any = {
+      subsidiaryId: subsidiaryId as string,
+    };
+
+    // ✅ Filtro por estado (opcionalmente solo activos)
+    if (status === "true") {
+      where.status = true;
+    } else if (status === "false") {
+      where.status = false;
+    }
+
+    // 🔍 Búsqueda opcional
+    if (search && String(search).trim().length >= 3) {
+      const normalizedSearch = String(search).trim().toLowerCase();
+      where.OR = [
+        { name: { contains: normalizedSearch, mode: "insensitive" } },
+        { lastname: { contains: normalizedSearch, mode: "insensitive" } },
+        { ci: { contains: normalizedSearch, mode: "insensitive" } },
+        { nit: { contains: normalizedSearch, mode: "insensitive" } },
+        { email: { contains: normalizedSearch, mode: "insensitive" } },
+        { cellphone: { contains: normalizedSearch, mode: "insensitive" } },
+      ];
+    }
+
+    // ✅ Filtro por categoría
+    if (categoryId && categoryId !== "all") {
+      where.clientCategoryId = categoryId as string;
+    }
+
+    // 📄 Paginación
+    const take = Math.max(parseInt(limit as string) || 5, 5);
+    const skip = (parseInt(page as string) - 1) * take;
+
+    const [total, clients] = await Promise.all([
+      prisma.client.count({ where }),
+      prisma.client.findMany({
+        where,
+        orderBy: { name: "asc" },
+        skip,
+        take,
+        include: { clientCategory: true },
+      }),
+    ]);
+
+    res.json({
+      total,
+      page: parseInt(page as string),
+      limit: take,
+      totalPages: Math.ceil(total / take),
+      clients,
+    });
+  }
+);

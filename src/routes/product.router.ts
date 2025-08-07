@@ -10,10 +10,10 @@ import { createPriceType, getActivePriceTypesBySubsidiary, getPriceTypeById, get
 import { createCurrencySchema, getCurrenciesBySubsidiarySchema, getCurrencyByIdSchema, toggleCurrencyStatusParamsSchema, updateCurrencySchema } from '../validators/product/currency.validatior';
 import { createCurrency, getActiveCurrenciesBySubsidiary, getCurrenciesBySubsidiary, getCurrencyById, toggleCurrencyStatus, updateCurrency } from '../controllers/product/currency.controller';
 import { createProductSchema, getProductByIdSchema, getProductsBySubsidiarySchema, toggleProductStatusParamsSchema, updateProductSchema } from '../validators/product/product.validatior';
-import { createProduct, getActiveProductsBySubsidiary, getProductById, getProductsBySubsidiary, toggleProductStatus, updateProduct } from '../controllers/product/product.controller';
+import { createProduct, getActiveProductsBySubsidiary, getActiveProductsWithStockForSale, getAllProductsForSale, getProductById, getProductsBySubsidiary, toggleProductStatus, updateProduct } from '../controllers/product/product.controller';
 import { importProductsWithCategoriesAndUnits } from '../controllers/product/importProduct.controller';
 import { importExcelFormSchema } from '../validators/product/importProduct.validator';
-import { createProductPrice, getPricesByProduct, getProductPriceById, updateProductPrice } from '../controllers/product/productPrice.controller';
+import { createProductPrice, getActivePricesByProduct, getPricesByProduct, getProductPriceById, updateProductPrice } from '../controllers/product/productPrice.controller';
 import { createProductPriceSchema, getPricesByProductParamsSchema, getPricesByProductQuerySchema, getProductPriceByIdSchema, updateProductPriceSchema } from '../validators/product/productPrice.validator';
 import { validateQuery } from '../middleware/validateQuery.middleware';
 
@@ -56,11 +56,14 @@ productRouter.get("/products/bySubsidiary/:subsidiaryId", validateParams(getProd
 productRouter.get("/products/:id", validateParams(getProductByIdSchema), getProductById);
 productRouter.patch("/products/:id/status", validateParams(toggleProductStatusParamsSchema), toggleProductStatus);
 productRouter.get("/productsActive/bySubsidiary/:subsidiaryId", validateParams(getProductsBySubsidiarySchema), getActiveProductsBySubsidiary);
+productRouter.get("/for-sale/all/:subsidiaryId", validateParams(getProductsBySubsidiarySchema), getAllProductsForSale);
+productRouter.get("/for-sale/active-with-stock/:subsidiaryId", validateParams(getProductsBySubsidiarySchema), getActiveProductsWithStockForSale);
 
 //import EXCEL 
 productRouter.post("/import/product-category-unit", ...importProductsWithCategoriesAndUnits);
 
 productRouter.get("/prices/:productId", validateParams(getPricesByProductParamsSchema), validateQuery(getPricesByProductQuerySchema), getPricesByProduct);
+productRouter.get("/prices/active/:productId", validateParams(getPricesByProductParamsSchema), getActivePricesByProduct);
 productRouter.post("/prices/:productId", validateParams(getPricesByProductParamsSchema), validate(createProductPriceSchema), createProductPrice);
 productRouter.get("/price/:id", validateParams(getProductPriceByIdSchema), getProductPriceById);
 productRouter.patch("/price/:id", validateParams(getProductPriceByIdSchema), validate(updateProductPriceSchema), updateProductPrice);

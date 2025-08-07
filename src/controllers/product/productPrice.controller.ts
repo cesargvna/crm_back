@@ -202,3 +202,73 @@ export const updateProductPrice = asyncHandler(async (req: Request, res: Respons
 
   res.json(updated);
 });
+
+// ✅ Obtener todos los precios activos de un producto (sin paginación)
+export const getActivePricesByProduct = asyncHandler(async (req: Request, res: Response) => {
+  const { productId } = req.params;
+
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      barcode: true,
+      subsidiaryId: true,
+      productCategory: { select: { id: true, name: true } },
+      unitMeasurement: { select: { id: true, name: true } },
+    },
+  });
+
+  if (!product) {
+    return res.status(404).json({ message: "Producto no encontrado." });
+  }
+
+  const prices = await prisma.productPrice.findMany({
+    where: {
+      productId,
+      subsidiaryId: product.subsidiaryId,
+      priceType: { status: true },
+    },
+    include: {
+      priceType: {
+        select: {
+          id: true,
+          name: true,
+          currency: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      priceType: {
+        name: "asc",
+      },
+    },
+  });
+
+  res.json({
+    product: {
+      id: product.id,
+      name: product.name,
+      code: product.code,
+      barcode: product.barcode,
+      productCategory: product.productCategory,
+      unitMeasurement: product.unitMeasurement,
+    },
+    prices: prices.map((price) => ({
+      id: price.id,
+      price: price.price,
+      priceType: {
+        id: price.priceType.id,
+        name: price.priceType.name,
+      },
+      currency: price.priceType.currency,
+    })),
+  });
+});

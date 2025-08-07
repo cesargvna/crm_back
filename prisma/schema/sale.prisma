@@ -1,8 +1,8 @@
 model Sale {
   id                   String               @id @default(uuid()) @db.VarChar(255)
   code                 String               @db.VarChar(20) // Código de compra único por fecha y sucursal  YYYY-MM-DD-00001
-  discountType         DiscountType?        // 🔸 Nuevo campo con enum
-  discountValue        Decimal?             @db.Decimal(10, 2) // 🔸 Nuevo campo
+  discountType         DiscountType         // 🔸 Nuevo campo con enum
+  discountValue        Decimal              @db.Decimal(10, 2) // 🔸 Nuevo campo
   total                Decimal              @db.Decimal(10, 2) // Total venta
   note                 String?              @db.VarChar(255) // Nota opcional
 
@@ -38,13 +38,15 @@ model SaleDetail {
   price                 Decimal              @db.Decimal(10,2) // Precio aplicado en la venta
   quantity              Int
   subtotal              Decimal              @db.Decimal(10, 2)
-  
+  priceTypeId           String?              @db.VarChar(255)
+  manualPrice           Boolean              @default(false)
+
   cashSessionId         String?              @db.VarChar(255) // ← campo referencial sin relación cruzada
   productId             String               @db.VarChar(255)
   saleId                String               @db.VarChar(255)
   userId                String               @db.VarChar(255)
   clientId              String               @db.VarChar(255) // FK a cliente
-  priceTypeId           String               @db.VarChar(255)
+  currencyId            String               @db.VarChar(255)
   subsidiaryId          String               @db.VarChar(255) // Sucursal específica
   tenantId              String               @db.VarChar(255) // Tenant dueño de la venta
    
@@ -57,6 +59,7 @@ model SaleDetail {
   @@index([cashSessionId])
   @@index([productId])
   @@index([saleId])
+  @@index([currencyId])
   @@index([priceTypeId])
   @@index([userId])
   @@index([clientId])

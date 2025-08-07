@@ -295,3 +295,90 @@ export const getActiveProductsBySubsidiary = asyncHandler(
     });
   }
 );
+
+export const getAllProductsForSale = asyncHandler(async (req: Request, res: Response) => {
+  const { subsidiaryId } = req.params;
+
+  if (!subsidiaryId) {
+    return res.status(400).json({ message: "subsidiaryId is required." });
+  }
+
+  const products = await prisma.product.findMany({
+    where: { subsidiaryId },
+    orderBy: { name: "asc" },
+    include: {
+      productCategory: true,
+      unitMeasurement: true,
+      inventory: {
+        where: { subsidiaryId },
+        select: {
+          id: true,
+          quantity_available: true,
+          min_quantity: true,
+          lastUpdateReason: true,
+          lastUpdateQuantity: true,
+        },
+      },
+      productPrices: {
+        where: { subsidiaryId },
+        include: {
+          priceType: {
+            include: {
+              currency: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  res.json(products);
+});
+
+export const getActiveProductsWithStockForSale = asyncHandler(async (req: Request, res: Response) => {
+  const { subsidiaryId } = req.params;
+
+  if (!subsidiaryId) {
+    return res.status(400).json({ message: "subsidiaryId is required." });
+  }
+
+  const products = await prisma.product.findMany({
+    where: {
+      subsidiaryId,
+      status: true,
+      inventory: {
+        some: {
+          subsidiaryId,
+          quantity_available: { gt: 0 },
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+    include: {
+      productCategory: true,
+      unitMeasurement: true,
+      inventory: {
+        where: { subsidiaryId },
+        select: {
+          id: true,
+          quantity_available: true,
+          min_quantity: true,
+          lastUpdateReason: true,
+          lastUpdateQuantity: true,
+        },
+      },
+      productPrices: {
+        where: { subsidiaryId },
+        include: {
+          priceType: {
+            include: {
+              currency: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  res.json(products);
+});

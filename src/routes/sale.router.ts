@@ -1,23 +1,17 @@
 import express from 'express';
 import { validate } from '../middleware/validate.middleware';
 import { validateParams } from '../middleware/validateParams.middleware';
-import { createSale, getSaleById, getSalesBySubsidiary, getSalesByUserId } from '../controllers/sale/sale.controller';
-import { createSaleCreditPayment, getSaleCreditPaymentsBySale } from '../controllers/sale/saleCreditPayment.controller';
-import { getSaleDetailsBySaleId } from '../controllers/sale/saleDetails.controller';
-
+import { validateParamsQuery } from '../middleware/validateParamsQuery';
+import { createSaleAllowNegativeStock, createSaleWithStockValidation, getSaleById, getSalesBySubsidiary } from '../controllers/sale/sale.controller';
+import { createSaleSchema } from '../validators/sale/sale.validatior';
 
 
 
 const saleRouter = express.Router();
 
-saleRouter.post("/", createSale);
+saleRouter.post("/withStockValidation", validate(createSaleSchema), createSaleWithStockValidation);
+saleRouter.post("/allowNegativeStock", validate(createSaleSchema),  createSaleAllowNegativeStock);
 saleRouter.get("/bySubsidiary/:subsidiaryId", getSalesBySubsidiary);
-saleRouter.get("/byUser/:userId", getSalesByUserId);
 saleRouter.get("/:id", getSaleById);
-
-saleRouter.get("/saleDetails/bySale/:saleId", getSaleDetailsBySaleId);
-
-saleRouter.post("/creditPayments", createSaleCreditPayment);
-saleRouter.get("/creditPayments/bySale/:saleId", getSaleCreditPaymentsBySale);
 
 export default saleRouter;
