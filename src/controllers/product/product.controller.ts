@@ -298,87 +298,123 @@ export const getActiveProductsBySubsidiary = asyncHandler(
 
 export const getAllProductsForSale = asyncHandler(async (req: Request, res: Response) => {
   const { subsidiaryId } = req.params;
+  const { page = "1", limit = "5" } = req.query;
 
   if (!subsidiaryId) {
     return res.status(400).json({ message: "subsidiaryId is required." });
   }
 
-  const products = await prisma.product.findMany({
-    where: { subsidiaryId },
-    orderBy: { name: "asc" },
-    include: {
-      productCategory: true,
-      unitMeasurement: true,
-      inventory: {
-        where: { subsidiaryId },
-        select: {
-          id: true,
-          quantity_available: true,
-          min_quantity: true,
-          lastUpdateReason: true,
-          lastUpdateQuantity: true,
+  const pageNumber = parseInt(page as string, 10) || 1;
+  const parsedLimit = parseInt(limit as string, 10) || 5;
+  const pageSize = Math.min(Math.max(parsedLimit, 5), 500); // Limitar entre 5 y 500
+  const skip = (pageNumber - 1) * pageSize;
+
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
+      where: { subsidiaryId },
+      orderBy: { name: "asc" },
+      skip,
+      take: pageSize,
+      include: {
+        productCategory: true,
+        unitMeasurement: true,
+        inventory: {
+          where: { subsidiaryId },
+          select: {
+            id: true,
+            quantity_available: true,
+            min_quantity: true,
+            lastUpdateReason: true,
+            lastUpdateQuantity: true,
+          },
         },
-      },
-      productPrices: {
-        where: { subsidiaryId },
-        include: {
-          priceType: {
-            include: {
-              currency: true,
+        productPrices: {
+          where: { subsidiaryId },
+          include: {
+            priceType: {
+              include: {
+                currency: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    }),
+    prisma.product.count({
+      where: { subsidiaryId },
+    }),
+  ]);
 
-  res.json(products);
+  res.json({ total, products });
 });
+
 
 export const getActiveProductsWithStockForSale = asyncHandler(async (req: Request, res: Response) => {
   const { subsidiaryId } = req.params;
+  const { page = "1", limit = "5" } = req.query;
 
   if (!subsidiaryId) {
     return res.status(400).json({ message: "subsidiaryId is required." });
   }
 
-  const products = await prisma.product.findMany({
-    where: {
-      subsidiaryId,
-      status: true,
-      inventory: {
-        some: {
-          subsidiaryId,
-          quantity_available: { gt: 0 },
+  const pageNumber = parseInt(page as string, 10) || 1;
+  const parsedLimit = parseInt(limit as string, 10) || 5;
+  const pageSize = Math.min(Math.max(parsedLimit, 5), 500); // Limitar entre 5 y 500
+  const skip = (pageNumber - 1) * pageSize;
+
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
+      where: {
+        subsidiaryId,
+        status: true,
+        inventory: {
+          some: {
+            subsidiaryId,
+            quantity_available: { gt: 0 },
+          },
         },
       },
-    },
-    orderBy: { name: "asc" },
-    include: {
-      productCategory: true,
-      unitMeasurement: true,
-      inventory: {
-        where: { subsidiaryId },
-        select: {
-          id: true,
-          quantity_available: true,
-          min_quantity: true,
-          lastUpdateReason: true,
-          lastUpdateQuantity: true,
+      orderBy: { name: "asc" },
+      skip,
+      take: pageSize,
+      include: {
+        productCategory: true,
+        unitMeasurement: true,
+        inventory: {
+          where: { subsidiaryId },
+          select: {
+            id: true,
+            quantity_available: true,
+            min_quantity: true,
+            lastUpdateReason: true,
+            lastUpdateQuantity: true,
+          },
         },
-      },
-      productPrices: {
-        where: { subsidiaryId },
-        include: {
-          priceType: {
-            include: {
-              currency: true,
+        productPrices: {
+          where: { subsidiaryId },
+          include: {
+            priceType: {
+              include: {
+                currency: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    }),
+    prisma.product.count({
+      where: {
+        subsidiaryId,
+        status: true,
+        inventory: {
+          some: {
+            subsidiaryId,
+            quantity_available: { gt: 0 },
+          },
+        },
+      },
+    }),
+  ]);
 
-  res.json(products);
+  res.json({ total, products });
 });
