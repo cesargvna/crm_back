@@ -7,7 +7,10 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import { normalizeProductCode, normalizeProductName } from "./product.controller";
 import { normalizeProductCategoryName } from "./productCategory.controller";
 import { normalizeUnitMeasurementName } from "./unitMeasurement.controller";
-import { importProductRowSchema, importExcelFormSchema } from "../../validators/product/importProduct.validator";
+import {
+  importProductRowSchema,
+  importExcelFormSchema,
+} from "../../validators/product/importProduct.validator";
 import { z } from "zod";
 
 // ✅ Multer configuration for in-memory file upload
@@ -38,8 +41,8 @@ export const importProductsWithCategoriesAndUnits = [
 
     // ✅ Check mimetype
     const allowedMimeTypes = [
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
-      "application/vnd.ms-excel", // .xls
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
     ];
 
     if (!allowedMimeTypes.includes(req.file.mimetype)) {
@@ -64,23 +67,43 @@ export const importProductsWithCategoriesAndUnits = [
     const createdProducts = [];
     const skippedProducts: any[] = [];
 
-    for (const row of rows) {
+    for (let index = 0; index < rows.length; index++) {
+      const row = rows[index];
+      const rowNumber = index + 2; // +2 assuming header is on row 1
+
       let parsedRow;
       try {
         parsedRow = importProductRowSchema.parse(row);
       } catch (err) {
         if (err instanceof z.ZodError) {
-          console.log("❌ Skipped invalid row:", row);
+          const formattedErrors = err.errors.map((e) => ({
+            path: e.path.join("."),
+            message: e.message,
+          }));
+
+          const codeInfo = row.code || "(sin código)";
+          const nameInfo = row.name || "(sin nombre)";
+
+          console.log(`❌ Error de validación en fila ${rowNumber} - Código: ${codeInfo}, Nombre: ${nameInfo}`);
+          formattedErrors.forEach((error) => {
+            console.log(`   • Campo: ${error.path} → ${error.message}`);
+          });
+
           skippedProducts.push({
+            rowNumber,
+            code: row.code || null,
+            name: row.name || null,
             reason: "Validation error",
-            details: err.errors,
-            raw: row,
+            details: formattedErrors,
           });
         } else {
+          console.log(`❌ Error desconocido en fila ${rowNumber}:`, row);
           skippedProducts.push({
+            rowNumber,
+            code: row.code || null,
+            name: row.name || null,
             reason: "Unknown error",
-            details: "Unknown error occurred",
-            raw: row,
+            details: "Unexpected error occurred.",
           });
         }
         continue;
@@ -112,8 +135,8 @@ export const importProductsWithCategoriesAndUnits = [
       });
 
       if (exists) {
-        console.log(`⚠️ Product already exists (skipped): ${name} - ${code}`);
-        skippedProducts.push({ code, name, reason: "Product already exists" });
+        console.log(`⚠️ Producto ya existe (omitido): ${name} - ${code}`);
+        skippedProducts.push({ rowNumber, code, name, reason: "Product already exists" });
         continue;
       }
 
@@ -168,14 +191,14 @@ export const importProductsWithCategoriesAndUnits = [
         },
       });
 
-      console.log(`✅ Product created: ${name} - ${code}`);
+      console.log(`✅ Producto creado: ${name} - ${code}`);
       createdProducts.push(product);
     }
 
     // ✅ Final response
-    console.log("✅ Import completed.");
-    console.log(`🟢 Products created: ${createdProducts.length}`);
-    console.log(`🟡 Products skipped: ${skippedProducts.length}`);
+    console.log("✅ Importación finalizada.");
+    console.log(`🟢 Productos creados: ${createdProducts.length}`);
+    console.log(`🟡 Productos omitidos: ${skippedProducts.length}`);
 
     res.status(201).json({
       message: "Import completed successfully.",
