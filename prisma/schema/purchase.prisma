@@ -67,8 +67,11 @@ model PurchaseDetail {
 model PurchaseCreditPayment {
   id                String        @id @default(uuid()) @db.VarChar(255)
   amount            Decimal       @db.Decimal(10, 2)
-  paymentDate       DateTime      @default(now())
+  paymentDate       DateTime      @db.Date     
 
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @updatedAt
+  
   cashSessionId     String?       @db.VarChar(255)// ← campo referencial sin relación cruzada
   supplierId        String        @db.VarChar(255)
   userId            String        @db.VarChar(255)
