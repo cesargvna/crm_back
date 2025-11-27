@@ -1,17 +1,15 @@
 model Client {
   id                String           @id @default(uuid()) @db.VarChar(255)
-  name              String           @db.VarChar(50)
+  name              String           @db.VarChar(255)     // Se guarda en MAYÚSCULAS; letras
   status            Boolean          @default(true)
   client_points     Int              @default(0)
-
-  lastname          String?          @db.VarChar(20)
-  ci                String?          @db.VarChar(20)
-  nit               String?          @db.VarChar(20)
-  description       String?          @db.VarChar(100)
-  address           String?          @db.VarChar(100)
-  cellphone         String?          @db.VarChar(20)
-  telephone         String?          @db.VarChar(20)
-  email             String?          @db.VarChar(50)
+  ci                String?          @db.VarChar(20)      // Se guarda números
+  nit               String?          @db.VarChar(20)      // Se guarda números
+  description       String?          @db.VarChar(255)     // Se guarda en MAYÚSCULAS; letras, números y símbolos básicos (máx 255)
+  address           String?          @db.VarChar(255)     // Se guarda en MAYÚSCULAS; letras, números y símbolos básicos (máx 255)
+  cellphone         String?          @db.VarChar(20)      // Se guarda en +591 65325424
+  telephone         String?          @db.VarChar(20)      // Se guarda en +591 65325424
+  email             String?          @db.VarChar(255)
   
   clientCategoryId  String           @db.VarChar(255)
   tenantId          String           @db.VarChar(255)
@@ -24,13 +22,14 @@ model Client {
   sales             Sale[]
 
   @@unique([name, tenantId, subsidiaryId])
+  @@index([tenantId, subsidiaryId, clientCategoryId, status])
   @@index([tenantId])
   @@index([subsidiaryId])
 }
 
 model ClientCategory {
   id            String    @id @default(uuid()) @db.VarChar(255)
-  name          String    @db.VarChar(50)
+  name          String    @db.VarChar(255)
   status        Boolean   @default(true)
   description   String?   @db.VarChar(100)
 

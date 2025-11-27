@@ -1,15 +1,14 @@
 import express from 'express';
 import { validate } from '../middleware/validate.middleware';
 import { validateParams } from '../middleware/validateParams.middleware';
-import { createPurchaseManualPrices, createPurchaseWithPriceSync, getPurchaseById, getPurchasesBySubsidiary } from '../controllers/purchase/purchase.controller';
 import { createPurchaseSchema } from '../validators/purchase/purchase.validation';
 import { validateParamsQuery } from '../middleware/validateParamsQuery';
+import { createPurchaseCreditPayment } from '../controllers/purchase/purchaseCreditPayment.controller';
+import { createPurchase } from '../controllers/purchase/purchase.controller';
 
 const purchaseRouter = express.Router();
 
-purchaseRouter.post("/withPriceSync", validate(createPurchaseSchema), createPurchaseWithPriceSync );
-purchaseRouter.post("/manual", validate(createPurchaseSchema), createPurchaseManualPrices );
-purchaseRouter.get("/bySubsidiary/:subsidiaryId", getPurchasesBySubsidiary );
-purchaseRouter.get("/:id", getPurchaseById );
+purchaseRouter.post("/", createPurchase );
+purchaseRouter.post("/creditPayment/:purchaseId", validate(createPurchaseSchema), createPurchaseCreditPayment );
 
 export default purchaseRouter;

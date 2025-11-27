@@ -1,11 +1,11 @@
 model Income {
   id                    String           @id @default(uuid()) @db.VarChar(255)
-  name                  String           @db.VarChar(100)
-  description           String?          @db.VarChar(100)
+  name                  String           @db.VarChar(255)
+  description           String?          @db.VarChar(255)
 
   quantity              Int              @default(1)
-  unit_price            Decimal          @db.Decimal(10, 2) 
-  total_amount          Decimal          @db.Decimal(10, 2)
+  unit_price            Decimal          @db.Decimal(12, 2) 
+  total_amount          Decimal          @db.Decimal(12, 2)
   
   created_at            DateTime         @default(now())
   updated_at            DateTime         @updatedAt
@@ -23,13 +23,14 @@ model Income {
   @@index([subsidiaryId])
   @@index([userId])
   @@index([cashSessionId])
+  @@index([tenantId, subsidiaryId, incomeCategoryId])
 }
 
 model IncomeCategory {
   id                    String           @id @default(uuid()) @db.VarChar(255)
-  name                  String           @db.VarChar(50)
+  name                  String           @db.VarChar(255)
   status                Boolean          @default(true)
-  description           String?          @db.VarChar(100)
+  description           String?          @db.VarChar(255)
 
   tenantId              String           @db.VarChar(255) 
   subsidiaryId          String           @db.VarChar(255) 

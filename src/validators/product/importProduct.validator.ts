@@ -11,7 +11,10 @@ export const importProductRowSchema = z.object({
     z.string().regex(/^\d+$/, "Quantity must be a number").transform(Number),
     z.number().int().positive("Quantity must be positive"),
   ]),
-  barcode: z.string().optional(),
+  barcode: z
+  .union([z.string(), z.number()])
+  .optional()
+  .transform((val) => (val !== undefined ? val.toString() : undefined)),
   description: z.string().optional(),
 });
 

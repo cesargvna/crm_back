@@ -1,19 +1,12 @@
+// prisma/seeders/08-cash-session.seed.ts
 import prisma from "../../src/utils/prisma";
-import { DayOfWeek } from "../../generated/prisma";
+import { Decimal } from "@prisma/client/runtime/library";
 
-const days: DayOfWeek[] = [
-  "LUNES",
-  "MARTES",
-  "MIERCOLES",
-  "JUEVES",
-  "VIERNES",
-  "SABADO",
-  "DOMINGO",
-];
+const DAYS = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO", "DOMINGO"] as const;
 
-const OPEN_HOUR = "08:00";
-const CLOSE_HOUR = "16:00";
-const INITIAL_AMOUNT = 100.0;
+const OPEN_HOUR = 8;   // 08:00
+const SHIFT_HOURS = 8; // duración estándar del turno
+const INITIAL_AMOUNT = new Decimal("100.00");
 
 type UserSeedData = {
   id: string;
@@ -23,23 +16,42 @@ type UserSeedData = {
   subsidiaryName?: string;
 };
 
-function getRandomDecimal(min: number, max: number, decimals = 2) {
-  return parseFloat((Math.random() * (max - min) + min).toFixed(decimals));
+// Helpers de decimales
+const rnd = (min: number, max: number) =>
+  Math.random() * (max - min) + min;
+
+const toDec = (n: number | string) =>
+  new Decimal(typeof n === "number" ? n.toFixed(2) : n);
+
+// Normaliza a 2 decimales
+const sum = (a: Decimal, b: Decimal) => new Decimal(a.add(b).toFixed(2));
+const sub = (a: Decimal, b: Decimal) => new Decimal(a.sub(b).toFixed(2));
+
+function dayBounds(d: Date) {
+  const start = new Date(d);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(d);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
 }
 
-export const seedCashSessions = async (users: UserSeedData[]) => {
+export async function seedCashSessions(users: UserSeedData[]) {
   console.log("\n🌱 Seeding CashSessions with dynamic values...");
 
-  const data: any[] = [];
+  const FIXED_UUID = "00000000-0000-0000-0000-000000000000";
+  let prepared = 0;
+  let created = 0;
+  let skipped = 0;
 
   for (const user of users) {
     const { id: userId, tenantId, subsidiaryId, name, subsidiaryName } = user;
 
+    // Validaciones básicas
     if (
       !tenantId ||
       !subsidiaryId ||
-      tenantId === "00000000-0000-0000-0000-000000000000" ||
-      subsidiaryId === "00000000-0000-0000-0000-000000000000"
+      tenantId === FIXED_UUID ||
+      subsidiaryId === FIXED_UUID
     ) {
       console.warn(
         `⚠️ Skipping CashSessions for user ${userId} — invalid tenantId or subsidiaryId`
@@ -47,59 +59,77 @@ export const seedCashSessions = async (users: UserSeedData[]) => {
       continue;
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Base: hoy a las 08:00
+    const base = new Date();
+    base.setHours(OPEN_HOUR, 0, 0, 0);
 
-    days.forEach((day, i) => {
-      const openDateTime = new Date(today);
-      openDateTime.setDate(today.getDate() + i);
-      const closeDateTime = new Date(openDateTime);
-      closeDateTime.setHours(openDateTime.getHours() + 8);
+    // 7 días seguidos a partir de hoy
+    for (let i = 0; i < DAYS.length; i++) {
+      prepared++;
 
-      const salesCash = getRandomDecimal(100, 500);
-      const totalCreditPayments = getRandomDecimal(50, 200);
-      const creditGivenToday = getRandomDecimal(20, 150);
-      const systemAmount = INITIAL_AMOUNT + salesCash + totalCreditPayments;
-      const countedAmount = systemAmount + getRandomDecimal(-10, 10);
-      const difference = countedAmount - systemAmount;
+      const openDateTime = new Date(base);
+      openDateTime.setDate(base.getDate() + i);
 
-      const note = `Session ${day} - ${subsidiaryName ?? 'Subsidiary'} - ${name ?? 'User'}`;
+      const isLast = i === DAYS.length - 1;
 
-      const isLastDay = i === days.length - 1;
-
-      data.push({
-        userId,
-        tenantId,
-        subsidiaryId,
-        workDate: day,
-        openDate: OPEN_HOUR,
-        closeDate: CLOSE_HOUR,
-        openDateTime,
-        closeDateTime,
-        status: isLastDay, // solo la última sesión activa
-        initialAmount: INITIAL_AMOUNT,
-        salesCash,
-        totalCreditPayments,
-        creditGivenToday,
-        systemAmount,
-        countedAmount,
-        difference,
-        note,
+      // Idempotencia: ¿ya hay sesión ese día para este usuario?
+      const { start, end } = dayBounds(openDateTime);
+      const existing = await prisma.cashSession.findFirst({
+        where: {
+          userId,
+          openDateTime: { gte: start, lte: end },
+        },
       });
-    });
+      if (existing) {
+        skipped++;
+        // Opcional: si quieres normalizar a una única “activa” por usuario, podrías cerrar las antiguas aquí.
+        continue;
+      }
+
+      // Montos
+      const salesCash = toDec(rnd(100, 500));
+      const totalCreditPayments = toDec(rnd(50, 200));
+      const creditGivenToday = toDec(rnd(20, 150));
+      const systemAmount = sum(sum(INITIAL_AMOUNT, salesCash), totalCreditPayments);
+      const countedAmount = sum(systemAmount, toDec(rnd(-10, 10)));
+      const difference = sub(countedAmount, systemAmount);
+
+      const note = `Session ${DAYS[i]} - ${subsidiaryName ?? "Subsidiary"} - ${name ?? "User"}`;
+
+      // Si está abierta (último día), no seteamos closeDateTime
+      const closeDateTime = isLast
+        ? null
+        : new Date(openDateTime.getTime() + SHIFT_HOURS * 60 * 60 * 1000);
+
+      await prisma.cashSession.create({
+        data: {
+          userId,
+          tenantId,
+          subsidiaryId,
+
+          openDateTime,
+          closeDateTime,
+
+          status: isLast, // sólo la última “activa”
+
+          initialAmount: INITIAL_AMOUNT,
+          salesCash,
+          totalCreditPayments,
+          creditGivenToday,
+          systemAmount,
+          countedAmount,
+          difference,
+          note,
+        },
+      });
+
+      created++;
+    }
 
     console.log(`✅ Prepared CashSessions for user ${userId}`);
   }
 
-  if (data.length > 0) {
-    await prisma.cashSession.createMany({
-      data,
-      skipDuplicates: true,
-    });
-    console.log(`✅ ${data.length} CashSessions inserted (duplicates skipped).`);
-  } else {
-    console.log("⚠️ No CashSessions to insert.");
-  }
-
-  console.log("✅ Finished seeding CashSessions.\n");
-};
+  console.log(
+    `✅ CashSessions done. Prepared: ${prepared} | Created: ${created} | Skipped (existing): ${skipped}\n`
+  );
+}

@@ -1,33 +1,36 @@
 model Subsidiary {
-  id                    String        @db.VarChar(255) @id  @default(uuid()) 
-  status                Boolean       @default(true) 
-  subsidiary_type       SubsidiaryType
-  maxUsers              Int           @default(3)
-  maxRoles              Int           @default(3)
+  id                      String          @db.VarChar(255) @id  @default(uuid()) 
+  status                  Boolean         @default(true) 
+  subsidiary_type         SubsidiaryType
+  maxUsers                Int             
+  maxRoles                Int             
 
-  name                  String        @db.VarChar(50) 
-  allowNegativeStock    Boolean       @default(false)
+  name                    String          @db.VarChar(255)        // Se guarda en MAYÚSCULAS; letras, números y símbolos básicos (máx 255)
+  shortname               String          @db.VarChar(10)         // minúsculas y dígitos [a-z0-9], 3–10, sin espacios/acentos
+  nopCommerceStatus       Boolean         @default(false)
+  allowNegativeStock      Boolean         @default(false)
   
-  ci                    String?       @db.VarChar(20)
-  nit                   String?       @db.VarChar(20)
-  description           String?       @db.VarChar(100)
-  address               String?       @db.VarChar(100)
-  city                  String?       @db.VarChar(20)
-  country               String?       @db.VarChar(20)
-  cellphone             String?       @db.VarChar(20)
-  telephone             String?       @db.VarChar(20)
-  email                 String?       @db.VarChar(50)
+  ci                      String?         @db.VarChar(20)         // Se guarda números
+  nit                     String?         @db.VarChar(20)         // Se guarda números
+  description             String?         @db.VarChar(255)        // Se guarda en MAYÚSCULAS; letras, números y símbolos básicos (máx 255)
+  address                 String?         @db.VarChar(255)        // Se guarda en MAYÚSCULAS; letras, números y símbolos básicos (máx 255)
+  city                    String?         @db.VarChar(20)         // Se guarda en MAYÚSCULAS; letras, números y símbolos básicos (máx 255)
+  country                 String?         @db.VarChar(20)         // Se guarda en MAYÚSCULAS; letras, números y símbolos básicos (máx 255)
+  cellphone               String?         @db.VarChar(20)         // Se guarda en +591 65325424
+  telephone               String?         @db.VarChar(20)         // Se guarda en +591 65325424
+  email                   String?         @db.VarChar(255)
   
-  created_at            DateTime      @default(now())
-  updated_at            DateTime      @updatedAt
+  created_at              DateTime        @default(now())
+  updated_at              DateTime        @updatedAt
 
-  tenantId              String        @db.VarChar(255)
-  tenant                Tenant        @relation(fields: [tenantId], references: [id])
+  tenantId                String          @db.VarChar(255)
+  tenant                  Tenant          @relation(fields: [tenantId], references: [id])
 
-  @@unique([name, tenantId])
-  
   users                   User[] 
   schedulesSubsidiaries   ScheduleSubsidiary[]    @relation(name: "ScheduleSubsidiaryForSubsidiary")
+
+  @@unique([tenantId, name])
+  @@unique([tenantId, shortname])
 
   @@index([tenantId]) 
 }

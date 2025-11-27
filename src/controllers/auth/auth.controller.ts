@@ -34,7 +34,6 @@ const login = async (
         rolId: user?.roleId,
         userId: user?.id,
         permission,
-        lastname: user?.lastname,
         name: user?.name,
       });
   } catch (error) {

@@ -1,8 +1,64 @@
+// prisma/seeders/03-user.seed.ts
 import prisma from "../../src/utils/prisma";
 import bcrypt from "bcryptjs";
 import normalize from "normalize-text";
 import { fakerES as faker } from "@faker-js/faker";
 import { User } from "../../generated/prisma";
+
+// ---------- helpers ----------
+const USER_MIN = 3;
+const USER_MAX = 10;
+
+const toUpperNormalized = (s?: string | null) =>
+  s ? normalize(s).replace(/\s+/g, " ").trim().toUpperCase() : null;
+
+const onlyDigits = (s?: string | null) => (s ?? "").replace(/\D/g, "");
+
+const cleanUsername = (s: string) =>
+  normalize(s).toLowerCase().replace(/[^a-z0-9]/g, "");
+
+function padUsernameToRange(base: string): string {
+  let u = cleanUsername(base);
+  if (u.length < USER_MIN) u = (u + "user").slice(0, USER_MIN);
+  if (u.length > USER_MAX) u = u.slice(0, USER_MAX);
+  return u;
+}
+
+function withSuffix(base: string, n: number) {
+  const s = String(n);
+  // si base ya está al límite, recorta para que entre el sufijo (<= 10)
+  return (base.slice(0, USER_MAX - s.length) + s).slice(0, USER_MAX);
+}
+
+async function genUniqueUsername(seedA: string, seedB?: string): Promise<string> {
+  const baseA = padUsernameToRange(seedA);
+  const existsA = await prisma.user.findUnique({ where: { username: baseA } });
+  if (!existsA) return baseA;
+
+  // variantes con sufijos 2..9999
+  for (let i = 2; i <= 9999; i++) {
+    const cand = withSuffix(baseA, i);
+    const exists = await prisma.user.findUnique({ where: { username: cand } });
+    if (!exists) return cand;
+  }
+
+  if (seedB) {
+    const baseB = padUsernameToRange(seedB);
+    const existsB = await prisma.user.findUnique({ where: { username: baseB } });
+    if (!existsB) return baseB;
+
+    for (let i = 2; i <= 9999; i++) {
+      const cand = withSuffix(baseB, i);
+      const exists = await prisma.user.findUnique({ where: { username: cand } });
+      if (!exists) return cand;
+    }
+  }
+
+  throw new Error("No se pudo generar un username único después de varios intentos.");
+}
+
+const randomCellBolivia = () => `+591 6${faker.string.numeric(7)}`; // ej: "+591 6XXXXXXX"
+// ---------- helpers ----------
 
 export const seedUsers = async (
   rolesBySubsidiary: Record<string, Record<string, any>>,
@@ -16,6 +72,7 @@ export const seedUsers = async (
   const fixedTenantId = "00000000-0000-0000-0000-000000000000";
   const fixedSubsidiaryId = "00000000-0000-0000-0000-000000000000";
 
+  // ---- Usuario fijo System.Admin (tenant/subsidiary fijos) ----
   const systemAdminRole = await prisma.role.findFirst({
     where: {
       name: "System.Admin",
@@ -23,102 +80,82 @@ export const seedUsers = async (
       subsidiaryId: fixedSubsidiaryId,
     },
   });
+  if (!systemAdminRole) throw new Error("❌ System.Admin role not found.");
 
-  if (!systemAdminRole) {
-    throw new Error("❌ System.Admin role not found.");
-  }
-
-  const existingSystemAdminUser = await prisma.user.findFirst({
-    where: { username: "system.admin" },
+  const sysUsername = "sysadmin"; // válido [a-z0-9], 3–10
+  const existingSystemAdminUser = await prisma.user.findUnique({
+    where: { username: sysUsername },
   });
 
   if (!existingSystemAdminUser) {
     const sysAdminUser = await prisma.user.create({
       data: {
-        username: "system.admin",
+        username: sysUsername,
         password: defaultPassword,
-        name: "System",
-        lastname: "Admin",
-        description: "Unique system admin user",
+        name: toUpperNormalized("System Admin")!, // un solo campo 'name'
+        description: toUpperNormalized("Unique system admin user"),
         roleId: systemAdminRole.id,
         subsidiaryId: fixedSubsidiaryId,
         tenantId: fixedTenantId,
         email: "system@admin.com",
+        cellphone: "+591 60000000",
+        isNopCommerce: false,
+        status: true,
       },
     });
-
     createdUsers.push(sysAdminUser);
-    console.log(`✅ System.Admin user created: system.admin`);
+    console.log(`✅ System.Admin user created: ${sysUsername}`);
   } else {
     console.log("⚠️ System.Admin user already exists.");
     createdUsers.push(existingSystemAdminUser);
   }
 
-  for (const subsidiary of subsidiaries) {
-    if (
-      subsidiary.tenantId === fixedTenantId &&
-      subsidiary.id === fixedSubsidiaryId
-    ) {
-      continue;
-    }
+  // ---- Usuarios por cada subsidiaria/rol (excepto System.Admin) ----
+  for (const { id: subsidiaryId, tenantId } of subsidiaries) {
+    if (tenantId === fixedTenantId && subsidiaryId === fixedSubsidiaryId) continue;
 
-    const { id: subsidiaryId, tenantId } = subsidiary;
-    const roles = rolesBySubsidiary[subsidiaryId];
-
+    const roles = rolesBySubsidiary[subsidiaryId] ?? {};
     for (const [roleName, role] of Object.entries(roles)) {
       if (roleName === "System.Admin") continue;
 
-      let username;
-      let attempts = 0;
+      // Generar nombre y username válidos
+      const first = faker.person.firstName();
+      const last = faker.person.lastName();
+      const uname = await genUniqueUsername(first, last);
 
-      do {
-        const nombre = faker.person.firstName().slice(0, 10);
-        const apellido = faker.person.lastName().slice(0, 8);
-        const num = Math.random() < 0.3 ? faker.number.int({ min: 10, max: 99 }) : "";
-        username = `${nombre}.${apellido}${num}`
-          .toLowerCase()
-          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9.]/g, "")
-          .slice(0, 20); // Límite exacto del schema
-        attempts++;
-      } while (
-        attempts < 5 &&
-        (await prisma.user.findUnique({ where: { username } }))
-      );
-
-      if (attempts >= 5) continue;
-
-      const name = faker.person.firstName().slice(0, 20);
-      const lastname = faker.person.lastName().slice(0, 20);
-      const email = faker.internet.email({ firstName: name, lastName: lastname }).slice(0, 20); // Límite exacto del schema
-      const address = faker.location.streetAddress().slice(0, 100);
-      const ci = faker.string.numeric(8).slice(0, 20);
-      const nit = faker.string.numeric(7).slice(0, 20);
-      const cellphone = `7${faker.string.numeric(7)}`.slice(0, 20);
-      const telephone = `2${faker.string.numeric(6)}`.slice(0, 20);
-      const description = `User for role ${roleName}`.slice(0, 100);
+      const name = toUpperNormalized(`${first} ${last}`)!;
+      const email = faker
+        .internet
+        .email({ firstName: first, lastName: last })
+        .toLowerCase()
+        .slice(0, 255);
 
       const user = await prisma.user.create({
         data: {
-          username,
+          username: uname,
           password: defaultPassword,
-          name: normalize(name),
-          lastname: normalize(lastname),
+          name,
+          jobPosition: toUpperNormalized("Empleado"),
+          description: toUpperNormalized(`User for role ${roleName}`),
+          address: toUpperNormalized(faker.location.streetAddress()),
           email,
-          ci,
-          nit,
-          address,
-          cellphone,
-          telephone,
-          description,
+
+          ci: onlyDigits(faker.string.numeric(8)),
+          nit: onlyDigits(faker.string.numeric(7)),
+
+          cellphone: randomCellBolivia(),
+
           roleId: role.id,
           subsidiaryId,
           tenantId,
+
+          isNopCommerce: false,
+          status: true,
         },
       });
 
       createdUsers.push(user);
-      console.log(`✅ User ${username} created for role ${roleName} in subsidiary ${subsidiaryId}`);
+      console.log(`✅ User ${uname} created for role ${roleName} in subsidiary ${subsidiaryId}`);
     }
   }
 

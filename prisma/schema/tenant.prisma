@@ -1,12 +1,13 @@
 model Tenant {
   id                String        @id @default(uuid()) @db.VarChar(255)
-  name              String        @unique @db.VarChar(50)
-  status            Boolean       @default(true)
-  description       String?       @db.VarChar(100)
+  name              String        @unique @db.VarChar(255)              // Se guarda en MAYÚSCULAS; letras, números y símbolos básicos (máx 255)
+  shortname         String        @unique @db.VarChar(10)               // minúsculas y dígitos [a-z0-9], 3–10, sin espacios/acentos
+  status            Boolean       @default(true)                        // activo/inactivo
+  description       String?       @db.VarChar(255)                      // Opcional; se guarda en MAYÚSCULAS (máx 255)
 
-  maxSubsidiaries   Int           @default(1)
-  maxUsers          Int           @default(3)
-  maxRoles          Int           @default(3) 
+  maxSubsidiaries   Int          
+  maxUsers          Int           
+  maxRoles          Int           
 
   created_at        DateTime      @default(now())
   updated_at        DateTime      @updatedAt

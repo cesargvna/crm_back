@@ -1,5 +1,9 @@
 import prisma from "../../src/utils/prisma";
-import { Subsidiary, ClientCategory, Client, User } from "../../generated/prisma"; // Ajusta si usas tus propios tipos
+import { Subsidiary, ClientCategory, Client } from "../../generated/prisma";
+
+// Normaliza: trim, colapsa espacios y pasa a MAYÚSCULAS
+const toUpperName = (s: string): string =>
+  s ? s.trim().replace(/\s+/g, " ").toUpperCase() : s;
 
 export async function seedClients(
   subsidiaries: Subsidiary[],
@@ -10,16 +14,18 @@ export async function seedClients(
   const createdClients: Client[] = [];
 
   for (const subsidiary of subsidiaries) {
-    // 🚫 Saltar tenant o subsidiary nulos
+    // 🚫 Saltar tenant o subsidiary nulos/reservas
     if (
+      !subsidiary?.id ||
+      !subsidiary?.tenantId ||
       subsidiary.id === "00000000-0000-0000-0000-000000000000" ||
       subsidiary.tenantId === "00000000-0000-0000-0000-000000000000"
     ) {
-      console.log(`⏭️ Skipping subsidiary ${subsidiary.id} for clients.`);
+      console.log(`⏭️ Skipping subsidiary ${subsidiary?.id} for clients.`);
       continue;
     }
 
-    // Filtra categorías de cliente de esta subsidiaria
+    // Categorías de cliente de esta subsidiaria
     const categoriesForSubsidiary = clientCategories.filter(
       (c) => c.subsidiaryId === subsidiary.id
     );
@@ -30,27 +36,27 @@ export async function seedClients(
     }
 
     for (const category of categoriesForSubsidiary) {
+      const rawName = `Cliente Demo - ${category.name}`;
+      const NAME = toUpperName(rawName); // ← normalizado a MAYÚSCULAS
+
       const client = await prisma.client.upsert({
         where: {
           name_tenantId_subsidiaryId: {
-            name: `Cliente Demo - ${category.name}`,
+            name: NAME,
             tenantId: subsidiary.tenantId,
             subsidiaryId: subsidiary.id,
           },
         },
         update: {},
         create: {
-          name: `Cliente Demo - ${category.name}`,
-          lastname: "Apellido",
+          name: NAME,
           ci: "12345678",
           nit: "87654321",
           description: `Cliente demo para categoría ${category.name}`,
           address: "Av. Ejemplo #123",
           cellphone: "+59170000000",
           telephone: "+59140000000",
-          email: `cliente.${category.name
-            .toLowerCase()
-            .replace(/\s+/g, "")}@example.com`,
+          email: `cliente.${category.name.toLowerCase().replace(/\s+/g, "")}@example.com`,
           tenantId: subsidiary.tenantId,
           subsidiaryId: subsidiary.id,
           clientCategoryId: category.id,
