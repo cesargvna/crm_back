@@ -23,6 +23,7 @@ model Inventory {
   @@index([userId])
   @@index([subsidiaryId])
   @@index([tenantId])
+  @@index([tenantId, subsidiaryId, productId, quantity_available])
 }
 
 enum StockUpdateReason {

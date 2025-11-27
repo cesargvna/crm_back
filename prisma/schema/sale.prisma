@@ -1,14 +1,14 @@
 model Sale {
   id                   String               @id @default(uuid()) @db.VarChar(255)
   code                 String               @db.VarChar(20) // Código de compra único por fecha y sucursal  YYYY-MM-DD-00001
-  discountType         DiscountType         // 🔸 Nuevo campo con enum
-  discountValue        Decimal              @db.Decimal(10, 2) // 🔸 Nuevo campo
+  discountType         DiscountType?        // Enum PORCENTAJE CANTIDAD
+  discountValue        Decimal?             @db.Decimal(10, 2) 
   total                Decimal              @db.Decimal(10, 2) // Total venta
   note                 String?              @db.VarChar(255) // Nota opcional
 
-  saleDate             DateTime             @db.Date   
+  saleDate             DateTime               
   paymentType          PaymentType          // Enum CONTADO / CREDITO
-  salesStatus          SalesStatus          @default(COMPLETADA)  // Enum COMPLETADA / ANULADA
+  salesStatus          SalesStatus          // Enum COMPLETADA / ANULADA
   paymentStatus        PaymentStatus        // Enum PENDIENTE / PARCIAL / COMPLETO
   
   created_at           DateTime             @default(now())
@@ -31,22 +31,23 @@ model Sale {
   @@index([userId])
   @@index([subsidiaryId])
   @@index([tenantId])
+  @@index([tenantId, subsidiaryId, clientId, paymentStatus])
+  @@index([tenantId, subsidiaryId, userId, saleDate])
 }
 
 model SaleDetail {
   id                    String               @id @default(uuid()) @db.VarChar(255)
-  price                 Decimal              @db.Decimal(10,2) // Precio aplicado en la venta
+  price                 Decimal              @db.Decimal(12,2) // Precio aplicado en la venta
   quantity              Int
   subtotal              Decimal              @db.Decimal(10, 2)
+  
   priceTypeId           String?              @db.VarChar(255)
-  manualPrice           Boolean              @default(false)
-
+  
   cashSessionId         String?              @db.VarChar(255) // ← campo referencial sin relación cruzada
   productId             String               @db.VarChar(255)
   saleId                String               @db.VarChar(255)
   userId                String               @db.VarChar(255)
   clientId              String               @db.VarChar(255) // FK a cliente
-  currencyId            String               @db.VarChar(255)
   subsidiaryId          String               @db.VarChar(255) // Sucursal específica
   tenantId              String               @db.VarChar(255) // Tenant dueño de la venta
    
@@ -59,7 +60,6 @@ model SaleDetail {
   @@index([cashSessionId])
   @@index([productId])
   @@index([saleId])
-  @@index([currencyId])
   @@index([priceTypeId])
   @@index([userId])
   @@index([clientId])

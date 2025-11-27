@@ -17,13 +17,11 @@ import { seedClientCategories } from "./seeds/14-client-category";
 import { seedClients } from "./seeds/15-client";
 import { seedSupplierCategories } from "./seeds/16-supplier-category";
 import { seedSuppliers } from "./seeds/17-supplier";
-import { seedCurrencies } from "./seeds/18-currency.seed";
 import { seedPriceTypes } from "./seeds/20-price-type.seed";
 import { seedProductCategories } from "./seeds/21-product-category.seed";
 import { seedUnitMeasurements } from "./seeds/22-unit-measurement.seed";
 import { seedProducts } from "./seeds/23-product.seed";
 import { seedPurchases } from "./seeds/24-purchase.seed";
-import { seedSales } from "./seeds/26-sale.seed";
 import { seedCashSessions } from "./seeds/30-cash-session";
 
 async function main() {
@@ -61,7 +59,6 @@ async function main() {
   const suppliers = await seedSuppliers(subsidiariesFull, supplierCategories);
 
   // 4️⃣ Datos económicos
-  const currencies = await seedCurrencies(subsidiariesFull);
   const priceTypes = await seedPriceTypes(subsidiariesFull);
 
   // 5️⃣ Productos y compras
@@ -72,18 +69,6 @@ async function main() {
     productCategories,
     units
   );
-/*
-  // 6️⃣ Compras 
-  await seedPurchases({
-    tenants,
-    subsidiaries: subsidiariesFull,
-    users,
-    suppliers,
-    products,
-    currencies,
-  });
-*/
-
 
 
   console.log("✅ Seeding completed.");

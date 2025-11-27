@@ -1,63 +1,32 @@
+// prisma/seeds/seedPriceTypes.ts
 import prisma from "../../src/utils/prisma";
 import { Prisma, Subsidiary, PriceType } from "../../generated/prisma";
 
 export async function seedPriceTypes(subsidiaries: Subsidiary[]): Promise<PriceType[]> {
-  console.log("💲 Seeding PriceTypes...");
+  console.log("💲 Seeding PriceTypes (sin currency)...");
 
-  const createdPriceTypes: PriceType[] = [];
+  const NUL = "00000000-0000-0000-0000-000000000000";
+  const defaultNames = ["Facturado", "Mayorista", "Minorista"] as const;
 
   for (const s of subsidiaries) {
-    if (
-      s.id === "00000000-0000-0000-0000-000000000000" ||
-      s.tenantId === "00000000-0000-0000-0000-000000000000"
-    ) continue;
+    // Evita tenants/sucursales nulas o placeholders
+    if (s.id === NUL || s.tenantId === NUL) continue;
 
-    // Busca la moneda activa de la sucursal
-    const currency = await prisma.currency.findFirst({
-      where: {
-        tenantId: s.tenantId,
-        subsidiaryId: s.id,
-        status: true
-      }
-    });
-
-    if (!currency) {
-      console.log(`⚠️ No active currency found for subsidiary ${s.id}`);
-      continue;
-    }
-
-    const priceTypesData: Prisma.PriceTypeCreateManyInput[] = [
-      {
-        name: "Facturado",
-        marginPercent: new Prisma.Decimal(45),
-        tenantId: s.tenantId,
-        subsidiaryId: s.id,
-        currencyId: currency.id
-      },
-      {
-        name: "Mayorista",
-        marginPercent: new Prisma.Decimal(10),
-        tenantId: s.tenantId,
-        subsidiaryId: s.id,
-        currencyId: currency.id
-      },
-      {
-        name: "Minorista",
-        marginPercent: new Prisma.Decimal(20),
-        tenantId: s.tenantId,
-        subsidiaryId: s.id,
-        currencyId: currency.id
-      }
-    ];
+    const priceTypesData: Prisma.PriceTypeCreateManyInput[] = defaultNames.map((name) => ({
+      name,
+      tenantId: s.tenantId,
+      subsidiaryId: s.id,
+      status: true,
+      // created_at / updated_at se manejan por default / @updatedAt
+    }));
 
     await prisma.priceType.createMany({
       data: priceTypesData,
-      skipDuplicates: true
+      skipDuplicates: true, // respeta @@unique([name, subsidiaryId])
     });
 
-    console.log(`✅ PriceTypes created for subsidiary ${s.id}`);
+    console.log(`✅ PriceTypes asegurados para la subsidiary ${s.id}`);
   }
 
-  const all = await prisma.priceType.findMany();
-  return all;
+  return prisma.priceType.findMany();
 }

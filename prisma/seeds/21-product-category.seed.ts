@@ -1,48 +1,78 @@
+// prisma/seeders/04-product-category.seed.ts
 import prisma from "../../src/utils/prisma";
+import normalize from "normalize-text";
+import { ProductCategory } from "../../generated/prisma";
 
-export async function seedProductCategories(subsidiaries) {
+type SubsidiaryLite = { id: string; tenantId: string };
+
+const FIXED_UUID = "00000000-0000-0000-0000-000000000000";
+
+// Helpers
+const toUpperNormalized = (s?: string | null) =>
+  s ? normalize(s).replace(/\s+/g, " ").trim().toUpperCase() : null;
+
+const BASE_CATEGORIES: Array<{ name: string; description?: string | null }> = [
+  { name: "Escritura",            description: "Lápices, bolígrafos, plumones" },
+  { name: "Cuadernos y Libretas", description: "Cuadernos, agendas, blocks" },
+  { name: "Adhesivos y Cintas",   description: "Cinta adhesiva, pegamento" },
+];
+
+// Seeder
+export async function seedProductCategories(
+  subsidiaries: SubsidiaryLite[]
+): Promise<ProductCategory[]> {
   console.log("🗂️ Seeding Product Categories...");
 
-  for (const s of subsidiaries) {
-    // ✅ Ignorar subsidiarias o tenants dummy con UUID 0000...
-    if (
-      s.id === "00000000-0000-0000-0000-000000000000" ||
-      s.tenantId === "00000000-0000-0000-0000-000000000000"
-    ) {
-      console.log(`⏭️ Skipping subsidiary ${s.id} (or tenant ${s.tenantId}) for product categories.`);
-      continue;
-    }
+  const validSubs = subsidiaries.filter(
+    (s) => s.id !== FIXED_UUID && s.tenantId !== FIXED_UUID
+  );
 
-    // ✅ Crear categorías para cada subsidiaria válida
-    await prisma.productCategory.createMany({
-      data: [
-        {
-          name: "Escritura",
-          description: "Lápices, bolígrafos, plumones",
-          tenantId: s.tenantId,
+  const ensured: ProductCategory[] = [];
+
+  for (const s of validSubs) {
+    for (const cat of BASE_CATEGORIES) {
+      const nameUC = toUpperNormalized(cat.name)!;
+      const descUC = toUpperNormalized(cat.description ?? null);
+
+      // ¿Existe (case-insensitive) en esta subsidiaria?
+      const existing = await prisma.productCategory.findFirst({
+        where: {
           subsidiaryId: s.id,
+          name: { equals: nameUC, mode: "insensitive" },
         },
-        {
-          name: "Cuadernos y Libretas",
-          description: "Cuadernos, agendas, blocks",
-          tenantId: s.tenantId,
-          subsidiaryId: s.id,
-        },
-        {
-          name: "Adhesivos y Cintas",
-          description: "Cinta adhesiva, pegamento",
-          tenantId: s.tenantId,
-          subsidiaryId: s.id,
+      });
+
+      if (existing) {
+        // Si difiere en casing/descr, normaliza
+        if (existing.name !== nameUC || existing.description !== descUC) {
+          const updated = await prisma.productCategory.update({
+            where: { id: existing.id },
+            data: { name: nameUC, description: descUC },
+          });
+          ensured.push(updated);
+          console.log(`♻️  Normalized category "${nameUC}" in subsidiary ${s.id}`);
+        } else {
+          ensured.push(existing);
+          console.log(`⚠️  Category "${nameUC}" already exists in subsidiary ${s.id}`);
         }
-      ],
-      skipDuplicates: true,
-    });
+        continue;
+      }
 
-    console.log(`✅ Product categories created for subsidiary ${s.id}`);
+      // Crear nuevo
+      const created = await prisma.productCategory.create({
+        data: {
+          name: nameUC,
+          description: descUC,
+          tenantId: s.tenantId,
+          subsidiaryId: s.id,
+          // status: true // usa el default del schema
+        },
+      });
+      ensured.push(created);
+      console.log(`✅ Created category "${nameUC}" for subsidiary ${s.id}`);
+    }
   }
 
-  // ✅ Retornar todas las categorías creadas
-  const all = await prisma.productCategory.findMany();
-  console.log("✅ Total Product Categories:", all.length);
-  return all;
+  console.log(`✅ Product categories ensured for ${validSubs.length} subsidiaries.`);
+  return ensured;
 }

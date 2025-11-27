@@ -1,3 +1,4 @@
+// src/controllers/purchase/purchase.controller.ts
 import { Request, Response } from "express";
 import prisma from "../../utils/prisma";
 import { asyncHandler } from "../../utils/asyncHandler";
@@ -10,204 +11,47 @@ import {
 } from "../../../generated/prisma";
 import { generateNextPurchaseCode } from "../../utils/generateNextPurchaseCode";
 
-export const getPurchasesBySubsidiary = asyncHandler(async (req: Request, res: Response) => {
-  const { subsidiaryId } = req.params;
-  const {
-    search = "",
-    supplierCategoryId,
-    userId,
-    paymentType,
-    paymentStatus,
-    purchaseStatus,
-    discountType,
-    purchaseDateFrom,
-    purchaseDateTo,
-    page = "1",
-    limit = "10",
-  } = req.query;
+// Redondeo duro a 2 decimales (Bolivia)
+const to2 = (n: number) => Number((Math.round(n * 100) / 100).toFixed(2));
 
-  const pageNumber = parseInt(page as string, 10) || 1;
-  const parsedLimit = parseInt(limit as string, 10) || 10;
-  const pageSize = Math.max(parsedLimit, 5);
-  const skip = (pageNumber - 1) * pageSize;
-
-  const normalizedSearch = (search as string).trim().toLowerCase();
-
-  const whereClause: Prisma.PurchaseWhereInput = {
-    subsidiaryId,
-    ...(paymentType ? { paymentType: paymentType as PaymentType } : {}),
-    ...(paymentStatus ? { paymentStatus: paymentStatus as PaymentStatus } : {}),
-    ...(purchaseStatus ? { purchaseStatus: purchaseStatus as PurchaseStatus } : {}),
-    ...(discountType ? { discountType: discountType as DiscountType } : {}),
-    ...(userId ? { userId: userId as string } : {}),
-    ...(purchaseDateFrom || purchaseDateTo
-      ? {
-          purchaseDate: {
-            ...(purchaseDateFrom ? { gte: new Date(purchaseDateFrom as string) } : {}),
-            ...(purchaseDateTo ? { lte: new Date(purchaseDateTo as string) } : {}),
-          },
-        }
-      : {}),
-    ...(supplierCategoryId && supplierCategoryId !== "all"
-      ? {
-          supplier: {
-            supplierCategoryId: supplierCategoryId as string,
-          },
-        }
-      : {}),
-    ...(normalizedSearch
-      ? {
-          OR: [
-            { code: { contains: normalizedSearch, mode: "insensitive" } },
-            {
-              supplier: {
-                OR: [
-                  { name: { contains: normalizedSearch, mode: "insensitive" } },
-                  { email: { contains: normalizedSearch, mode: "insensitive" } },
-                ],
-              },
-            },
-          ],
-        }
-      : {}),
-  };
-
-  const [purchases, total] = await Promise.all([
-    prisma.purchase.findMany({
-      where: whereClause,
-      skip,
-      take: pageSize,
-      orderBy: { purchaseDate: "desc" },
-      include: {
-        supplier: {
-          include: {
-            supplierCategory: true,
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            lastname: true,
-            role: { select: { name: true } },
-          },
-        },
-        purchaseDetails: {
-          select: {
-            id: true,
-            price: true,
-            quantity: true,
-            sub_total: true,
-            currencyId: true,
-            product: {
-              select: {
-                id: true,
-                name: true,
-                code: true,
-                barcode: true,
-                description: true,
-                status: true,
-                productCategory: true,
-                unitMeasurement: true,
-              },
-            },
-          },
-        },
-        creditPayments: true,
-      },
-    }),
-    prisma.purchase.count({ where: whereClause }),
-  ]);
-
-  res.json({
-    total,
-    page: pageNumber,
-    pageSize,
-    totalPages: Math.ceil(total / pageSize),
-    data: purchases,
-  });
-});
-
-export const getPurchaseById = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
-
-  const purchase = await prisma.purchase.findUnique({
-    where: { id },
-    include: {
-      supplier: {
-        include: {
-          supplierCategory: true,
-        },
-      },
-      user: {
-        select: {
-          id: true,
-          username: true,
-          name: true,
-          lastname: true,
-          role: { select: { name: true } },
-        },
-      },
-      purchaseDetails: {
-        select: {
-          id: true,
-          price: true,
-          quantity: true,
-          sub_total: true,
-          currencyId: true,
-          product: {
-            select: {
-              id: true,
-              name: true,
-              code: true,
-              barcode: true,
-              description: true,
-              status: true,
-              productCategory: {
-                select: {
-                  id: true,
-                  name: true,
-                  status: true,
-                  description: true,
-                },
-              },
-              unitMeasurement: {
-                select: {
-                  id: true,
-                  name: true,
-                  quantity: true,
-                },
-              },
-            },
-          },
-        },
-      },
-      creditPayments: true,
-    },
-  });
-
-  if (!purchase) {
-    return res.status(404).json({ message: "Compra no encontrada." });
-  }
-
-  // ✅ Calcular total original sin aplicar descuento
-  const originalTotal = purchase.purchaseDetails.reduce(
-    (sum, detail) => sum + Number(detail.sub_total),
-    0
-  );
-
-  res.json({
-    ...purchase,
-    originalTotal, // 🆕 total before discount
-    total: Number(purchase.total), // 🧾 total after discount (ya guardado)
-  });
-});
-
-/* createPurchaseWithPriceSync
- * Este crea la compra + actualiza o crea precios automáticamente según los PriceType activos.
+/**
+ * Helper de reintento para evitar colisión del code (P2002).
+ * Lee el último correlativo y reintenta hasta 5 veces si colisiona.
  */
-export const createPurchaseWithPriceSync = asyncHandler(async (req: Request, res: Response) => {
+async function createPurchaseWithCodeRetry(
+  body: any,
+  fnTx: (code: string) => Promise<any>,
+  maxRetries = 5
+) {
+  let attempt = 0;
+  while (attempt < maxRetries) {
+    const code = await generateNextPurchaseCode(
+      body.purchaseDate,
+      body.tenantId,
+      body.subsidiaryId
+    );
+    try {
+      return await fnTx(code);
+    } catch (err: any) {
+      // Unique constraint violation
+      if (
+        err?.code === "P2002" &&
+        Array.isArray(err?.meta?.target) &&
+        err.meta.target.includes("code")
+      ) {
+        attempt++;
+        continue; // genera otro code y reintenta
+      }
+      throw err; // otro error: propaga
+    }
+  }
+  throw new Error(
+    "No se pudo generar un código único de compra tras varios intentos."
+  );
+}
+
+/** CREATE ÚNICO con precios manuales + márgenes calculados + retry de code */
+export const createPurchase = asyncHandler(async (req: Request, res: Response) => {
   const {
     purchaseDate,
     paymentType,
@@ -218,371 +62,278 @@ export const createPurchaseWithPriceSync = asyncHandler(async (req: Request, res
     subsidiaryId,
     note,
     purchaseDetails,
-    discountType = "PORCENTAJE", // ✅ por defecto
-    discountValue = 0,           // ✅ por defecto
+    cashSessionId,
+    discountType = "PORCENTAJE",
+    discountValue = 0,
   } = req.body;
 
-  const generatedCode = await generateNextPurchaseCode(purchaseDate, tenantId, subsidiaryId);
+  const cleanedDiscountType: DiscountType =
+    (discountType?.toString().trim().toUpperCase() === "CANTIDAD"
+      ? "CANTIDAD"
+      : "PORCENTAJE") as DiscountType;
 
-  const subtotal = purchaseDetails.reduce(
-    (sum: number, item: any) => sum + item.price * item.quantity,
-    0
+  // Subtotal y descuentos (2 decimales)
+  const subtotal = to2(
+    purchaseDetails.reduce(
+      (sum: number, it: any) => sum + Number(it.price) * Number(it.quantity),
+      0
+    )
   );
 
-  const discount =
-    discountType === "PORCENTAJE"
+  const rawDiscount =
+    cleanedDiscountType === "PORCENTAJE"
       ? subtotal * (Number(discountValue) / 100)
       : Number(discountValue || 0);
 
-  const total = subtotal - discount;
+  const discount = to2(Math.max(0, Math.min(subtotal, rawDiscount)));
+  const total = to2(subtotal - discount);
 
-  const createdPurchase = await prisma.purchase.create({
-    data: {
-      code: generatedCode,
-      purchaseDate: new Date(purchaseDate),
-      paymentType,
-      purchaseStatus: "CONFIRMADA",
-      paymentStatus,
-      note,
-      discountType,
-      discountValue,
-      supplierId,
-      userId,
-      tenantId,
-      subsidiaryId,
-      total,
-    },
-  });
+  // Cálculos a devolver por detalle
+  type SalePriceComputed = {
+    priceTypeId: string;
+    priceTypeName: string;
+    baseCostUsed: number | null;
+    salePrice: number;
+    gainAmount: number | null;
+    gainPercent: number | null;
+  };
+  const computedByProduct: Record<string, SalePriceComputed[]> = {};
 
-  const activePriceTypes = await prisma.priceType.findMany({
-    where: {
-      status: true,
-      tenantId,
-      subsidiaryId,
-    },
-  });
-
-  for (const detail of purchaseDetails) {
-    const { productId, price, quantity, currencyId } = detail;
-
-    await prisma.purchaseDetail.create({
-      data: {
-        price,
-        quantity,
-        sub_total: price * quantity,
-        productId,
-        purchaseId: createdPurchase.id,
-        userId,
-        supplierId,
-        currencyId,
-        tenantId,
-        subsidiaryId,
-      },
-    });
-
-    const existingInventory = await prisma.inventory.findUnique({
-      where: {
-        productId_subsidiaryId: {
-          productId,
-          subsidiaryId,
-        },
-      },
-    });
-
-    if (existingInventory) {
-      await prisma.inventory.update({
-        where: { id: existingInventory.id },
-        data: {
-          quantity_available: existingInventory.quantity_available + quantity,
-          lastUpdateReason: "COMPRA",
-          lastUpdateQuantity: quantity,
-          userId,
-        },
-      });
-    } else {
-      await prisma.inventory.create({
-        data: {
-          productId,
-          quantity_available: quantity,
-          min_quantity: 0,
-          lastUpdateReason: "COMPRA",
-          lastUpdateQuantity: quantity,
-          userId,
-          tenantId,
-          subsidiaryId,
-        },
-      });
-    }
-
-    const product = await prisma.product.findUnique({ where: { id: productId } });
-    if (product && !product.status) {
-      await prisma.product.update({
-        where: { id: productId },
-        data: { status: true },
-      });
-    }
-
-    if (product?.productCategoryId) {
-      const category = await prisma.productCategory.findUnique({
-        where: { id: product.productCategoryId },
-      });
-
-      if (category && !category.status) {
-        await prisma.productCategory.update({
-          where: { id: category.id },
-          data: { status: true },
-        });
-      }
-    }
-
-    for (const priceType of activePriceTypes) {
-      const generatedPrice = price * (1 + Number(priceType.marginPercent) / 100);
-
-      const existingPrice = await prisma.productPrice.findUnique({
-        where: {
-          productId_priceTypeId_subsidiaryId: {
-            productId,
-            priceTypeId: priceType.id,
-            subsidiaryId,
-          },
-        },
-      });
-
-      if (existingPrice) {
-        if (existingPrice.autoGenerated || existingPrice.editable) {
-          await prisma.productPrice.update({
-            where: {
-              productId_priceTypeId_subsidiaryId: {
-                productId,
-                priceTypeId: priceType.id,
-                subsidiaryId,
-              },
-            },
-            data: {
-              price: generatedPrice,
-              autoGenerated: true,
-              editable: false,
-            },
-          });
-        }
-      } else {
-        await prisma.productPrice.create({
+  try {
+    const created = await createPurchaseWithCodeRetry(req.body, async (code) => {
+      return prisma.$transaction(async (tx) => {
+        // 1) Crear cabecera de compra
+        const purchase = await tx.purchase.create({
           data: {
-            productId,
-            priceTypeId: priceType.id,
+            code,
+            purchaseDate: new Date(purchaseDate),
+            paymentType,
+            purchaseStatus: "CONFIRMADA",
+            paymentStatus,
+            note,
+            discountType: cleanedDiscountType,
+            discountValue: new Prisma.Decimal(
+              to2(Number(discountValue || 0)).toFixed(2)
+            ),
+            supplierId,
+            userId,
             tenantId,
             subsidiaryId,
-            price: generatedPrice,
-            autoGenerated: true,
-            editable: false,
+            cashSessionId: cashSessionId || null,
+            total: new Prisma.Decimal(total.toFixed(2)),
           },
         });
-      }
-    }
-  }
 
-  const fullPurchase = await prisma.purchase.findUnique({
-    where: { id: createdPurchase.id },
-    include: {
-      supplier: { include: { supplierCategory: true } },
-      user: {
-        select: {
-          id: true,
-          username: true,
-          name: true,
-          lastname: true,
-          role: { select: { name: true } },
-        },
-      },
-      purchaseDetails: {
-        select: {
-          id: true,
-          price: true,
-          quantity: true,
-          sub_total: true,
-          currencyId: true,
-          product: {
-            select: {
-              id: true,
-              name: true,
-              code: true,
-              barcode: true,
-              description: true,
-              status: true,
-              productCategory: true,
-              unitMeasurement: true,
+        // 2) Procesar detalles
+        for (const d of purchaseDetails) {
+          const productId: string = d.productId;
+          const unitCost = to2(Number(d.price)); // costo unitario
+          const qty = Number(d.quantity);
+          const lineSubtotal = to2(unitCost * qty);
+          const currencyId: string = d.currencyId;
+
+          // 2.1) detalle de compra
+          await tx.purchaseDetail.create({
+            data: {
+              price: new Prisma.Decimal(unitCost.toFixed(2)),
+              quantity: qty,
+              sub_total: new Prisma.Decimal(lineSubtotal.toFixed(2)),
+              productId,
+              purchaseId: purchase.id,
+              userId,
+              supplierId,
+              currencyId,
+              tenantId,
+              subsidiaryId,
+              cashSessionId: cashSessionId || null,
             },
+          });
+
+          // 2.2) inventario solo si entra física
+          if (qty > 0) {
+            const inv = await tx.inventory.findUnique({
+              where: { productId_subsidiaryId: { productId, subsidiaryId } },
+            });
+            if (inv) {
+              await tx.inventory.update({
+                where: { id: inv.id },
+                data: {
+                  quantity_available: inv.quantity_available + qty,
+                  lastUpdateReason: "COMPRA",
+                  lastUpdateQuantity: qty,
+                  userId,
+                },
+              });
+            } else {
+              await tx.inventory.create({
+                data: {
+                  productId,
+                  quantity_available: qty,
+                  min_quantity: 0,
+                  lastUpdateReason: "COMPRA",
+                  lastUpdateQuantity: qty,
+                  userId,
+                  tenantId,
+                  subsidiaryId,
+                },
+              });
+            }
+
+            // 2.3) activar producto y categoría si estaban inactivos
+            const product = await tx.product.findUnique({ where: { id: productId } });
+            if (product && !product.status) {
+              await tx.product.update({ where: { id: productId }, data: { status: true } });
+            }
+            if (product?.productCategoryId) {
+              const category = await tx.productCategory.findUnique({
+                where: { id: product.productCategoryId },
+              });
+              if (category && !category.status) {
+                await tx.productCategory.update({
+                  where: { id: category.id },
+                  data: { status: true },
+                });
+              }
+            }
+          }
+
+          // 2.4) upsert de precios de venta manuales + cálculo de margen
+          if (Array.isArray(d.salePrices) && d.salePrices.length > 0) {
+            // baseCost: el costo del detalle; si 0 y qty=0, usar último costo conocido
+            let baseCost = unitCost;
+            if ((isNaN(baseCost) || baseCost === 0) && qty === 0) {
+              const last = await tx.purchaseDetail.findFirst({
+                where: { productId, tenantId, subsidiaryId },
+                orderBy: { created_at: "desc" },
+                select: { price: true },
+              });
+              baseCost = to2(last ? Number(last.price) : 0);
+            }
+
+            const computedList: SalePriceComputed[] = [];
+
+            for (const sp of d.salePrices) {
+              const salePrice = to2(Number(sp.price));
+              // PriceType válido y activo del mismo tenant/sucursal
+              const pt = await tx.priceType.findFirst({
+                where: { id: sp.priceTypeId, tenantId, subsidiaryId, status: true },
+                select: { id: true, name: true },
+              });
+              if (!pt) continue;
+
+              const gainPercent =
+                baseCost > 0 ? to2(((salePrice - baseCost) / baseCost) * 100) : null;
+              const gainAmount =
+                baseCost > 0 ? to2(salePrice - baseCost) : null;
+
+              // persistimos ProductPrice (con 2 decimales)
+              await tx.productPrice.upsert({
+                where: {
+                  productId_priceTypeId_subsidiaryId: {
+                    productId,
+                    priceTypeId: pt.id,
+                    subsidiaryId,
+                  },
+                },
+                create: {
+                  id: crypto.randomUUID(),
+                  productId,
+                  priceTypeId: pt.id,
+                  tenantId,
+                  subsidiaryId,
+                  price: new Prisma.Decimal(salePrice.toFixed(2)),
+                  marginPercent: gainPercent === null ? null : new Prisma.Decimal(gainPercent.toFixed(2)),
+                  baseCostUsed: baseCost === 0 ? null : new Prisma.Decimal(baseCost.toFixed(2)),
+                },
+                update: {
+                  price: new Prisma.Decimal(salePrice.toFixed(2)),
+                  marginPercent: gainPercent === null ? null : new Prisma.Decimal(gainPercent.toFixed(2)),
+                  baseCostUsed: baseCost === 0 ? null : new Prisma.Decimal(baseCost.toFixed(2)),
+                },
+              });
+
+              // guardamos cálculo para la respuesta
+              computedList.push({
+                priceTypeId: pt.id,
+                priceTypeName: pt.name,
+                baseCostUsed: baseCost === 0 ? null : baseCost,
+                salePrice,
+                gainAmount,
+                gainPercent,
+              });
+            }
+
+            if (computedList.length) {
+              computedByProduct[productId] = (computedByProduct[productId] || []).concat(computedList);
+            }
+          }
+        }
+
+        // 3) respuesta: compra completa
+        const full = await tx.purchase.findUnique({
+          where: { id: purchase.id },
+          include: {
+            supplier: { include: { supplierCategory: true } },
+            user: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                lastname: true,
+                role: { select: { name: true } },
+              },
+            },
+            purchaseDetails: {
+              select: {
+                id: true,
+                price: true,
+                quantity: true,
+                sub_total: true,
+                currencyId: true,
+                cashSessionId: true,
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    code: true,
+                    barcode: true,
+                    description: true,
+                    status: true,
+                    productCategory: true,
+                    unitMeasurement: true,
+                  },
+                },
+              },
+            },
+            creditPayments: true,
           },
-        },
-      },
-      creditPayments: true,
-    },
-  });
-
-  res.status(201).json(fullPurchase);
-});
-
-/* createPurchaseManualPrices
- * Este solo registra la compra y el inventario, y no toca los precios.
- */
-export const createPurchaseManualPrices = asyncHandler(async (req: Request, res: Response) => {
-  const {
-    purchaseDate,
-    paymentType,
-    paymentStatus,
-    supplierId,
-    userId,
-    tenantId,
-    subsidiaryId,
-    note,
-    purchaseDetails,
-    discountType = "PORCENTAJE", // ✅ por defecto
-    discountValue = 0,           // ✅ por defecto
-  } = req.body;
-
-  const generatedCode = await generateNextPurchaseCode(purchaseDate, tenantId, subsidiaryId);
-
-  const subtotal = purchaseDetails.reduce(
-    (sum: number, item: any) => sum + item.price * item.quantity,
-    0
-  );
-
-  const discount =
-    discountType === "PORCENTAJE"
-      ? subtotal * (Number(discountValue) / 100)
-      : Number(discountValue || 0);
-
-  const total = subtotal - discount;
-
-  const createdPurchase = await prisma.purchase.create({
-    data: {
-      code: generatedCode,
-      purchaseDate: new Date(purchaseDate),
-      paymentType,
-      purchaseStatus: "CONFIRMADA",
-      paymentStatus,
-      note,
-      discountType,
-      discountValue,
-      supplierId,
-      userId,
-      tenantId,
-      subsidiaryId,
-      total,
-    },
-  });
-
-  for (const detail of purchaseDetails) {
-    const { productId, price, quantity, currencyId } = detail;
-
-    await prisma.purchaseDetail.create({
-      data: {
-        price,
-        quantity,
-        sub_total: price * quantity,
-        productId,
-        purchaseId: createdPurchase.id,
-        userId,
-        supplierId,
-        currencyId,
-        tenantId,
-        subsidiaryId,
-      },
-    });
-
-    const existingInventory = await prisma.inventory.findUnique({
-      where: {
-        productId_subsidiaryId: {
-          productId,
-          subsidiaryId,
-        },
-      },
-    });
-
-    if (existingInventory) {
-      await prisma.inventory.update({
-        where: { id: existingInventory.id },
-        data: {
-          quantity_available: existingInventory.quantity_available + quantity,
-          lastUpdateReason: "COMPRA",
-          lastUpdateQuantity: quantity,
-          userId,
-        },
-      });
-    } else {
-      await prisma.inventory.create({
-        data: {
-          productId,
-          quantity_available: quantity,
-          min_quantity: 0,
-          lastUpdateReason: "COMPRA",
-          lastUpdateQuantity: quantity,
-          userId,
-          tenantId,
-          subsidiaryId,
-        },
-      });
-    }
-
-    const product = await prisma.product.findUnique({ where: { id: productId } });
-    if (product && !product.status) {
-      await prisma.product.update({
-        where: { id: productId },
-        data: { status: true },
-      });
-    }
-
-    if (product?.productCategoryId) {
-      const category = await prisma.productCategory.findUnique({
-        where: { id: product.productCategoryId },
-      });
-
-      if (category && !category.status) {
-        await prisma.productCategory.update({
-          where: { id: category.id },
-          data: { status: true },
         });
-      }
+
+        // 4) Adjuntar cálculos a cada detalle en 'computed'
+        const enriched = {
+          ...full!,
+          computed: full!.purchaseDetails.map((pd) => ({
+            purchaseDetailId: pd.id,
+            productId: pd.product.id,
+            productName: pd.product.name,
+            salePrices: computedByProduct[pd.product.id] || [], // puede venir vacío si no se mandaron salePrices
+          })),
+        };
+
+        return enriched;
+      });
+    });
+
+    return res.status(201).json(created);
+  } catch (err: any) {
+    if (err?.code === "P2002") {
+      // devolvemos qué índice único falló, para diagnosticar rápido
+      return res.status(409).json({
+        error: "Duplicate key error",
+        target: err.meta?.target, // p.ej. ["tenantId","subsidiaryId","code"] o ["productId","priceTypeId","subsidiaryId"]
+      });
     }
+    console.error(err);
+    return res.status(500).json({ error: "Internal error" });
   }
-
-  const fullPurchase = await prisma.purchase.findUnique({
-    where: { id: createdPurchase.id },
-    include: {
-      supplier: { include: { supplierCategory: true } },
-      user: {
-        select: {
-          id: true,
-          username: true,
-          name: true,
-          lastname: true,
-          role: { select: { name: true } },
-        },
-      },
-      purchaseDetails: {
-        select: {
-          id: true,
-          price: true,
-          quantity: true,
-          sub_total: true,
-          currencyId: true,
-          product: {
-            select: {
-              id: true,
-              name: true,
-              code: true,
-              barcode: true,
-              description: true,
-              status: true,
-              productCategory: true,
-              unitMeasurement: true,
-            },
-          },
-        },
-      },
-      creditPayments: true,
-    },
-  });
-
-  res.status(201).json(fullPurchase);
 });
